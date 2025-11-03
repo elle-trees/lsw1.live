@@ -1,0 +1,16 @@
+env:
+-   variable: API_URL
+    value: lsw1live.firebaseapp.com
+    availability:
+      -   BUILD
+
+-   variable: STORAGE_BUCKET
+    value: lsw1live.firebasestorage.app
+    availability:
+      -   RUNTIME
+
+-   variable: API_KEY
+    secret: secretIDforAPI
+
+-   variable: ADMIN_UID
+    secret: adminUID
