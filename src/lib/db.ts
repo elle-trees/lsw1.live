@@ -175,12 +175,15 @@ export const backfillPointsForAllRuns = async () => {
   return backfillPointsForAllRunsFirestore();
 };
 
+/**
+ * Set admin status for a player
+ * Creates player document if it doesn't exist
+ */
 export const setPlayerAdminStatus = async (uid: string, isAdmin: boolean): Promise<boolean> => {
   try {
     const existingPlayer = await getPlayerByUid(uid);
     
     if (!existingPlayer) {
-      console.log("Player not found, creating player with admin status:", uid);
       const today = new Date().toISOString().split('T')[0];
       const newPlayer = {
         uid: uid,
@@ -195,28 +198,22 @@ export const setPlayerAdminStatus = async (uid: string, isAdmin: boolean): Promi
         isAdmin: isAdmin,
       };
       const result = await createPlayer(newPlayer);
-      console.log("Created player with admin status:", result);
       return result !== null;
     } else {
-      console.log("Updating existing player admin status:", uid, isAdmin);
       const playerDocRef = doc(db, "players", uid);
       const docSnap = await getDoc(playerDocRef);
       
       if (docSnap.exists()) {
         try {
           await updateDoc(playerDocRef, { isAdmin });
-          console.log("Update result: success");
           return true;
         } catch (updateError: any) {
-          console.error("Update error:", updateError?.code, updateError?.message);
+          // Try alternative method if permission denied
           if (updateError?.code === 'permission-denied') {
-            console.log("Permission denied - trying setDoc with merge");
             try {
               await setDoc(playerDocRef, { uid, isAdmin }, { merge: true });
-              console.log("setDoc with merge: success");
               return true;
-            } catch (setDocError: any) {
-              console.error("setDoc error:", setDocError?.code, setDocError?.message);
+            } catch {
               return false;
             }
           }
@@ -227,8 +224,7 @@ export const setPlayerAdminStatus = async (uid: string, isAdmin: boolean): Promi
         return true;
       }
     }
-  } catch (error: any) {
-    console.error("Error setting admin status:", error?.code, error?.message);
+  } catch {
     return false;
   }
 };

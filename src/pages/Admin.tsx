@@ -206,11 +206,6 @@ const Admin = () => {
       }
       
       if (!currentUser.isAdmin) {
-        console.log("Admin check failed:", {
-          uid: currentUser.uid,
-          isAdmin: currentUser.isAdmin,
-          displayName: currentUser.displayName,
-        });
         toast({
           title: "Access Denied",
           description: "You do not have permission to view this page. Admin status required.",
@@ -292,7 +287,8 @@ const Admin = () => {
 
     setAddingDownload(true);
     try {
-      const success = await addDownloadEntry(newDownload, currentUser.uid);
+      const downloadEntry = { ...newDownload, addedBy: currentUser.uid };
+      const success = await addDownloadEntry(downloadEntry, currentUser.uid);
       if (success) {
         toast({
           title: "Download Added",
@@ -950,10 +946,9 @@ const Admin = () => {
                         if (result.errors.length > 0) {
                           toast({
                             title: "Backfill Complete with Errors",
-                            description: `Updated ${result.runsUpdated} runs and ${result.playersUpdated} players. ${result.errors.length} error(s) occurred. Check console for details.`,
+                            description: `Updated ${result.runsUpdated} runs and ${result.playersUpdated} players. ${result.errors.length} error(s) occurred.`,
                             variant: "destructive",
                           });
-                          console.error("Backfill errors:", result.errors);
                         } else {
                           toast({
                             title: "Backfill Complete",
@@ -961,10 +956,9 @@ const Admin = () => {
                           });
                         }
                       } catch (error: any) {
-                        console.error("Backfill error:", error);
                         toast({
                           title: "Error",
-                          description: error.message || "Failed to backfill points. Check console for details.",
+                          description: error.message || "Failed to backfill points.",
                           variant: "destructive",
                         });
                       } finally {

@@ -11,9 +11,9 @@ import SubmitRun from "./pages/SubmitRun";
 import PlayerDetails from "./pages/PlayerDetails";
 import RunDetails from "./pages/RunDetails";
 import UserSettings from "./pages/UserSettings";
-import Admin from "./pages/Admin"; // Import the new Admin page
-import Live from "./pages/Live"; // Import the new Live page
-import Downloads from "./pages/Downloads"; // Import the new Downloads page
+import Admin from "./pages/Admin";
+import Live from "./pages/Live";
+import Downloads from "./pages/Downloads";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "@/components/AuthProvider";
 
@@ -37,10 +37,9 @@ const App = () => (
                 <Route path="/player/:playerId" element={<PlayerDetails />} />
                 <Route path="/run/:runId" element={<RunDetails />} />
                 <Route path="/settings" element={<UserSettings />} />
-                <Route path="/admin" element={<Admin />} /> {/* New route for Admin page */}
-                <Route path="/live" element={<Live />} /> {/* New route for Live page */}
-                <Route path="/downloads" element={<Downloads />} /> {/* New route for Downloads page */}
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="/admin" element={<Admin />} />
+                <Route path="/live" element={<Live />} />
+                <Route path="/downloads" element={<Downloads />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </main>

@@ -7,15 +7,13 @@ import { onAuthStateChanged } from "firebase/auth";
 
 const ADMIN_UID = import.meta.env.VITE_ADMIN_UID;
 
+// Automatically set admin status for the configured admin UID
 onAuthStateChanged(auth, async (user) => {
   if (user && ADMIN_UID && user.uid === ADMIN_UID) {
     try {
-      const result = await setPlayerAdminStatus(ADMIN_UID, true);
-      if (!result) {
-        console.error("Failed to set admin status");
-      }
+      await setPlayerAdminStatus(ADMIN_UID, true);
     } catch (error) {
-      console.error("Error setting admin status:", error);
+      // Silent fail - admin status will be set on next auth check
     }
   }
 });

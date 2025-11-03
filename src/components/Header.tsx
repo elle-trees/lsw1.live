@@ -39,7 +39,7 @@ export function Header() {
               <div className="transition-transform duration-300 group-hover:rotate-12">
                 <LegoStudIcon size={32} color="#60a5fa" />
               </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-[#60a5fa] to-[#cba6f7] bg-clip-text text-transparent">lsw1.live</span>
+              <span className="text-xl font-bold bg-gradient-to-r from-[#60a5fa] to-[#cba6f7] bg-clip-text text-transparent">lsw1.net</span>
             </Link>
             <nav className="hidden md:flex space-x-6">
                 <Link 

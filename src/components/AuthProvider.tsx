@@ -71,11 +71,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const playerData = await getPlayerByUid(user.uid);
             if (playerData) {
               const isAdmin = Boolean(playerData.isAdmin);
-              console.log("Player data loaded:", {
-                uid: user.uid,
-                isAdmin: isAdmin,
-                playerDataIsAdmin: playerData.isAdmin,
-              });
               
               setCurrentUser(prev => {
                 if (!prev || prev.uid !== user.uid) return prev;

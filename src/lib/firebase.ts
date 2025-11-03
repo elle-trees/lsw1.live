@@ -2,6 +2,10 @@ import { initializeApp } from "firebase/app";
 import { getAuth, Auth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
+/**
+ * Firebase configuration loaded from environment variables
+ * All values must be set in .env file or deployment environment
+ */
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,

@@ -83,7 +83,7 @@ const Index = () => {
             {/* Center Content - Title, Subtext, Buttons */}
             <div className="flex-1 text-center order-1 lg:order-2">
               <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-[hsl(var(--mocha-sapphire))] via-[hsl(var(--mocha-mauve))] to-[hsl(var(--mocha-lavender))] bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]">
-                lsw1.live
+                lsw1.net
               </h1>
               <p className="text-xl md:text-2xl mb-10 text-[hsl(222,15%,70%)] max-w-2xl mx-auto animate-fade-in-delay">
                 Compete for the fastest times in the galaxy. Track your progress and climb the ranks!
