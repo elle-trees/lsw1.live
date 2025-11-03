@@ -10,7 +10,7 @@ env:
       -   RUNTIME
 
 -   variable: API_KEY
-    secret: secretIDforAPI
+    secret: secretIDforAPI@1
 
 -   variable: ADMIN_UID
-    secret: adminUID
+    secret: adminUID@1
