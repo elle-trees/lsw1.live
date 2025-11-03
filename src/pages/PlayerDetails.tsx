@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,7 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 const PlayerDetails = () => {
   const { playerId } = useParams<{ playerId: string }>();
+  const navigate = useNavigate();
   const [player, setPlayer] = useState<Player | null>(null);
   const [playerRuns, setPlayerRuns] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -133,7 +134,11 @@ const PlayerDetails = () => {
                       const platformName = platforms.find(p => p.id === run.platform)?.name || run.platform;
                       
                       return (
-                        <tr key={run.id} className="border-b border-[hsl(235,13%,30%)] hover:bg-[hsl(235,19%,13%)]">
+                        <tr 
+                          key={run.id} 
+                          className="border-b border-[hsl(235,13%,30%)] hover:bg-[hsl(235,19%,13%)] cursor-pointer transition-colors"
+                          onClick={() => navigate(`/run/${run.id}`)}
+                        >
                           <td className="py-3 px-4">
                             <Badge 
                               variant={run.rank && run.rank <= 3 ? "default" : "secondary"} 

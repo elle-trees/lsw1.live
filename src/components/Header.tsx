@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Upload, Home, User, Settings, ShieldAlert, Download, Radio } from "lucide-react"; // Import Download and Radio icons
+import { Upload, Home, User, Settings, ShieldAlert, Download, Radio, Trophy } from "lucide-react"; // Import Download, Radio, and Trophy icons
 import LegoStudIcon from "@/components/icons/LegoStudIcon";
 import { useAuth } from "@/components/AuthProvider";
 import { signOut } from "firebase/auth";
@@ -55,6 +55,14 @@ export function Header() {
                   className="text-[hsl(222,15%,60%)] hover:text-[hsl(220,17%,92%)] transition-all duration-300 relative group"
                 >
                   <span>Leaderboards</span>
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#cba6f7] transition-all duration-300 group-hover:w-full"></span>
+                </Link>
+                <Link 
+                  to="/points" 
+                  className="text-[hsl(222,15%,60%)] hover:text-[hsl(220,17%,92%)] flex items-center gap-1 transition-all duration-300 relative group"
+                >
+                  <Trophy className="h-4 w-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12" />
+                  <span>Points</span>
                   <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#cba6f7] transition-all duration-300 group-hover:w-full"></span>
                 </Link>
                 <Link 

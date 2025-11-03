@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, ShieldAlert, ExternalLink, Download, PlusCircle, Trash2, Wrench, Edit2, FolderTree, Play, ArrowUp, ArrowDown, Gamepad2, UserPlus, UserMinus } from "lucide-react";
+import { CheckCircle, XCircle, ShieldAlert, ExternalLink, Download, PlusCircle, Trash2, Wrench, Edit2, FolderTree, Play, ArrowUp, ArrowDown, Gamepad2, UserPlus, UserMinus, Trophy } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -37,6 +37,7 @@ import {
   deletePlatform,
   movePlatformUp,
   movePlatformDown,
+  backfillPointsForAllRuns,
 } from "@/lib/db";
 import { LeaderboardEntry, DownloadEntry } from "@/types/database";
 import { useNavigate } from "react-router-dom";
@@ -104,6 +105,7 @@ const Admin = () => {
   const [settingAdmin, setSettingAdmin] = useState(false);
   const [foundPlayer, setFoundPlayer] = useState<{ uid: string; displayName: string; email: string; isAdmin: boolean } | null>(null);
   const [searchingPlayer, setSearchingPlayer] = useState(false);
+  const [backfillingPoints, setBackfillingPoints] = useState(false);
 
   useEffect(() => {
     fetchPlatforms();
@@ -773,29 +775,45 @@ const Admin = () => {
     
     setAddingManualRun(true);
     try {
-      // If playerUsername is provided, look up the player to get their UID
-      let playerId = currentUser.uid; // Default to current admin user
+      // Look up the player by username (if provided) or by playerName
+      let playerId: string | null = null;
       
+      // Try to find player by username first (if provided)
       if (manualRun.playerUsername.trim()) {
         const player = await getPlayerByUsername(manualRun.playerUsername.trim());
         if (player) {
           playerId = player.uid;
           // Use the player's displayName from database if found
           if (player.displayName && player.displayName !== manualRun.playerName) {
-            // Update playerName to match the database record
             toast({
               title: "Player Found",
               description: `Using player account: ${player.displayName}`,
             });
           }
-        } else {
-          toast({
-            title: "Player Not Found",
-            description: `Could not find player with username "${manualRun.playerUsername}". Using provided name without linking to account.`,
-            variant: "destructive",
-          });
-          // Still proceed, but without a linked player account
         }
+      }
+      
+      // If not found by username, try to find by playerName
+      if (!playerId && manualRun.playerName.trim()) {
+        const player = await getPlayerByUsername(manualRun.playerName.trim());
+        if (player) {
+          playerId = player.uid;
+        }
+      }
+      
+      // If player still not found, use a generated ID based on player name
+      // This ensures runs for non-existent players don't get assigned to admin's account
+      if (!playerId) {
+        // Generate a unique ID based on player name that won't conflict with real UIDs
+        // Real Firebase UIDs are 28 characters, so we'll use a different format
+        const nameHash = manualRun.playerName.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+        playerId = `unlinked_${nameHash}_${Date.now()}`;
+        
+        toast({
+          title: "Player Not Found",
+          description: `Player "${manualRun.playerName}" does not have an account. Run will be submitted but won't be linked to any player profile.`,
+          variant: "default",
+        });
       }
       
       const entry: any = {
@@ -887,6 +905,76 @@ const Admin = () => {
             Review and manage submitted speedruns and site resources.
           </p>
         </div>
+
+        {/* System Tools Section */}
+        <Card className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Wrench className="h-5 w-5" />
+              System Tools
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="p-4 bg-[hsl(235,19%,18%)] rounded-lg border border-[hsl(235,13%,30%)]">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <h3 className="font-semibold flex items-center gap-2">
+                      <Trophy className="h-4 w-4 text-yellow-500" />
+                      Backfill Points for Existing Runs
+                    </h3>
+                    <p className="text-sm text-[hsl(222,15%,60%)] mt-1">
+                      Calculate and assign points to all verified runs that don't have points yet. This will also update all players' total points.
+                    </p>
+                  </div>
+                  <Button
+                    onClick={async () => {
+                      if (!currentUser) return;
+                      setBackfillingPoints(true);
+                      try {
+                        const result = await backfillPointsForAllRuns();
+                        if (result.errors.length > 0) {
+                          toast({
+                            title: "Backfill Complete with Errors",
+                            description: `Updated ${result.runsUpdated} runs and ${result.playersUpdated} players. ${result.errors.length} error(s) occurred.`,
+                            variant: "destructive",
+                          });
+                        } else {
+                          toast({
+                            title: "Backfill Complete",
+                            description: `Successfully updated ${result.runsUpdated} runs and ${result.playersUpdated} players with points.`,
+                          });
+                        }
+                      } catch (error: any) {
+                        toast({
+                          title: "Error",
+                          description: error.message || "Failed to backfill points.",
+                          variant: "destructive",
+                        });
+                      } finally {
+                        setBackfillingPoints(false);
+                      }
+                    }}
+                    disabled={backfillingPoints}
+                    className="bg-gradient-to-r from-[#FFD700] to-[#FFA500] hover:from-[#FFA500] hover:to-[#FFD700] text-black font-semibold"
+                  >
+                    {backfillingPoints ? (
+                      <>
+                        <LoadingSpinner size="sm" className="mr-2" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <Trophy className="h-4 w-4 mr-2" />
+                        Backfill Points
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Unverified Runs Section */}
         <Card className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] mb-8">

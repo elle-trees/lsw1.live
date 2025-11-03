@@ -1,6 +1,7 @@
 import { db } from "@/lib/firebase";
-import { collection, doc, getDoc, setDoc, updateDoc, deleteDoc, getDocs, query, where, orderBy, limit as firestoreLimit } from "firebase/firestore";
+import { collection, doc, getDoc, setDoc, updateDoc, deleteDoc, getDocs, query, where, orderBy, limit as firestoreLimit, deleteField } from "firebase/firestore";
 import { Player, LeaderboardEntry, DownloadEntry, Category, Platform } from "@/types/database";
+import { calculatePoints } from "@/lib/utils";
 
 export const getLeaderboardEntriesFirestore = async (
   categoryId?: string,
@@ -337,17 +338,241 @@ export const getLeaderboardEntryByIdFirestore = async (runId: string): Promise<L
   }
 };
 
+export const updateLeaderboardEntryFirestore = async (runId: string, data: Partial<LeaderboardEntry>): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const runDocRef = doc(db, "leaderboardEntries", runId);
+    const runDocSnap = await getDoc(runDocRef);
+    
+    if (!runDocSnap.exists()) {
+      return false;
+    }
+    
+    // If time, category, or platform changed, recalculate points if verified
+    const runData = runDocSnap.data() as LeaderboardEntry;
+    const updateData: any = {};
+    
+    // Filter out undefined values and convert null to deleteField for Firestore
+    for (const [key, value] of Object.entries(data)) {
+      if (value === undefined) {
+        // Skip undefined values
+        continue;
+      } else if (value === null) {
+        // Use deleteField to remove the field
+        updateData[key] = deleteField();
+      } else {
+        updateData[key] = value;
+      }
+    }
+    
+    if (runData.verified && (data.time || data.category || data.platform)) {
+      // Get category and platform names for points calculation
+      let categoryName = "Unknown";
+      let platformName = "Unknown";
+      
+      const newCategoryId = data.category || runData.category;
+      const newPlatformId = data.platform || runData.platform;
+      const newTime = data.time || runData.time;
+      
+      try {
+        const categoryDocRef = doc(db, "categories", newCategoryId);
+        const categoryDocSnap = await getDoc(categoryDocRef);
+        if (categoryDocSnap.exists()) {
+          categoryName = categoryDocSnap.data().name || "Unknown";
+        }
+      } catch (error) {
+        // Silent fail - use default
+      }
+      try {
+        const platformDocRef = doc(db, "platforms", newPlatformId);
+        const platformDocSnap = await getDoc(platformDocRef);
+        if (platformDocSnap.exists()) {
+          platformName = platformDocSnap.data().name || "Unknown";
+        }
+      } catch (error) {
+        // Silent fail - use default
+      }
+      
+      // Recalculate points
+      const points = calculatePoints(newTime, categoryName, platformName);
+      updateData.points = points;
+      
+      // Recalculate player's total points
+      await recalculatePlayerPointsFirestore(runData.playerId);
+      if (runData.player2Name && runData.runType === 'co-op') {
+        const player2 = await getPlayerByUsernameFirestore(runData.player2Name);
+        if (player2) {
+          await recalculatePlayerPointsFirestore(player2.uid);
+        }
+      }
+    }
+    
+    await updateDoc(runDocRef, updateData);
+    return true;
+  } catch (error: any) {
+    console.error("Error updating leaderboard entry:", error);
+    // Re-throw the error so the caller can see what went wrong
+    throw error;
+  }
+};
+
 export const updateRunVerificationStatusFirestore = async (runId: string, verified: boolean, verifiedBy?: string): Promise<boolean> => {
   if (!db) return false;
   try {
     const runDocRef = doc(db, "leaderboardEntries", runId);
-    const updateData: { verified: boolean; verifiedBy?: string } = { verified };
+    const runDocSnap = await getDoc(runDocRef);
+    
+    if (!runDocSnap.exists()) {
+      return false;
+    }
+    
+    const runData = runDocSnap.data() as LeaderboardEntry;
+    const updateData: { verified: boolean; verifiedBy?: string; points?: number } = { verified };
+    
     if (verified && verifiedBy) {
       updateData.verifiedBy = verifiedBy;
+      
+      // Calculate and store points when verifying
+      if (!runData.points || runData.points === 0) {
+        // Get category and platform names
+        let categoryName = "Unknown";
+        let platformName = "Unknown";
+        try {
+          const categoryDocRef = doc(db, "categories", runData.category);
+          const categoryDocSnap = await getDoc(categoryDocRef);
+          if (categoryDocSnap.exists()) {
+            categoryName = categoryDocSnap.data().name || "Unknown";
+          }
+        } catch (error) {
+          // Silent fail - use default
+        }
+        try {
+          const platformDocRef = doc(db, "platforms", runData.platform);
+          const platformDocSnap = await getDoc(platformDocRef);
+          if (platformDocSnap.exists()) {
+            platformName = platformDocSnap.data().name || "Unknown";
+          }
+        } catch (error) {
+          // Silent fail - use default
+        }
+        
+        const points = calculatePoints(runData.time, categoryName, platformName);
+        updateData.points = points;
+        
+        // Update player's total points
+        await updatePlayerPointsFirestore(runData.playerId, points);
+      }
     }
+    
     await updateDoc(runDocRef, updateData);
     return true;
   } catch (error) {
+    return false;
+  }
+};
+
+/**
+ * Update a player's total points by adding the given points
+ */
+export const updatePlayerPointsFirestore = async (playerId: string, pointsToAdd: number): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const playerDocRef = doc(db, "players", playerId);
+    const playerDocSnap = await getDoc(playerDocRef);
+    
+    if (playerDocSnap.exists()) {
+      const currentData = playerDocSnap.data() as Player;
+      const currentPoints = currentData.totalPoints || 0;
+      await updateDoc(playerDocRef, { totalPoints: currentPoints + pointsToAdd });
+    } else {
+      // If player doesn't exist, create with initial points
+      await setDoc(playerDocRef, { totalPoints: pointsToAdd }, { merge: true });
+    }
+    return true;
+  } catch (error) {
+    return false;
+  }
+};
+
+/**
+ * Recalculate total points for a player based on all their verified runs
+ */
+export const recalculatePlayerPointsFirestore = async (playerId: string): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    // Get all verified runs for this player
+    const q = query(
+      collection(db, "leaderboardEntries"),
+      where("playerId", "==", playerId),
+      where("verified", "==", true)
+    );
+    const querySnapshot = await getDocs(q);
+    
+    // Get all categories and platforms for lookup
+    const categories = await getCategoriesFirestore();
+    const platforms = await getPlatformsFirestore();
+    const categoryMap = new Map(categories.map(c => [c.id, c.name]));
+    const platformMap = new Map(platforms.map(p => [p.id, p.name]));
+    
+    let totalPoints = 0;
+    const runsToUpdate: { id: string; points: number }[] = [];
+    
+    // Calculate points for each run
+    for (const runDoc of querySnapshot.docs) {
+      const runData = runDoc.data() as LeaderboardEntry;
+      
+      // Skip obsolete runs - they don't count for points
+      if (runData.isObsolete) {
+        continue;
+      }
+      
+      const categoryName = categoryMap.get(runData.category) || "Unknown";
+      const platformName = platformMap.get(runData.platform) || "Unknown";
+      
+      // Recalculate points for all runs with the new formula
+      const points = calculatePoints(runData.time, categoryName, platformName);
+      runsToUpdate.push({ id: runDoc.id, points });
+      totalPoints += points;
+    }
+    
+    // Update runs that didn't have points
+    for (const run of runsToUpdate) {
+      try {
+        const runDocRef = doc(db, "leaderboardEntries", run.id);
+        await updateDoc(runDocRef, { points: run.points });
+      } catch (error) {
+        // Continue even if individual run update fails
+        console.error(`Failed to update run ${run.id}:`, error);
+      }
+    }
+    
+    // Update or create player's total points
+    const playerDocRef = doc(db, "players", playerId);
+    const playerDocSnap = await getDoc(playerDocRef);
+    
+    if (playerDocSnap.exists()) {
+      await updateDoc(playerDocRef, { totalPoints });
+    } else {
+      // Create player document if it doesn't exist
+      // Get player info from first run if available
+      const firstRun = querySnapshot.docs[0]?.data() as LeaderboardEntry | undefined;
+      const playerData: Partial<Player> = {
+        uid: playerId,
+        displayName: firstRun?.playerName || "Unknown Player",
+        email: "",
+        joinDate: firstRun?.date || new Date().toISOString().split('T')[0],
+        totalRuns: querySnapshot.docs.length,
+        bestRank: null,
+        favoriteCategory: null,
+        favoritePlatform: null,
+        totalPoints,
+      };
+      await setDoc(playerDocRef, playerData);
+    }
+    
+    return true;
+  } catch (error) {
+    console.error(`Error recalculating points for player ${playerId}:`, error);
     return false;
   }
 };
@@ -951,5 +1176,286 @@ export const claimRunFirestore = async (runId: string, userId: string): Promise<
     return true;
   } catch (error) {
     return false;
+  }
+};
+
+/**
+ * Get all players sorted by total points (descending)
+ * This function queries verified runs and aggregates points by player for reliability
+ */
+export const getPlayersByPointsFirestore = async (limit: number = 100): Promise<Player[]> => {
+  if (!db) return [];
+  try {
+    // Get all verified runs
+    const q = query(
+      collection(db, "leaderboardEntries"),
+      where("verified", "==", true),
+      firestoreLimit(2000)
+    );
+    const runsSnapshot = await getDocs(q);
+
+    // Get all categories and platforms for lookup
+    const categories = await getCategoriesFirestore();
+    const platforms = await getPlatformsFirestore();
+    const categoryMap = new Map(categories.map(c => [c.id, c.name]));
+    const platformMap = new Map(platforms.map(p => [p.id, p.name]));
+
+    // Aggregate runs by player
+    // For unlinked players (without accounts), we aggregate by playerName
+    // For players with accounts, we aggregate by playerId
+    const playerMap = new Map<string, {
+      playerId: string;
+      playerName: string;
+      totalPoints: number;
+      totalRuns: number;
+      firstRunDate?: string;
+      isUnlinked: boolean;
+    }>();
+
+    // Process each run
+    for (const runDoc of runsSnapshot.docs) {
+      const runData = runDoc.data() as LeaderboardEntry;
+      
+      if (!runData.playerId || runData.isObsolete) continue;
+
+      // Recalculate points for all runs with the new formula
+      const categoryName = categoryMap.get(runData.category) || "Unknown";
+      const platformName = platformMap.get(runData.platform) || "Unknown";
+      let points = calculatePoints(runData.time, categoryName, platformName);
+      
+      // Update the run with recalculated points (async, don't wait)
+      try {
+        const runDocRef = doc(db, "leaderboardEntries", runDoc.id);
+        updateDoc(runDocRef, { points }).catch(() => {}); // Fire and forget
+      } catch {}
+
+      // Determine aggregation key: use playerName for unlinked players, playerId for others
+      const isUnlinked = runData.playerId.startsWith("unlinked_");
+      const aggregationKey = isUnlinked 
+        ? `unlinked_${runData.playerName.trim().toLowerCase()}` // Group by name for unlinked
+        : runData.playerId; // Use playerId for real accounts
+
+      // Get or create player entry
+      const existing = playerMap.get(aggregationKey);
+      if (existing) {
+        existing.totalPoints += points;
+        existing.totalRuns += 1;
+        if (runData.date && (!existing.firstRunDate || runData.date < existing.firstRunDate)) {
+          existing.firstRunDate = runData.date;
+        }
+        // Update playerId to use the first one encountered (for display purposes)
+        // This ensures we can still track which playerId was used
+        if (isUnlinked && !existing.playerId.startsWith("unlinked_")) {
+          // Keep existing playerId if it's from a real account
+        } else if (isUnlinked) {
+          // For unlinked players, use the first playerId encountered (doesn't matter which one)
+          existing.playerId = runData.playerId;
+        }
+      } else {
+        playerMap.set(aggregationKey, {
+          playerId: runData.playerId,
+          playerName: runData.playerName || "Unknown Player",
+          totalPoints: points,
+          totalRuns: 1,
+          firstRunDate: runData.date,
+          isUnlinked: isUnlinked,
+        });
+      }
+    }
+
+    // Convert to Player array and fetch additional player data
+    const playersList = Array.from(playerMap.values())
+      .filter(p => p.totalPoints > 0)
+      .sort((a, b) => b.totalPoints - a.totalPoints)
+      .slice(0, limit);
+
+    // Fetch player documents for additional info (name color, etc.)
+    const players: Player[] = await Promise.all(
+      playersList.map(async (p) => {
+        // Skip fetching player doc for unlinked players - they don't have accounts
+        if (p.isUnlinked) {
+          return {
+            id: p.playerId,
+            uid: p.playerId,
+            displayName: p.playerName,
+            email: "",
+            joinDate: p.firstRunDate || "",
+            totalRuns: p.totalRuns,
+            bestRank: null,
+            favoriteCategory: null,
+            favoritePlatform: null,
+            nameColor: undefined,
+            isAdmin: false,
+            totalPoints: p.totalPoints,
+          } as Player;
+        }
+
+        try {
+          const playerDocRef = doc(db, "players", p.playerId);
+          const playerDocSnap = await getDoc(playerDocRef);
+          
+          if (playerDocSnap.exists()) {
+            const playerData = playerDocSnap.data() as Player;
+            return {
+              id: p.playerId,
+              uid: p.playerId,
+              displayName: playerData.displayName || p.playerName,
+              email: playerData.email || "",
+              joinDate: playerData.joinDate || p.firstRunDate || "",
+              totalRuns: p.totalRuns,
+              bestRank: playerData.bestRank || null,
+              favoriteCategory: playerData.favoriteCategory || null,
+              favoritePlatform: playerData.favoritePlatform || null,
+              nameColor: playerData.nameColor,
+              isAdmin: playerData.isAdmin || false,
+              totalPoints: p.totalPoints,
+            } as Player;
+          } else {
+            // Player doesn't exist in players collection, use run data
+            return {
+              id: p.playerId,
+              uid: p.playerId,
+              displayName: p.playerName,
+              email: "",
+              joinDate: p.firstRunDate || "",
+              totalRuns: p.totalRuns,
+              bestRank: null,
+              favoriteCategory: null,
+              favoritePlatform: null,
+              nameColor: undefined,
+              isAdmin: false,
+              totalPoints: p.totalPoints,
+            } as Player;
+          }
+        } catch (error) {
+          // Fallback if player fetch fails
+          return {
+            id: p.playerId,
+            uid: p.playerId,
+            displayName: p.playerName,
+            email: "",
+            joinDate: p.firstRunDate || "",
+            totalRuns: p.totalRuns,
+            bestRank: null,
+            favoriteCategory: null,
+            favoritePlatform: null,
+            nameColor: undefined,
+            isAdmin: false,
+            totalPoints: p.totalPoints,
+          } as Player;
+        }
+      })
+    );
+
+    return players;
+  } catch (error) {
+    console.error("Error getting players by points:", error);
+    return [];
+  }
+};
+
+/**
+ * Backfill points for all existing verified runs that don't have points
+ * Returns summary of the operation
+ */
+export const backfillPointsForAllRunsFirestore = async (): Promise<{
+  runsUpdated: number;
+  playersUpdated: number;
+  errors: string[];
+}> => {
+  if (!db) {
+    return { runsUpdated: 0, playersUpdated: 0, errors: ["Firestore not initialized"] };
+  }
+
+  const result = {
+    runsUpdated: 0,
+    playersUpdated: 0,
+    errors: [] as string[],
+  };
+
+  try {
+    // Get all verified runs
+    const q = query(
+      collection(db, "leaderboardEntries"),
+      where("verified", "==", true),
+      firestoreLimit(5000) // Get a large batch
+    );
+    const querySnapshot = await getDocs(q);
+
+    // Get all categories and platforms for lookup
+    const categories = await getCategoriesFirestore();
+    const platforms = await getPlatformsFirestore();
+    const categoryMap = new Map(categories.map(c => [c.id, c.name]));
+    const platformMap = new Map(platforms.map(p => [p.id, p.name]));
+
+    // Track runs that need points and player totals
+    const runsToUpdate: { id: string; points: number; playerId: string }[] = [];
+    const playerPointsMap = new Map<string, number>(); // playerId -> total points (recalculated from all runs)
+
+    // Process each run - recalculate ALL runs (even ones with existing points)
+    for (const runDoc of querySnapshot.docs) {
+      try {
+        const runData = runDoc.data() as LeaderboardEntry;
+        
+        // Skip obsolete runs - they don't count for points
+        if (runData.isObsolete) {
+          continue;
+        }
+
+        // Recalculate points for all runs with the new formula
+        const categoryName = categoryMap.get(runData.category) || "Unknown";
+        const platformName = platformMap.get(runData.platform) || "Unknown";
+        const points = calculatePoints(runData.time, categoryName, platformName);
+        
+        runsToUpdate.push({
+          id: runDoc.id,
+          points,
+          playerId: runData.playerId,
+        });
+
+        // Accumulate points for each player (recalculating totals from scratch)
+        const currentTotal = playerPointsMap.get(runData.playerId) || 0;
+        playerPointsMap.set(runData.playerId, currentTotal + points);
+      } catch (error) {
+        result.errors.push(`Error processing run ${runDoc.id}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+
+    // Update all runs
+    for (const run of runsToUpdate) {
+      try {
+        const runDocRef = doc(db, "leaderboardEntries", run.id);
+        await updateDoc(runDocRef, { points: run.points });
+        result.runsUpdated++;
+      } catch (error) {
+        result.errors.push(`Error updating run ${run.id}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+
+    // Get all unique player IDs from all verified runs (not just the ones we updated)
+    const allPlayerIds = new Set<string>();
+    for (const runDoc of querySnapshot.docs) {
+      const runData = runDoc.data() as LeaderboardEntry;
+      if (runData.playerId) {
+        allPlayerIds.add(runData.playerId);
+      }
+    }
+
+    // Recalculate total points for each player from all their verified runs
+    for (const playerId of allPlayerIds) {
+      try {
+        const success = await recalculatePlayerPointsFirestore(playerId);
+        if (success) {
+          result.playersUpdated++;
+        }
+      } catch (error) {
+        result.errors.push(`Error recalculating player ${playerId}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+
+    return result;
+  } catch (error) {
+    result.errors.push(`Fatal error: ${error instanceof Error ? error.message : String(error)}`);
+    return result;
   }
 };

@@ -16,6 +16,7 @@ export interface LeaderboardEntry {
   isObsolete?: boolean; // New field to mark runs as obsolete
   nameColor?: string; // Player's name color
   player2Color?: string; // Player 2's name color (for co-op)
+  points?: number; // Points awarded for this run
 }
 
 export interface Player {
@@ -30,6 +31,7 @@ export interface Player {
   favoritePlatform: string | null;
   nameColor?: string; // New field for player's name color
   isAdmin?: boolean; // New field to identify admin users
+  totalPoints?: number; // Total points accumulated from all verified runs
 }
 
 export interface Category {

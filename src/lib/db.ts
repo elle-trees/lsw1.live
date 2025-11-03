@@ -36,6 +36,7 @@ import {
   getUnclaimedRunsByUsernameFirestore,
   claimRunFirestore,
   getAllVerifiedRunsFirestore,
+  getPlayersByPointsFirestore,
 } from "./data/firestore";
 
 const defaultCategories = [
@@ -127,6 +128,15 @@ export const updatePlayerProfile = updatePlayerProfileFirestore;
 export const getRecentRuns = getRecentRunsFirestore;
 export const getPlayerRuns = getPlayerRunsFirestore;
 export const getUnverifiedLeaderboardEntries = getUnverifiedLeaderboardEntriesFirestore;
+export const updateLeaderboardEntry = async (runId: string, data: Partial<LeaderboardEntry>): Promise<boolean> => {
+  const { updateLeaderboardEntryFirestore } = await import("./data/firestore");
+  try {
+    return await updateLeaderboardEntryFirestore(runId, data);
+  } catch (error: any) {
+    // Re-throw with more context
+    throw new Error(error.message || error.code || "Failed to update run");
+  }
+};
 export const updateRunVerificationStatus = updateRunVerificationStatusFirestore;
 export const deleteLeaderboardEntry = deleteLeaderboardEntryFirestore;
 export const deleteAllLeaderboardEntries = deleteAllLeaderboardEntriesFirestore;
@@ -157,6 +167,13 @@ export const getUnclaimedRunsByUsername = getUnclaimedRunsByUsernameFirestore;
 export const claimRun = claimRunFirestore;
 
 export const getAllVerifiedRuns = getAllVerifiedRunsFirestore;
+
+export const getPlayersByPoints = getPlayersByPointsFirestore;
+
+export const backfillPointsForAllRuns = async () => {
+  const { backfillPointsForAllRunsFirestore } = await import("./data/firestore");
+  return backfillPointsForAllRunsFirestore();
+};
 
 export const setPlayerAdminStatus = async (uid: string, isAdmin: boolean): Promise<boolean> => {
   try {

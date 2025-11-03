@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Header } from "@/components/Header";
 import Index from "./pages/Index";
 import Leaderboards from "./pages/Leaderboards";
+import PointsLeaderboard from "./pages/PointsLeaderboard";
 import SubmitRun from "./pages/SubmitRun";
 import PlayerDetails from "./pages/PlayerDetails";
 import RunDetails from "./pages/RunDetails";
@@ -31,6 +32,7 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/leaderboards" element={<Leaderboards />} />
+                <Route path="/points" element={<PointsLeaderboard />} />
                 <Route path="/submit" element={<SubmitRun />} />
                 <Route path="/player/:playerId" element={<PlayerDetails />} />
                 <Route path="/run/:runId" element={<RunDetails />} />

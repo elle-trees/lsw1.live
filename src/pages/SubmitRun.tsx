@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Upload, Gamepad2, Timer, User, Users } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
-import { addLeaderboardEntry, getCategories, getPlatforms, runTypes } from "@/lib/db";
+import { addLeaderboardEntry, getCategories, getPlatforms, runTypes, getPlayerByUsername } from "@/lib/db";
 import { useNavigate } from "react-router-dom";
 
 const SubmitRun = () => {
@@ -50,10 +50,15 @@ const SubmitRun = () => {
   }, []);
 
   // Update playerName when currentUser loads (if field is still empty)
+  // For non-admins, always set to current user's name and lock it
   useEffect(() => {
     if (currentUser?.displayName) {
       setFormData(prev => {
-        // Only update if the field is empty or still has the old email-based default
+        // If not admin, always lock to current user's name
+        if (!currentUser.isAdmin) {
+          return { ...prev, playerName: currentUser.displayName || "" };
+        }
+        // For admins, only update if the field is empty or still has the old email-based default
         if (!prev.playerName || prev.playerName === currentUser.email?.split('@')[0]) {
           return { ...prev, playerName: currentUser.displayName || "" };
         }
@@ -64,6 +69,10 @@ const SubmitRun = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    // Prevent non-admins from changing player name
+    if (name === "playerName" && !currentUser?.isAdmin) {
+      return;
+    }
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
@@ -92,6 +101,21 @@ const SubmitRun = () => {
       return;
     }
 
+    // For non-admin users, ensure they can only submit for themselves
+    if (!currentUser.isAdmin) {
+      const currentUserDisplayName = currentUser.displayName || currentUser.email?.split('@')[0] || "";
+      if (formData.playerName.trim() !== currentUserDisplayName) {
+        toast({
+          title: "Invalid Player Name",
+          description: "You can only submit runs for yourself. Please use your own player name.",
+          variant: "destructive",
+        });
+        // Reset to current user's name
+        setFormData(prev => ({ ...prev, playerName: currentUserDisplayName }));
+        return;
+      }
+    }
+
     if (!formData.category || !formData.platform || !formData.runType || !formData.time) {
       toast({
         title: "Missing Information",
@@ -109,13 +133,53 @@ const SubmitRun = () => {
       });
       return;
     }
+
+    // Check if video is required for this category
+    const selectedCategory = availableCategories.find(c => c.id === formData.category);
+    const categoryName = selectedCategory?.name || "";
+    const normalizedCategory = categoryName.toLowerCase().trim();
+    const isNocutsNoships = normalizedCategory === "nocuts noships" || normalizedCategory === "nocutsnoships";
+    
+    // Video is required for all categories except Nocuts Noships
+    if (!isNocutsNoships && (!formData.videoUrl || !formData.videoUrl.trim())) {
+      toast({
+        title: "Missing Information",
+        description: "Video proof is required for this category.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setLoading(true);
     
     try {
+      // Determine playerId based on whether admin is submitting for someone else
+      let playerId = currentUser.uid;
+      let finalPlayerName = formData.playerName.trim();
+      
+      // If admin is submitting for a different player, look up that player
+      if (currentUser.isAdmin && formData.playerName.trim() !== (currentUser.displayName || currentUser.email?.split('@')[0] || "")) {
+        const targetPlayer = await getPlayerByUsername(formData.playerName.trim());
+        if (targetPlayer) {
+          // Player exists, use their UID
+          playerId = targetPlayer.uid;
+          // Use the player's actual displayName from the database
+          finalPlayerName = targetPlayer.displayName || formData.playerName.trim();
+        } else {
+          // Player doesn't exist - prevent submission to avoid assigning run to wrong account
+          toast({
+            title: "Player Not Found",
+            description: `Player "${formData.playerName.trim()}" does not have an account. Please create the player account first, or use the Admin panel to add the run manually.`,
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+      }
+      
       const entry: any = {
-        playerId: currentUser.uid,
-        playerName: formData.playerName.trim(),
+        playerId: playerId,
+        playerName: finalPlayerName,
         category: formData.category,
         platform: formData.platform,
         runType: formData.runType as 'solo' | 'co-op',
@@ -203,8 +267,14 @@ const SubmitRun = () => {
                       onChange={handleChange}
                       placeholder="Enter your username"
                       required
+                      disabled={!currentUser?.isAdmin}
                       className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
                     />
+                    {!currentUser?.isAdmin && (
+                      <p className="text-xs text-[hsl(222,15%,60%)] mt-1">
+                        You can only submit runs for yourself
+                      </p>
+                    )}
                   </div>
                   {formData.runType === 'co-op' && ( // Conditionally render player2Name
                     <div>
@@ -293,19 +363,34 @@ const SubmitRun = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="videoUrl">Video Proof *</Label>
-                  <Input
-                    id="videoUrl"
-                    name="videoUrl"
-                    value={formData.videoUrl}
-                    onChange={handleChange}
-                    placeholder="https://youtube.com/watch?v=..."
-                    required
-                    className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
-                  />
-                  <p className="text-sm text-[hsl(222,15%,60%)] mt-1">
-                    Upload your run to YouTube or Twitch and provide the link for verification
-                  </p>
+                  {(() => {
+                    const selectedCategory = availableCategories.find(c => c.id === formData.category);
+                    const categoryName = selectedCategory?.name || "";
+                    const normalizedCategory = categoryName.toLowerCase().trim();
+                    const isNocutsNoships = normalizedCategory === "nocuts noships" || normalizedCategory === "nocutsnoships";
+                    const isVideoRequired = !isNocutsNoships;
+                    
+                    return (
+                      <>
+                        <Label htmlFor="videoUrl">Video Proof {isVideoRequired ? "*" : ""}</Label>
+                        <Input
+                          id="videoUrl"
+                          name="videoUrl"
+                          value={formData.videoUrl}
+                          onChange={handleChange}
+                          placeholder="https://youtube.com/watch?v=..."
+                          required={isVideoRequired}
+                          className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
+                        />
+                        <p className="text-sm text-[hsl(222,15%,60%)] mt-1">
+                          {isNocutsNoships 
+                            ? "Video proof is optional for Nocuts Noships runs, but recommended."
+                            : "Upload your run to YouTube or Twitch and provide the link for verification"
+                          }
+                        </p>
+                      </>
+                    );
+                  })()}
                 </div>
 
                 <div>
@@ -361,6 +446,7 @@ const SubmitRun = () => {
                 <h3 className="text-lg font-semibold text-[hsl(220,17%,92%)] mb-2">2. Video Rules</h3>
                 <ul className="list-disc pl-5 space-y-1">
                   <li>Runs must have video proof with game audio.</li>
+                  <li><strong>Nocuts Noships</strong> runs do not require video proof (video is optional but recommended).</li>
                   <li>Twitch VODs or highlights will not be accepted as video proof.</li>
                   <li>All runs must be done RTA; the timer may not be paused during the run.</li>
                 </ul>
