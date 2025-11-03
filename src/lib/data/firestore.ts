@@ -448,59 +448,70 @@ export const updateRunVerificationStatusFirestore = async (runId: string, verifi
     if (verified && verifiedBy) {
       updateData.verifiedBy = verifiedBy;
       
-      // Calculate and store points when verifying
-      if (!runData.points || runData.points === 0) {
-        // Get category and platform names
-        let categoryName = "Unknown";
-        let platformName = "Unknown";
-        try {
-          const categoryDocRef = doc(db, "categories", runData.category);
-          const categoryDocSnap = await getDoc(categoryDocRef);
-          if (categoryDocSnap.exists()) {
-            categoryName = categoryDocSnap.data().name || "Unknown";
-          }
-        } catch (error) {
-          // Silent fail - use default
+      // Calculate and store points when verifying (always recalculate to ensure accuracy)
+      // Get category and platform names
+      let categoryName = "Unknown";
+      let platformName = "Unknown";
+      try {
+        const categoryDocRef = doc(db, "categories", runData.category);
+        const categoryDocSnap = await getDoc(categoryDocRef);
+        if (categoryDocSnap.exists()) {
+          categoryName = categoryDocSnap.data().name || "Unknown";
         }
-        try {
-          const platformDocRef = doc(db, "platforms", runData.platform);
-          const platformDocSnap = await getDoc(platformDocRef);
-          if (platformDocSnap.exists()) {
-            platformName = platformDocSnap.data().name || "Unknown";
-          }
-        } catch (error) {
-          // Silent fail - use default
+      } catch (error) {
+        console.error("Error fetching category:", error);
+        // Silent fail - use default
+      }
+      try {
+        const platformDocRef = doc(db, "platforms", runData.platform);
+        const platformDocSnap = await getDoc(platformDocRef);
+        if (platformDocSnap.exists()) {
+          platformName = platformDocSnap.data().name || "Unknown";
         }
+      } catch (error) {
+        console.error("Error fetching platform:", error);
+        // Silent fail - use default
+      }
+      
+      const points = calculatePoints(runData.time, categoryName, platformName);
+      updateData.points = points;
+      
+      // Always recalculate player points to ensure accuracy (handles re-verification correctly)
+      try {
+        await recalculatePlayerPointsFirestore(runData.playerId);
         
-        const points = calculatePoints(runData.time, categoryName, platformName);
-        updateData.points = points;
-        
-        // For co-op runs, split points between both players
+        // For co-op runs, also recalculate player2's points
         if (runData.runType === 'co-op' && runData.player2Name) {
-          const pointsPerPlayer = Math.round(points / 2);
-          
-          // Update player 1's total points
-          await updatePlayerPointsFirestore(runData.playerId, pointsPerPlayer);
-          
-          // Update player 2's total points (if they have an account)
-          const player2 = await getPlayerByDisplayNameFirestore(runData.player2Name);
-          if (player2) {
-            await updatePlayerPointsFirestore(player2.uid, pointsPerPlayer);
+          try {
+            const player2 = await getPlayerByDisplayNameFirestore(runData.player2Name.trim());
+            if (player2) {
+              await recalculatePlayerPointsFirestore(player2.uid);
+            }
+          } catch (error) {
+            console.error("Error recalculating player2 points on verify:", error);
           }
-        } else {
-          // Solo run - full points to the player
-          await updatePlayerPointsFirestore(runData.playerId, points);
         }
+      } catch (error) {
+        console.error("Error recalculating player points on verify:", error);
+        // Don't fail verification if points recalculation fails
       }
     } else if (!verified && runData.verified) {
       // When unverifying, recalculate points for all affected players
       // This will subtract the points since the run is no longer verified
-      await recalculatePlayerPointsFirestore(runData.playerId);
-      if (runData.runType === 'co-op' && runData.player2Name) {
-        const player2 = await getPlayerByDisplayNameFirestore(runData.player2Name);
-        if (player2) {
-          await recalculatePlayerPointsFirestore(player2.uid);
+      try {
+        await recalculatePlayerPointsFirestore(runData.playerId);
+        if (runData.runType === 'co-op' && runData.player2Name) {
+          try {
+            const player2 = await getPlayerByDisplayNameFirestore(runData.player2Name.trim());
+            if (player2) {
+              await recalculatePlayerPointsFirestore(player2.uid);
+            }
+          } catch (error) {
+            console.error("Error recalculating player2 points on unverify:", error);
+          }
         }
+      } catch (error) {
+        console.error("Error recalculating player points on unverify:", error);
       }
     }
     
@@ -557,12 +568,19 @@ export const recalculatePlayerPointsFirestore = async (playerId: string): Promis
     
     // Get all verified co-op runs to check if player is player2
     // We need to filter these since we can't query by player2Name directly
-    const coOpRunsQuery = query(
-      collection(db, "leaderboardEntries"),
-      where("verified", "==", true),
-      where("runType", "==", "co-op")
-    );
-    const coOpRunsSnapshot = await getDocs(coOpRunsQuery);
+    let coOpRunsSnapshot;
+    try {
+      const coOpRunsQuery = query(
+        collection(db, "leaderboardEntries"),
+        where("verified", "==", true),
+        where("runType", "==", "co-op")
+      );
+      coOpRunsSnapshot = await getDocs(coOpRunsQuery);
+    } catch (error) {
+      console.error(`Error fetching co-op runs for player ${playerId}:`, error);
+      // If we can't fetch co-op runs, just use empty snapshot
+      coOpRunsSnapshot = { docs: [] } as any;
+    }
     
     // Get all categories and platforms for lookup
     const categories = await getCategoriesFirestore();
@@ -600,32 +618,37 @@ export const recalculatePlayerPointsFirestore = async (playerId: string): Promis
     }
     
     // Calculate points for co-op runs where player is player2
-    if (playerDisplayName) {
+    if (playerDisplayName && coOpRunsSnapshot?.docs) {
       for (const runDoc of coOpRunsSnapshot.docs) {
-        // Skip if we already processed this run (player is player1)
-        if (processedRunIds.has(runDoc.id)) {
-          continue;
-        }
-        
-        const runData = runDoc.data() as LeaderboardEntry;
-        
-        // Skip obsolete runs - they don't count for points
-        if (runData.isObsolete) {
-          continue;
-        }
-        
-        // Check if this player is player2 in this co-op run
-        // Compare player2Name with player's displayName (case-insensitive)
-        if (runData.player2Name && runData.player2Name.trim().toLowerCase() === playerDisplayName.trim().toLowerCase()) {
-          const categoryName = categoryMap.get(runData.category) || "Unknown";
-          const platformName = platformMap.get(runData.platform) || "Unknown";
+        try {
+          // Skip if we already processed this run (player is player1)
+          if (processedRunIds.has(runDoc.id)) {
+            continue;
+          }
           
-          // Recalculate points for the run
-          const points = calculatePoints(runData.time, categoryName, platformName);
-          runsToUpdate.push({ id: runDoc.id, points });
+          const runData = runDoc.data() as LeaderboardEntry;
           
-          // Player2 gets half points
-          totalPoints += Math.round(points / 2);
+          // Skip obsolete runs - they don't count for points
+          if (runData.isObsolete) {
+            continue;
+          }
+          
+          // Check if this player is player2 in this co-op run
+          // Compare player2Name with player's displayName (case-insensitive)
+          if (runData.player2Name && runData.player2Name.trim().toLowerCase() === playerDisplayName.trim().toLowerCase()) {
+            const categoryName = categoryMap.get(runData.category) || "Unknown";
+            const platformName = platformMap.get(runData.platform) || "Unknown";
+            
+            // Recalculate points for the run
+            const points = calculatePoints(runData.time, categoryName, platformName);
+            runsToUpdate.push({ id: runDoc.id, points });
+            
+            // Player2 gets half points
+            totalPoints += Math.round(points / 2);
+          }
+        } catch (error) {
+          console.error(`Error processing co-op run ${runDoc.id} for player2:`, error);
+          // Continue with next run
         }
       }
     }

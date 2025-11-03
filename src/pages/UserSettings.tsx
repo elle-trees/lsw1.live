@@ -10,6 +10,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { updatePlayerProfile, getPlayerByUid, getUnclaimedRunsByUsername, claimRun } from "@/lib/db";
 import { updateEmail, updatePassword, updateProfile } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import { useNavigate, Link } from "react-router-dom";
 import { Player, LeaderboardEntry } from "@/types/database";
 import { Badge } from "@/components/ui/badge";
@@ -107,8 +108,14 @@ const UserSettings = () => {
 
     try {
       // Update Firebase Auth profile if displayName changed
+      // Use auth.currentUser instead of currentUser from context to ensure we have the actual Firebase User object
+      const firebaseUser = auth.currentUser;
+      if (!firebaseUser) {
+        throw new Error("No authenticated user found.");
+      }
+      
       if (displayName.trim() !== (currentUser.displayName || "")) {
-        await updateProfile(currentUser, { displayName: displayName.trim() });
+        await updateProfile(firebaseUser, { displayName: displayName.trim() });
       }
 
       // Update Firestore player profile (creates document if it doesn't exist)
@@ -159,7 +166,13 @@ const UserSettings = () => {
     }
 
     try {
-      await updateEmail(currentUser, email);
+      // Use auth.currentUser instead of currentUser from context
+      const firebaseUser = auth.currentUser;
+      if (!firebaseUser) {
+        throw new Error("No authenticated user found.");
+      }
+      
+      await updateEmail(firebaseUser, email);
       await updatePlayerProfile(currentUser.uid, { email }); // Update in Firestore as well
       toast({
         title: "Email Updated",
@@ -225,7 +238,13 @@ const UserSettings = () => {
     }
 
     try {
-      await updatePassword(currentUser, newPassword);
+      // Use auth.currentUser instead of currentUser from context
+      const firebaseUser = auth.currentUser;
+      if (!firebaseUser) {
+        throw new Error("No authenticated user found.");
+      }
+      
+      await updatePassword(firebaseUser, newPassword);
       toast({
         title: "Password Updated",
         description: "Your password has been changed successfully.",
