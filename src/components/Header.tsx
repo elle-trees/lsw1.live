@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Upload, Home, User, Settings, ShieldAlert, Download, Radio, Trophy } from "lucide-react"; // Import Download, Radio, and Trophy icons
+import { Upload, Home, User, Settings, ShieldAlert, Download, Radio, Trophy, Github } from "lucide-react"; // Import Download, Radio, and Trophy icons
 import LegoStudIcon from "@/components/icons/LegoStudIcon";
 import { useAuth } from "@/components/AuthProvider";
 import { signOut } from "firebase/auth";
@@ -101,7 +101,16 @@ export function Header() {
                 )}
               </nav>
           </div>
-          <div className="px-4">
+          <div className="px-4 flex items-center gap-3">
+            <a
+              href="https://github.com/elle-trees/lsw1.dev"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[hsl(222,15%,60%)] hover:text-[hsl(220,17%,92%)] transition-all duration-300 hover:scale-110"
+              aria-label="GitHub Repository"
+            >
+              <Github className="h-5 w-5 transition-transform duration-300 hover:rotate-12" />
+            </a>
             {loading ? (
                 <Button variant="outline" className="text-[hsl(220,17%,92%)] border-[hsl(235,13%,30%)]">
                   Loading...
