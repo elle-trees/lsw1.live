@@ -22,11 +22,20 @@ service cloud.firestore {
     match /players/{playerId} {
       // Users can read their own player data
       allow read: if isOwner(playerId);
+      // Anyone can read player data (needed for leaderboards)
+      allow read: if true;
       // Users can create their own player document (including isAdmin on creation)
       allow create: if isOwner(playerId);
+      // Admins can create player documents (needed when recalculating points for players who don't exist yet)
+      allow create: if isAdmin();
       // Users can update their own player data (except isAdmin field)
       allow update: if isOwner(playerId) && 
                        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['isAdmin']));
+      // Admins can update any player's totalPoints (needed for point recalculation when verifying runs)
+      // Also allow updating other non-sensitive fields like totalRuns
+      allow update: if isAdmin() && 
+                       'totalPoints' in request.resource.data.diff(resource.data).affectedKeys() &&
+                       (!('isAdmin' in request.resource.data.diff(resource.data).affectedKeys()));
       // Only admins can update admin status (when changing from true to false or vice versa)
       allow update: if isAdmin() && 'isAdmin' in request.resource.data.diff(resource.data).affectedKeys();
       // Allow users to set their own isAdmin to true if it's currently false/undefined (initial admin setup)
