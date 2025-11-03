@@ -119,7 +119,7 @@ const UserSettings = () => {
       
       if (newDisplayName !== currentDisplayName) {
         await updateProfile(firebaseUser, { displayName: newDisplayName });
-        // Reload the user to refresh auth state and trigger onAuthStateChanged
+        // Reload the user to refresh auth state
         await firebaseUser.reload();
       }
 
@@ -135,22 +135,29 @@ const UserSettings = () => {
       }
 
       // Refresh the page data to show updated info immediately
-      // Use the updated firebaseUser after reload
-      const updatedUser = auth.currentUser;
+      // Fetch updated player data from Firestore
       const player = await getPlayerByUid(currentUser.uid);
       if (player) {
         // Update local state with the saved data
         setDisplayName(player.displayName || newDisplayName);
         setNameColor(player.nameColor || nameColor);
-      } else if (updatedUser) {
-        // Fallback to Firebase Auth data if Firestore update hasn't propagated yet
-        setDisplayName(updatedUser.displayName || newDisplayName);
+      } else {
+        // Fallback to the new display name if player fetch fails
+        setDisplayName(newDisplayName);
       }
 
       toast({
         title: "Profile Updated",
         description: "Your profile information has been saved.",
       });
+      
+      // Refresh the auth context by manually triggering a refresh
+      // The AuthProvider's refresh interval (every 3 seconds) will pick up the changes,
+      // but we can also force an immediate refresh by reloading the page after a short delay
+      // to ensure all components (like the header) show the updated display name
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
 
       if (newDisplayName) {
         fetchUnclaimedRuns(newDisplayName);

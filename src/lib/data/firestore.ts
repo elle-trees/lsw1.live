@@ -488,11 +488,15 @@ export const updateRunVerificationStatusFirestore = async (runId: string, verifi
         // For co-op runs, also recalculate player2's points
         if (runData.runType === 'co-op' && runData.player2Name) {
           try {
-            const player2 = await getPlayerByDisplayNameFirestore(runData.player2Name.trim());
+            const player2NameTrimmed = runData.player2Name.trim();
+            console.log(`Looking up player2 for co-op run ${runId}: "${player2NameTrimmed}"`);
+            const player2 = await getPlayerByDisplayNameFirestore(player2NameTrimmed);
             if (player2) {
+              console.log(`Found player2 "${player2.displayName}" (UID: ${player2.uid}), recalculating points...`);
               await recalculatePlayerPointsFirestore(player2.uid);
+              console.log(`Successfully recalculated points for player2 "${player2.displayName}"`);
             } else {
-              console.warn(`Player2 "${runData.player2Name}" not found for co-op run ${runId}`);
+              console.warn(`Player2 "${player2NameTrimmed}" not found for co-op run ${runId}. Points will only be awarded to player1.`);
             }
           } catch (error) {
             console.error("Error recalculating player2 points on verify:", error);
@@ -515,11 +519,12 @@ export const updateRunVerificationStatusFirestore = async (runId: string, verifi
         await recalculatePlayerPointsFirestore(runData.playerId);
         if (runData.runType === 'co-op' && runData.player2Name) {
           try {
-            const player2 = await getPlayerByDisplayNameFirestore(runData.player2Name.trim());
+            const player2NameTrimmed = runData.player2Name.trim();
+            const player2 = await getPlayerByDisplayNameFirestore(player2NameTrimmed);
             if (player2) {
               await recalculatePlayerPointsFirestore(player2.uid);
             } else {
-              console.warn(`Player2 "${runData.player2Name}" not found for co-op run ${runId} during unverify`);
+              console.warn(`Player2 "${player2NameTrimmed}" not found for co-op run ${runId} during unverify`);
             }
           } catch (error) {
             console.error("Error recalculating player2 points on unverify:", error);
@@ -651,8 +656,11 @@ export const recalculatePlayerPointsFirestore = async (playerId: string): Promis
           }
           
           // Check if this player is player2 in this co-op run
-          // Compare player2Name with player's displayName (case-insensitive)
-          if (runData.player2Name && runData.player2Name.trim().toLowerCase() === playerDisplayName.trim().toLowerCase()) {
+          // Compare player2Name with player's displayName (case-insensitive, normalized)
+          const runPlayer2Name = runData.player2Name?.trim().toLowerCase() || "";
+          const normalizedPlayerDisplayName = playerDisplayName.trim().toLowerCase();
+          
+          if (runPlayer2Name && runPlayer2Name === normalizedPlayerDisplayName) {
             const categoryName = categoryMap.get(runData.category) || "Unknown";
             const platformName = platformMap.get(runData.platform) || "Unknown";
             
@@ -661,7 +669,10 @@ export const recalculatePlayerPointsFirestore = async (playerId: string): Promis
             runsToUpdate.push({ id: runDoc.id, points });
             
             // Player2 gets half points
-            totalPoints += Math.round(points / 2);
+            const halfPoints = Math.round(points / 2);
+            totalPoints += halfPoints;
+            
+            console.log(`Player2 "${playerDisplayName}" gets ${halfPoints} points (half of ${points}) from co-op run ${runDoc.id}`);
           }
         } catch (error) {
           console.error(`Error processing co-op run ${runDoc.id} for player2:`, error);

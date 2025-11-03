@@ -94,10 +94,10 @@ const PlayerDetails = () => {
         </div>
 
         <PlayerProfile 
-          playerName={player.displayName} 
-          joinDate={formatDate(player.joinDate)} 
+          playerName={player.displayName || "Unknown Player"} 
+          joinDate={player.joinDate ? formatDate(player.joinDate) : "Unknown"} 
           stats={{
-            totalRuns: player.totalRuns,
+            totalRuns: player.totalRuns || 0,
             bestRank: player.bestRank || 0,
             favoriteCategory: player.favoriteCategory || "Not set",
             favoritePlatform: player.favoritePlatform || "Not set",
