@@ -70,12 +70,9 @@ export function LeaderboardTable({ data, platforms = [], categories = [] }: Lead
                         <LegoStudIcon size={48} color="#C0C0C0" />
                       </div>
                     ) : (
-                      <Badge 
-                        variant="secondary" 
-                        className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold bg-[hsl(235,13%,25%)] text-[hsl(222,15%,70%)] border-[hsl(235,13%,30%)]"
-                      >
+                      <span className="font-bold text-lg text-[hsl(220,17%,92%)] min-w-[2rem]">
                         #{entry.rank}
-                      </Badge>
+                      </span>
                     )}
                     {entry.isObsolete && (
                       <Badge variant="destructive" className="bg-red-800/50 text-red-200 text-sm px-3 py-1">

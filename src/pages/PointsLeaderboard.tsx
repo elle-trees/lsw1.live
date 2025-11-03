@@ -128,13 +128,9 @@ const PointsLeaderboard = () => {
                                 </div>
                               </>
                             ) : (
-                              <div className={`w-14 h-14 rounded-full flex items-center justify-center font-bold text-lg transition-all duration-300 group-hover:scale-110 ${
-                                rank <= 10 
-                                  ? "bg-gradient-to-br from-[#cba6f7] to-[#b4a0e2] text-[hsl(240,21%,15%)] shadow-lg"
-                                  : "bg-[hsl(235,13%,25%)] text-[hsl(222,15%,70%)] border border-[hsl(235,13%,30%)]"
-                              }`}>
-                                {rank}
-                              </div>
+                              <span className="font-bold text-xl text-[hsl(220,17%,92%)] min-w-[2.5rem]">
+                                #{rank}
+                              </span>
                             )}
                           </div>
 

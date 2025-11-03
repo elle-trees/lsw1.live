@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 const Live = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   // Get the current hostname for the 'parent' parameter required by Twitch embeds
+  // Twitch requires the parent parameter to match the domain where the embed is hosted
   const parentDomain = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
   const channel = 'lsw1live';
 
@@ -44,11 +45,8 @@ const Live = () => {
           {/* Stream Player */}
           <div className="w-full h-[600px] lg:h-[calc(100vh-200px)] min-h-[400px] animate-fade-in-up">
             <div className="bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border border-[hsl(235,13%,30%)] rounded-lg overflow-hidden shadow-2xl group hover:shadow-[#89b4fa]/20 transition-all duration-500 hover:scale-[1.01] relative h-full">
-              {/* Decorative gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-r from-[#89b4fa]/5 via-transparent to-[#74c7ec]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10 pointer-events-none"></div>
-              
               {/* Streaming indicator */}
-              <div className="absolute top-4 left-4 z-20 flex items-center gap-2 bg-black/70 backdrop-blur-sm rounded-full px-3 py-1.5 border border-[#89b4fa]/30">
+              <div className="absolute top-4 left-4 z-20 flex items-center gap-2 bg-black/70 backdrop-blur-sm rounded-full px-3 py-1.5 border border-[#89b4fa]/30 pointer-events-none">
                 <div className="relative">
                   <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
                   <div className="absolute top-0 left-0 w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
@@ -56,40 +54,39 @@ const Live = () => {
                 <span className="text-xs font-semibold text-white">LIVE</span>
               </div>
 
-              <div className="bg-[hsl(240,21%,15%)] rounded-lg overflow-hidden w-full h-full relative">
-                <iframe
-                  src={`https://player.twitch.tv/?channel=${channel}&parent=${parentDomain}&autoplay=false&muted=false`}
-                  height="100%"
-                  width="100%"
-                  allowFullScreen
-                  className="w-full h-full transition-transform duration-500 group-hover:scale-[1.005]"
-                  title={`${channel} Twitch Stream`}
-                ></iframe>
-              </div>
+              <iframe
+                src={`https://player.twitch.tv/?channel=${channel}&parent=${parentDomain}&autoplay=false&muted=false`}
+                height="100%"
+                width="100%"
+                allowFullScreen
+                className="w-full h-full block"
+                title={`${channel} Twitch Stream`}
+                style={{ border: 'none' }}
+                frameBorder="0"
+                scrolling="no"
+              ></iframe>
             </div>
           </div>
 
           {/* Chat */}
           <div className="w-full h-[400px] lg:h-[calc(100vh-200px)] min-h-[400px] hidden lg:block animate-fade-in-up delay-300">
             <div className="bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border border-[hsl(235,13%,30%)] rounded-lg overflow-hidden shadow-2xl group hover:shadow-[#89b4fa]/20 transition-all duration-500 hover:scale-[1.01] relative h-full">
-              {/* Decorative gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-r from-[#74c7ec]/5 via-transparent to-[#89dceb]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10 pointer-events-none"></div>
-              
               {/* Chat header indicator */}
-              <div className="absolute top-4 left-4 z-20 flex items-center gap-2 bg-black/70 backdrop-blur-sm rounded-full px-3 py-1.5 border border-[#74c7ec]/30">
+              <div className="absolute top-4 left-4 z-20 flex items-center gap-2 bg-black/70 backdrop-blur-sm rounded-full px-3 py-1.5 border border-[#74c7ec]/30 pointer-events-none">
                 <Users className="h-4 w-4 text-[#74c7ec]" />
                 <span className="text-xs font-semibold text-white">Chat</span>
               </div>
 
-              <div className="bg-[hsl(240,21%,15%)] rounded-lg overflow-hidden w-full h-full relative">
-                <iframe
-                  src={`https://www.twitch.tv/embed/${channel}/chat?parent=${parentDomain}&darkpopout`}
-                  height="100%"
-                  width="100%"
-                  className="w-full h-full transition-transform duration-500 group-hover:scale-[1.005]"
-                  title={`${channel} Twitch Chat`}
-                ></iframe>
-              </div>
+              <iframe
+                src={`https://www.twitch.tv/embed/${channel}/chat?parent=${parentDomain}&darkpopout`}
+                height="100%"
+                width="100%"
+                className="w-full h-full block"
+                title={`${channel} Twitch Chat`}
+                style={{ border: 'none' }}
+                frameBorder="0"
+                scrolling="no"
+              ></iframe>
             </div>
           </div>
 

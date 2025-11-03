@@ -50,10 +50,23 @@ export const getLeaderboardEntriesFirestore = async (
     }
 
     const entriesWithTime = entries.map(entry => {
+      // Parse time string (HH:MM:SS format)
       const parts = entry.time.split(':').map(Number);
-      const totalSeconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+      // Handle cases where time might be in MM:SS format (2 parts) or HH:MM:SS (3 parts)
+      let totalSeconds = 0;
+      if (parts.length === 3) {
+        // HH:MM:SS format
+        totalSeconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+      } else if (parts.length === 2) {
+        // MM:SS format (treat as minutes:seconds)
+        totalSeconds = parts[0] * 60 + parts[1];
+      } else {
+        // Invalid format, default to a large number so it sorts last
+        totalSeconds = Infinity;
+      }
       return { entry, totalSeconds };
     });
+    // Sort by time in ascending order (fastest times first)
     entriesWithTime.sort((a, b) => a.totalSeconds - b.totalSeconds);
     entries = entriesWithTime.map(item => item.entry);
     entries = entries.slice(0, 100);
@@ -73,7 +86,7 @@ export const getLeaderboardEntriesFirestore = async (
         if (entry.player2Name && entry.runType === 'co-op') {
           // Try to find player2 by name (since we don't have player2Id in entry)
           // This is a best-effort approach
-          const player2 = await getPlayerByUsernameFirestore(entry.player2Name);
+          const player2 = await getPlayerByDisplayNameFirestore(entry.player2Name);
           if (player2?.nameColor) {
             entry.player2Color = player2.nameColor;
           }
@@ -238,7 +251,7 @@ export const getRecentRunsFirestore = async (limitCount: number = 10): Promise<L
         }
         // For co-op runs, also fetch player2 color
         if (entry.player2Name && entry.runType === 'co-op') {
-          const player2 = await getPlayerByUsernameFirestore(entry.player2Name);
+          const player2 = await getPlayerByDisplayNameFirestore(entry.player2Name);
           if (player2?.nameColor) {
             entry.player2Color = player2.nameColor;
           }
@@ -304,7 +317,7 @@ export const getUnverifiedLeaderboardEntriesFirestore = async (): Promise<Leader
         }
         // For co-op runs, also fetch player2 color
         if (entry.player2Name && entry.runType === 'co-op') {
-          const player2 = await getPlayerByUsernameFirestore(entry.player2Name);
+          const player2 = await getPlayerByDisplayNameFirestore(entry.player2Name);
           if (player2?.nameColor) {
             entry.player2Color = player2.nameColor;
           }
@@ -337,7 +350,7 @@ export const getLeaderboardEntryByIdFirestore = async (runId: string): Promise<L
         }
         // For co-op runs, also fetch player2 color
         if (entry.player2Name && entry.runType === 'co-op') {
-          const player2 = await getPlayerByUsernameFirestore(entry.player2Name);
+          const player2 = await getPlayerByDisplayNameFirestore(entry.player2Name);
           if (player2?.nameColor) {
             entry.player2Color = player2.nameColor;
           }
