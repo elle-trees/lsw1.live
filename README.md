@@ -1,2 +1,2 @@
 # lsw1.live
-lsw1.live is a React website built in Typescript and Vite as an alternative to database sites like Speedrun.com. The goal of this project is to use modern web technologies to deliver a better UX, and over time add more documentation and code comments to allow forks for other games to be made quickly.
+lsw1.live is a React website built with Typescript and Vite. This site is being developed as an alternative to database sites like Speedrun.com. The goal of this project is to use modern web technologies to deliver a better UX and faster performance. More documentation and code comments are the main focus as of now so forks for other games that want to move away from SRC can be made quickly.
