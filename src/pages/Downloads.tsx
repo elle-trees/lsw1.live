@@ -31,52 +31,80 @@ const Downloads = () => {
   const getCategoryIcon = (category: string) => {
     switch (category.toLowerCase()) {
       case "tools":
-        return <Wrench className="h-5 w-5 text-[#cba6f7]" />;
+        return <Wrench className="h-6 w-6 text-[#cba6f7] transition-transform duration-300 group-hover:rotate-12" />;
       case "guides":
-        return <Book className="h-5 w-5 text-[#cba6f7]" />;
+        return <Book className="h-6 w-6 text-[#cba6f7] transition-transform duration-300 group-hover:scale-110" />;
       case "save files":
-        return <Save className="h-5 w-5 text-[#cba6f7]" />;
+        return <Save className="h-6 w-6 text-[#cba6f7] transition-transform duration-300 group-hover:scale-110" />;
       default:
-        return <Download className="h-5 w-5 text-[#cba6f7]" />;
+        return <Download className="h-6 w-6 text-[#cba6f7] transition-transform duration-300 group-hover:scale-110" />;
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[hsl(240,21%,15%)] to-[hsl(235,19%,13%)] text-[hsl(220,17%,92%)] py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold mb-4 flex items-center justify-center gap-2">
-            <Download className="h-8 w-8 text-[#cba6f7]" />
+      <div className="max-w-5xl mx-auto px-4">
+        {/* Animated Header */}
+        <div className="text-center mb-12 animate-fade-in">
+          <div className="inline-flex items-center justify-center mb-6">
+            <div className="relative">
+              <div className="absolute inset-0 bg-[#cba6f7]/20 blur-3xl rounded-full animate-pulse"></div>
+              <Download className="h-12 w-12 text-[#cba6f7] relative z-10 animate-bounce-slow" />
+            </div>
+          </div>
+          <h1 className="text-5xl font-bold mb-4 flex items-center justify-center gap-3 bg-gradient-to-r from-[#cba6f7] via-[#b4a0e2] to-[#cba6f7] bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]">
             Downloads & Resources
           </h1>
-          <p className="text-[hsl(222,15%,60%)] max-w-2xl mx-auto">
+          <p className="text-[hsl(222,15%,60%)] max-w-2xl mx-auto text-lg leading-relaxed animate-fade-in-delay">
             Find useful tools, guides, and save files to help with your speedrunning journey.
           </p>
         </div>
 
         {loading ? (
-          <LoadingSpinner size="sm" className="py-8" />
+          <div className="flex justify-center items-center py-16">
+            <LoadingSpinner size="md" />
+          </div>
         ) : downloadEntries.length === 0 ? (
-          <Card className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]">
-            <CardContent className="p-8 text-center">
-              <p className="text-[hsl(222,15%,60%)]">No download entries available yet.</p>
+          <Card className="bg-gradient-to-br from-[hsl(240,21%,15%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] animate-fade-in">
+            <CardContent className="p-12 text-center">
+              <Download className="h-16 w-16 text-[#cba6f7]/30 mx-auto mb-4" />
+              <p className="text-[hsl(222,15%,60%)] text-lg">No download entries available yet.</p>
             </CardContent>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {downloadEntries.map((entry) => (
-              <Card key={entry.id} className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]">
-                {/* CardHeader removed */}
-                <CardContent className="pt-6"> {/* Adjusted padding after removing CardHeader */}
-                  <CardTitle className="text-lg font-medium flex items-center gap-2 mb-2">
+            {downloadEntries.map((entry, index) => (
+              <Card
+                key={entry.id}
+                className="group relative overflow-hidden bg-gradient-to-br from-[hsl(240,21%,15%)] to-[hsl(235,19%,14%)] border-[hsl(235,13%,30%)] hover:border-[#cba6f7]/50 transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl hover:shadow-[#cba6f7]/20 animate-fade-in"
+                style={{ 
+                  animationDelay: `${index * 0.1}s`,
+                  opacity: 0 
+                }}
+              >
+                {/* Animated background gradient on hover */}
+                <div className="absolute inset-0 bg-gradient-to-r from-[#cba6f7]/0 via-[#cba6f7]/5 to-[#cba6f7]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                
+                {/* Shine effect on hover */}
+                <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+                
+                <CardContent className="relative pt-6 pb-6">
+                  <CardTitle className="text-xl font-semibold flex items-center gap-3 mb-3 group-hover:text-[#cba6f7] transition-colors duration-300">
                     {getCategoryIcon(entry.category)}
-                    {entry.name}
+                    <span className="bg-gradient-to-r from-[hsl(220,17%,92%)] to-[#cba6f7] bg-clip-text text-transparent group-hover:from-[#cba6f7] group-hover:to-[#b4a0e2] transition-all duration-300">
+                      {entry.name}
+                    </span>
                   </CardTitle>
-                  <p className="text-[hsl(222,15%,60%)] text-sm mb-4">{entry.description}</p>
-                  <Button asChild className="bg-[#cba6f7] hover:bg-[#b4a0e2] text-[hsl(240,21%,15%)] font-bold">
-                    <a href={entry.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
-                      Download / View
-                      <ExternalLink className="h-4 w-4" />
+                  <p className="text-[hsl(222,15%,60%)] text-sm mb-6 leading-relaxed group-hover:text-[hsl(222,15%,70%)] transition-colors duration-300">
+                    {entry.description}
+                  </p>
+                  <Button 
+                    asChild 
+                    className="w-full bg-gradient-to-r from-[#cba6f7] to-[#b4a0e2] hover:from-[#b4a0e2] hover:to-[#cba6f7] text-[hsl(240,21%,15%)] font-bold shadow-lg hover:shadow-xl hover:shadow-[#cba6f7]/30 transition-all duration-300 hover:scale-105"
+                  >
+                    <a href={entry.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2">
+                      <span>Download / View</span>
+                      <ExternalLink className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1" />
                     </a>
                   </Button>
                 </CardContent>
@@ -85,6 +113,46 @@ const Downloads = () => {
           </div>
         )}
       </div>
+      
+      <style>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes bounce-slow {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-10px);
+          }
+        }
+        
+        .animate-fade-in {
+          animation: fadeIn 0.8s ease-out forwards;
+        }
+        
+        .animate-fade-in-delay {
+          animation: fadeIn 1s ease-out 0.3s forwards;
+          opacity: 0;
+        }
+        
+        .animate-bounce-slow {
+          animation: bounce-slow 3s ease-in-out infinite;
+        }
+        
+        .animate-gradient {
+          background-size: 200% auto;
+          animation: gradient 3s linear infinite;
+        }
+      `}</style>
     </div>
   );
 };

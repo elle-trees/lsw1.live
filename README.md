@@ -1,2 +1,2 @@
-# lsw1.net
-lsw1.net is a React website built with Typescript and Vite. This site is being developed as an alternative to database sites like Speedrun.com. The goal of this project is to use modern web technologies to deliver a better UX and faster performance. More documentation and code comments are the main focus as of now so forks for other games that want to move away from SRC can be made quickly.
+# lsw1.dev
+lsw1.dev is a React website built with Typescript and Vite. This site is being developed as an alternative to database sites like Speedrun.com. The goal of this project is to use modern web technologies to deliver a better UX and faster performance. More documentation and code comments are the main focus as of now so forks for other games that want to move away from SRC can be made quickly.
