@@ -1450,15 +1450,33 @@ const Admin = () => {
                             try {
                               console.log("Starting upload for:", file.name, "Size:", file.size);
                               const uploadedFiles = await startUpload([file]);
-                              console.log("Upload result:", uploadedFiles);
-                              if (uploadedFiles && uploadedFiles[0]) {
-                                const fileUrl = uploadedFiles[0].url;
+                              console.log("Upload result (full):", JSON.stringify(uploadedFiles, null, 2));
+                              console.log("Upload result type:", typeof uploadedFiles);
+                              console.log("Is array?", Array.isArray(uploadedFiles));
+                              
+                              // Handle different response structures
+                              let fileUrl: string | null = null;
+                              
+                              if (Array.isArray(uploadedFiles) && uploadedFiles.length > 0) {
+                                // Standard array response
+                                fileUrl = uploadedFiles[0]?.url || uploadedFiles[0]?.serverData?.url || null;
+                                console.log("File URL from array:", fileUrl);
+                              } else if (uploadedFiles && typeof uploadedFiles === 'object') {
+                                // Object response - try different possible properties
+                                fileUrl = (uploadedFiles as any).url || 
+                                         (uploadedFiles as any).fileUrl || 
+                                         (uploadedFiles as any)[0]?.url ||
+                                         null;
+                                console.log("File URL from object:", fileUrl);
+                              }
+                              
+                              if (fileUrl) {
                                 console.log("Got fileUrl:", fileUrl);
                                 // Use functional update to ensure we have the latest state
                                 setNewDownload((prev) => {
                                   const updated = { 
                                     ...prev, 
-                                    fileUrl: fileUrl,
+                                    fileUrl: fileUrl!,
                                     fileName: file.name, // Keep file name
                                     useFileUpload: true // Ensure this is set to true
                                   };
@@ -1470,13 +1488,19 @@ const Admin = () => {
                                   description: "File uploaded successfully. You can now click 'Add Download' to save it.",
                                 });
                               } else {
-                                throw new Error("Upload completed but no file URL returned");
+                                console.error("No file URL found in response:", uploadedFiles);
+                                throw new Error("Upload completed but no file URL found in response. Check console for details.");
                               }
                             } catch (error: any) {
                               console.error("Upload error:", error);
+                              console.error("Error details:", {
+                                message: error.message,
+                                stack: error.stack,
+                                name: error.name,
+                              });
                               toast({
                                 title: "Upload Failed",
-                                description: error.message || "Failed to upload file.",
+                                description: error.message || "Failed to upload file. Check console for details.",
                                 variant: "destructive",
                               });
                             }
