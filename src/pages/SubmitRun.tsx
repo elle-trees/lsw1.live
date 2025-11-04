@@ -431,9 +431,6 @@ const SubmitRun = () => {
               </form>
             </CardContent>
           </Card>
-
-            </CardContent>
-          </Card>
             </div>
             
             {/* Guidelines Sidebar */}
