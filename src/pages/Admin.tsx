@@ -1775,7 +1775,7 @@ const Admin = () => {
                   </span>
                 </CardTitle>
               </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <h3 className="text-xl font-semibold mb-4">Add New Download</h3>
             <form onSubmit={handleAddDownload} className="space-y-4 mb-8">
               <div>
