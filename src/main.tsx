@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./globals.css";
+import "@uploadthing/react/styles.css";
 import { setPlayerAdminStatus } from "./lib/db";
 import { auth } from "./lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
