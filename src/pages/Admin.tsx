@@ -1431,32 +1431,18 @@ const Admin = () => {
                             if (!file) return;
                             
                             try {
-                              console.log("Starting upload for file:", file.name, file.size);
                               const uploadedFiles = await startUpload([file]);
-                              console.log("Upload result:", uploadedFiles);
                               if (uploadedFiles && uploadedFiles[0]) {
                                 setNewDownload({ ...newDownload, fileUrl: uploadedFiles[0].url });
                                 toast({
                                   title: "File Uploaded",
                                   description: "File uploaded successfully.",
                                 });
-                              } else {
-                                throw new Error("Upload completed but no file URL returned");
                               }
                             } catch (error: any) {
-                              console.error("Upload error:", error);
-                              let errorMessage = error.message || "Failed to upload file.";
-                              
-                              // Provide helpful error messages
-                              if (errorMessage.includes("404") || errorMessage.includes("Not Found")) {
-                                errorMessage = "API route not found. File uploads only work when deployed to Vercel. Please deploy to test file uploads.";
-                              } else if (errorMessage.includes("UPLOADTHING")) {
-                                errorMessage = "UploadThing is not configured. Please set UPLOADTHING_SECRET and UPLOADTHING_APP_ID environment variables.";
-                              }
-                              
                               toast({
                                 title: "Upload Failed",
-                                description: errorMessage + " Check the browser console for details.",
+                                description: error.message || "Failed to upload file.",
                                 variant: "destructive",
                               });
                             }
