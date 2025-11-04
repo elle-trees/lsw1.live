@@ -148,8 +148,8 @@ const UserSettings = () => {
 
       toast({
         title: "Profile Updated",
-        description: "Your profile information has been saved.",
-      });
+          description: "Your profile information has been saved.",
+        });
       
       // Refresh the auth context by manually triggering a refresh
       // The AuthProvider's refresh interval (every 3 seconds) will pick up the changes,

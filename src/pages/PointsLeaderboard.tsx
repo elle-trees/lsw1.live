@@ -101,32 +101,11 @@ const PointsLeaderboard = () => {
                           {/* Rank */}
                           <div className="flex items-center gap-3 flex-shrink-0">
                             {rank === 1 ? (
-                              <>
-                                <span className="font-bold text-xl text-[hsl(220,17%,92%)] min-w-[2.5rem]">
-                                  #{rank}
-                                </span>
-                                <div className="relative">
-                                  <LegoStudIcon size={56} color="#0055BF" />
-                                </div>
-                              </>
+                              <LegoStudIcon size={56} color="#0055BF" />
                             ) : rank === 2 ? (
-                              <>
-                                <span className="font-bold text-xl text-[hsl(220,17%,92%)] min-w-[2.5rem]">
-                                  #{rank}
-                                </span>
-                                <div className="relative">
-                                  <LegoStudIcon size={56} color="#FFD700" />
-                                </div>
-                              </>
+                              <LegoStudIcon size={56} color="#FFD700" />
                             ) : rank === 3 ? (
-                              <>
-                                <span className="font-bold text-xl text-[hsl(220,17%,92%)] min-w-[2.5rem]">
-                                  #{rank}
-                                </span>
-                                <div className="relative">
-                                  <LegoStudIcon size={56} color="#C0C0C0" />
-                                </div>
-                              </>
+                              <LegoStudIcon size={56} color="#C0C0C0" />
                             ) : (
                               <span className="font-bold text-xl text-[hsl(220,17%,92%)] min-w-[2.5rem]">
                                 #{rank}
