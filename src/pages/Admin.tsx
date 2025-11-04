@@ -43,6 +43,7 @@ import { useUploadThing } from "@/lib/uploadthing";
 import { LeaderboardEntry, DownloadEntry } from "@/types/database";
 import { useNavigate } from "react-router-dom";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { formatTime } from "@/lib/utils";
 
 const downloadCategories = [
   { id: "tools", name: "Tools" },
@@ -1070,7 +1071,7 @@ const Admin = () => {
                           )}
                         </TableCell>
                         <TableCell className="py-3 px-4">{firestoreCategories.find(c => c.id === run.category)?.name || run.category}</TableCell>
-                        <TableCell className="py-3 px-4 font-mono">{run.time}</TableCell>
+                        <TableCell className="py-3 px-4 font-mono">{formatTime(run.time)}</TableCell>
                         <TableCell className="py-3 px-4">{firestorePlatforms.find(p => p.id === run.platform)?.name || run.platform}</TableCell>
                         <TableCell className="py-3 px-4">{run.runType.charAt(0).toUpperCase() + run.runType.slice(1)}</TableCell>
                         <TableCell className="py-3 px-4">

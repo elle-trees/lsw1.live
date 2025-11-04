@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Gamepad2, Timer, User, Users, FileText, Sparkles, CheckCircle } from "lucide-react";
+import { Upload, Gamepad2, Timer, User, Users, FileText, Sparkles, CheckCircle, Calendar } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { addLeaderboardEntry, getCategories, getPlatforms, runTypes, getPlayerByDisplayName } from "@/lib/db";
@@ -26,6 +26,7 @@ const SubmitRun = () => {
     platform: "",
     runType: "",
     time: "",
+    date: new Date().toISOString().split('T')[0], // Default to today's date
     videoUrl: "",
     comment: "",
   });
@@ -92,7 +93,7 @@ const SubmitRun = () => {
       return;
     }
 
-    if (!formData.category || !formData.platform || !formData.runType || !formData.time) {
+    if (!formData.category || !formData.platform || !formData.runType || !formData.time || !formData.date) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
@@ -160,7 +161,7 @@ const SubmitRun = () => {
         platform: formData.platform,
         runType: formData.runType as 'solo' | 'co-op',
         time: formData.time.trim(),
-        date: new Date().toISOString().split('T')[0],
+        date: formData.date,
         verified: false,
       };
       
@@ -213,7 +214,7 @@ const SubmitRun = () => {
             </h1>
           </div>
           <p className="text-xl text-[hsl(222,15%,70%)] max-w-3xl mx-auto">
-            Share your LEGO Star Wars speedrun time with the community. Make sure to follow our submission guidelines!
+            Share your PB with the community. Make sure to follow our submission guidelines!
           </p>
         </div>
 
@@ -274,6 +275,22 @@ const SubmitRun = () => {
                         className="bg-gradient-to-br from-[hsl(240,21%,18%)] to-[hsl(240,21%,16%)] border-[hsl(235,13%,30%)] h-12 text-base pl-11 hover:border-[#cba6f7] hover:bg-gradient-to-br hover:from-[hsl(240,21%,20%)] hover:to-[hsl(240,21%,18%)] transition-all duration-300"
                       />
                     </div>
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="date" className="text-base font-semibold mb-2">Run Date *</Label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[hsl(222,15%,60%)]" />
+                    <Input
+                      id="date"
+                      name="date"
+                      type="date"
+                      value={formData.date}
+                      onChange={handleChange}
+                      required
+                      max={new Date().toISOString().split('T')[0]}
+                      className="bg-gradient-to-br from-[hsl(240,21%,18%)] to-[hsl(240,21%,16%)] border-[hsl(235,13%,30%)] h-12 text-base pl-11 hover:border-[#cba6f7] hover:bg-gradient-to-br hover:from-[hsl(240,21%,20%)] hover:to-[hsl(240,21%,18%)] transition-all duration-300"
+                    />
                   </div>
                 </div>
                 {formData.runType === 'co-op' && (

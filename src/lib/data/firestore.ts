@@ -323,6 +323,46 @@ export const getPlayerRunsFirestore = async (playerId: string): Promise<Leaderbo
   }
 };
 
+export const getPlayerPendingRunsFirestore = async (playerId: string): Promise<LeaderboardEntry[]> => {
+  if (!db) return [];
+  try {
+    const q = query(
+      collection(db, "leaderboardEntries"),
+      where("playerId", "==", playerId),
+      where("verified", "==", false),
+      firestoreLimit(100)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    
+    const entries = querySnapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() } as LeaderboardEntry))
+      .sort((a, b) => {
+        // Sort by date descending (most recent first)
+        const dateA = a.date || "";
+        const dateB = b.date || "";
+        return dateB.localeCompare(dateA);
+      });
+
+    // Enrich with player display name and color
+    const player = await getPlayerByUidFirestore(playerId);
+    return entries.map(entry => {
+      if (player) {
+        // Use displayName from player document if available
+        if (player.displayName) {
+          entry.playerName = player.displayName;
+        }
+        if (player.nameColor) {
+          entry.nameColor = player.nameColor;
+        }
+      }
+      return entry;
+    });
+  } catch (error) {
+    return [];
+  }
+};
+
 export const getUnverifiedLeaderboardEntriesFirestore = async (): Promise<LeaderboardEntry[]> => {
   if (!db) return [];
   try {

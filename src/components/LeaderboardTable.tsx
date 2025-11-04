@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { User, Users, ExternalLink, Trophy, Clock } from "lucide-react";
 import { LeaderboardEntry } from "@/types/database";
 import LegoStudIcon from "@/components/icons/LegoStudIcon";
+import { formatTime } from "@/lib/utils";
 
 interface LeaderboardTableProps {
   data: LeaderboardEntry[];
@@ -93,7 +94,7 @@ export function LeaderboardTable({ data, platforms = [], categories = [] }: Lead
               <TableCell className="py-5 px-6">
                 <Link to={`/run/${entry.id}`} className="hover:text-[#cba6f7] transition-all group-hover:scale-105 inline-block">
                   <p className="font-mono text-xl font-bold bg-gradient-to-r from-[#cdd6f4] to-[#cba6f7] bg-clip-text text-transparent">
-                    {entry.time}
+                    {formatTime(entry.time)}
                   </p>
                 </Link>
               </TableCell>

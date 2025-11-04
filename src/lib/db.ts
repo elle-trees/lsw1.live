@@ -10,6 +10,7 @@ import {
   updatePlayerProfileFirestore,
   getRecentRunsFirestore,
   getPlayerRunsFirestore,
+  getPlayerPendingRunsFirestore,
   getUnverifiedLeaderboardEntriesFirestore,
   updateRunVerificationStatusFirestore,
   deleteLeaderboardEntryFirestore,
@@ -127,6 +128,7 @@ export const createPlayer = createPlayerFirestore;
 export const updatePlayerProfile = updatePlayerProfileFirestore;
 export const getRecentRuns = getRecentRunsFirestore;
 export const getPlayerRuns = getPlayerRunsFirestore;
+export const getPlayerPendingRuns = getPlayerPendingRunsFirestore;
 export const getUnverifiedLeaderboardEntries = getUnverifiedLeaderboardEntriesFirestore;
 export const updateLeaderboardEntry = async (runId: string, data: Partial<LeaderboardEntry>): Promise<boolean> => {
   const { updateLeaderboardEntryFirestore } = await import("./data/firestore");

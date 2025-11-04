@@ -14,7 +14,7 @@ import { auth } from "@/lib/firebase";
 import { useNavigate, Link } from "react-router-dom";
 import { Player, LeaderboardEntry } from "@/types/database";
 import { Badge } from "@/components/ui/badge";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatTime } from "@/lib/utils";
 import { categories, platforms } from "@/lib/db";
 
 const UserSettings = () => {
@@ -480,7 +480,7 @@ const UserSettings = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <span className="font-mono text-lg font-bold text-[#cba6f7]">
-                          {run.time}
+                          {formatTime(run.time)}
                         </span>
                         <Badge variant="outline" className="border-[hsl(235,13%,30%)]">
                           {categories.find(c => c.id === run.category)?.name || run.category}

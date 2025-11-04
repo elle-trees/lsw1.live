@@ -14,7 +14,7 @@ import { VideoEmbed } from "@/components/VideoEmbed";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
-import { formatDate, calculatePoints } from "@/lib/utils";
+import { formatDate, calculatePoints, formatTime } from "@/lib/utils";
 
 const RunDetails = () => {
   const { runId } = useParams<{ runId: string }>();
@@ -566,7 +566,7 @@ const RunDetails = () => {
                       <div className="text-base text-muted-foreground mb-2 font-medium">Time</div>
                       <div className="font-mono text-3xl font-bold text-[#cdd6f4] flex items-center gap-3">
                         <Timer className="h-7 w-7" />
-                        {run.time}
+                        {formatTime(run.time)}
                       </div>
                     </div>
 

@@ -41,6 +41,26 @@ export function formatSecondsToTime(totalSeconds: number): string {
 }
 
 /**
+ * Format a time string to display without hours if under 1 hour
+ * @param timeString - Time string in HH:MM:SS format
+ * @returns Formatted time string (MM:SS if under 1 hour, otherwise HH:MM:SS)
+ */
+export function formatTime(timeString: string): string {
+  if (!timeString) return timeString;
+  
+  const parts = timeString.split(':');
+  if (parts.length === 3) {
+    const hours = parseInt(parts[0], 10);
+    // If hours is 0, return MM:SS format
+    if (hours === 0) {
+      return `${parts[1]}:${parts[2]}`;
+    }
+  }
+  // Otherwise return as-is
+  return timeString;
+}
+
+/**
  * Calculate points for a run based on time, category, and platform
  * Uses exponential scaling - faster times earn exponentially more points
  * Premium categories (Any%, Nocuts Noships) get full points

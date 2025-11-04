@@ -6,19 +6,24 @@ import { Badge } from "@/components/ui/badge";
 import { PlayerProfile } from "@/components/PlayerProfile";
 import { ArrowLeft, Trophy, User, Users } from "lucide-react";
 import { Link } from "react-router-dom";
-import { getPlayerRuns, getPlayerByUid, getCategories, getPlatforms } from "@/lib/db";
+import { getPlayerRuns, getPlayerByUid, getCategories, getPlatforms, getPlayerPendingRuns } from "@/lib/db";
 import { Player, LeaderboardEntry } from "@/types/database";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatTime } from "@/lib/utils";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { useAuth } from "@/components/AuthProvider";
+import { Clock } from "lucide-react";
 
 const PlayerDetails = () => {
   const { playerId } = useParams<{ playerId: string }>();
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
   const [player, setPlayer] = useState<Player | null>(null);
   const [playerRuns, setPlayerRuns] = useState<LeaderboardEntry[]>([]);
+  const [pendingRuns, setPendingRuns] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [platforms, setPlatforms] = useState<{ id: string; name: string }[]>([]);
+  const isOwnProfile = currentUser?.uid === playerId;
 
   useEffect(() => {
     const fetchPlayerData = async () => {
@@ -37,6 +42,12 @@ const PlayerDetails = () => {
         setPlayerRuns(fetchedRuns);
         setCategories(fetchedCategories);
         setPlatforms(fetchedPlatforms);
+        
+        // Only fetch pending runs if viewing own profile
+        if (currentUser?.uid === playerId) {
+          const fetchedPending = await getPlayerPendingRuns(playerId);
+          setPendingRuns(fetchedPending);
+        }
       } catch (error) {
         // Error handling - player data fetch failed
         setPlayer(null);
@@ -47,7 +58,7 @@ const PlayerDetails = () => {
     };
 
     fetchPlayerData();
-  }, [playerId]);
+  }, [playerId, currentUser?.uid]);
 
   if (loading) {
     return (
@@ -105,6 +116,66 @@ const PlayerDetails = () => {
           nameColor={player.nameColor}
         />
 
+        {/* Pending Submissions Panel - Only show for own profile */}
+        {isOwnProfile && (
+          <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] mt-8 shadow-xl">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-[#f9e2af]" />
+                Pending Submissions
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {pendingRuns.length === 0 ? (
+                <p className="text-[hsl(222,15%,60%)] text-center py-4">No pending submissions</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-[hsl(235,13%,30%)]">
+                        <th className="py-3 px-4 text-left">Category</th>
+                        <th className="py-3 px-4 text-left">Time</th>
+                        <th className="py-3 px-4 text-left">Date</th>
+                        <th className="py-3 px-4 text-left">Platform</th>
+                        <th className="py-3 px-4 text-left">Type</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pendingRuns.map((run) => {
+                        const categoryName = categories.find(c => c.id === run.category)?.name || run.category;
+                        const platformName = platforms.find(p => p.id === run.platform)?.name || run.platform;
+                        
+                        return (
+                          <tr 
+                            key={run.id} 
+                            className="border-b border-[hsl(235,13%,30%)] hover:bg-[hsl(235,19%,13%)] cursor-pointer transition-colors"
+                            onClick={() => navigate(`/run/${run.id}`)}
+                          >
+                            <td className="py-3 px-4 font-medium">{categoryName}</td>
+                            <td className="py-3 px-4 font-mono">{formatTime(run.time)}</td>
+                            <td className="py-3 px-4 text-[hsl(222,15%,60%)]">{formatDate(run.date)}</td>
+                            <td className="py-3 px-4">
+                              <Badge variant="outline" className="border-[hsl(235,13%,30%)]">
+                                {platformName}
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-4">
+                              <Badge variant="outline" className="border-[hsl(235,13%,30%)] flex items-center gap-1 w-fit">
+                                {run.runType === 'solo' ? <User className="h-3 w-3" /> : <Users className="h-3 w-3" />}
+                                {run.runType.charAt(0).toUpperCase() + run.runType.slice(1)}
+                              </Badge>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] mt-8 shadow-xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -148,7 +219,7 @@ const PlayerDetails = () => {
                             </Badge>
                           </td>
                           <td className="py-3 px-4 font-medium">{categoryName}</td>
-                          <td className="py-3 px-4 font-mono">{run.time}</td>
+                          <td className="py-3 px-4 font-mono">{formatTime(run.time)}</td>
                           <td className="py-3 px-4 text-[hsl(222,15%,60%)]">{formatDate(run.date)}</td>
                           <td className="py-3 px-4">
                             <Badge variant="outline" className="border-[hsl(235,13%,30%)]">

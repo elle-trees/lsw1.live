@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Timer, User, Users, Trophy, Sparkles, TrendingUp, Gamepad2, Clock } from "lucide-react";
 import { LeaderboardEntry } from "@/types/database";
 import { getCategories, getPlatforms } from "@/lib/db";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatTime } from "@/lib/utils";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -148,7 +148,7 @@ export function RecentRuns({ runs, loading, showRankBadge = true }: RecentRunsPr
                       <div className="flex items-center gap-2 justify-end mb-1">
                         <Timer className="h-5 w-5 text-[hsl(var(--mocha-mauve))] group-hover:scale-110 transition-transform" />
                         <p className="font-mono text-2xl font-bold bg-gradient-to-r from-[#cdd6f4] to-[#cba6f7] bg-clip-text text-transparent group-hover:scale-105 transition-transform">
-                          {run.time}
+                          {formatTime(run.time)}
                         </p>
                       </div>
                       <p className="text-xs text-[hsl(222,15%,60%)] mt-1.5 flex items-center justify-end gap-1">
