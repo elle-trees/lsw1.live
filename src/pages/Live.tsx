@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 const Live = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [parentDomain, setParentDomain] = useState<string>('localhost');
+  const [isLive, setIsLive] = useState<boolean | null>(null);
   const channel = 'lsw1live';
 
   useEffect(() => {
@@ -17,6 +18,30 @@ const Live = () => {
     }
     setIsLoaded(true);
   }, []);
+
+  useEffect(() => {
+    // Check if stream is live
+    const checkStreamStatus = async () => {
+      try {
+        // Use a public API to check stream status (no auth required)
+        const response = await fetch(`https://decapi.me/twitch/uptime/${channel}`);
+        const data = await response.text();
+        // If the response is "offline" or empty, stream is offline
+        setIsLive(data && data.trim() !== 'offline' && data.trim() !== '');
+      } catch (error) {
+        console.error('Error checking stream status:', error);
+        setIsLive(false);
+      }
+    };
+
+    // Check immediately
+    checkStreamStatus();
+
+    // Check every 30 seconds
+    const interval = setInterval(checkStreamStatus, 30000);
+
+    return () => clearInterval(interval);
+  }, [channel]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[hsl(240,21%,15%)] to-[hsl(235,19%,13%)] text-[hsl(220,17%,92%)] py-8">
@@ -39,14 +64,18 @@ const Live = () => {
             </div>
             
             {/* Title below player */}
-            <div className={`text-center mt-6 transition-all duration-1000 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
-              <div className="flex items-center justify-center gap-3">
-                <div className={`p-2 rounded-xl bg-gradient-to-br from-[#89b4fa] to-[#74c7ec] shadow-lg transition-all duration-1000 ${isLoaded ? 'rotate-0 scale-100' : 'rotate-180 scale-0'}`}>
-                  <Radio className="h-6 w-6 text-[hsl(240,21%,15%)]" />
-                </div>
-                <h1 className={`text-2xl md:text-3xl font-bold bg-gradient-to-r from-[#89b4fa] via-[#74c7ec] to-[#89dceb] bg-clip-text text-transparent transition-all duration-1000 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
-                  Live Stream
-                </h1>
+            <div className={`text-center mt-4 transition-all duration-1000 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
+              <div className="flex items-center justify-center gap-2">
+                <Radio className="h-4 w-4 text-[#89b4fa]" />
+                <span className={`text-base font-medium transition-colors duration-300 ${
+                  isLive === null 
+                    ? 'text-[hsl(222,15%,70%)]' 
+                    : isLive 
+                    ? 'text-[#89b4fa]' 
+                    : 'text-[hsl(222,15%,60%)]'
+                }`}>
+                  {isLive === null ? 'Checking...' : isLive ? 'Live' : 'Offline'}
+                </span>
               </div>
             </div>
           </div>
