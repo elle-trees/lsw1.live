@@ -12,27 +12,19 @@ if (!process.env.UPLOADTHING_SECRET || !process.env.UPLOADTHING_APP_ID) {
 const ourFileRouter = {
   downloadFile: f({ 
     blob: { 
-      maxFileSize: "100MB", 
+      maxFileSize: "64MB", 
       maxFileCount: 1 
     } 
   })
-    .onUploadComplete(async ({ metadata, file }) => {
+    .onUploadComplete(async ({ file }) => {
       console.log("File upload complete:", file.url);
-      return { uploadedBy: metadata?.uploadedBy };
+      return {};
     }),
 } satisfies FileRouter;
 
 // Create the route handler - this returns an object with GET and POST handlers
 const { GET, POST } = createRouteHandler({
   router: ourFileRouter,
-  // Add error handling
-  errorFormatter: (err) => {
-    console.error("UploadThing error:", err);
-    return {
-      message: err.message || "An error occurred during upload",
-      status: err.status || 500,
-    };
-  },
 });
 
 // Export for Vercel serverless functions
