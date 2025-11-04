@@ -75,24 +75,33 @@ export const getLeaderboardEntriesFirestore = async (
       entry.rank = index + 1;
     });
 
-    // Enrich entries with player name colors
+    // Enrich entries with player display names and colors
     const enrichedEntries = await Promise.all(entries.map(async (entry) => {
       try {
         const player = await getPlayerByUidFirestore(entry.playerId);
-        if (player?.nameColor) {
-          entry.nameColor = player.nameColor;
+        if (player) {
+          // Use displayName from player document if available
+          if (player.displayName) {
+            entry.playerName = player.displayName;
+          }
+          if (player.nameColor) {
+            entry.nameColor = player.nameColor;
+          }
         }
-        // For co-op runs, also fetch player2 color if player2Id exists
+        // For co-op runs, also fetch player2 display name and color
         if (entry.player2Name && entry.runType === 'co-op') {
-          // Try to find player2 by name (since we don't have player2Id in entry)
-          // This is a best-effort approach
+          // Try to find player2 by display name
           const player2 = await getPlayerByDisplayNameFirestore(entry.player2Name);
-          if (player2?.nameColor) {
-            entry.player2Color = player2.nameColor;
+          if (player2) {
+            // Update player2Name to use displayName from player document
+            entry.player2Name = player2.displayName;
+            if (player2.nameColor) {
+              entry.player2Color = player2.nameColor;
+            }
           }
         }
       } catch (error) {
-        // Silent fail - continue without name color
+        // Silent fail - continue without enrichment
       }
       return entry;
     }));
@@ -243,22 +252,32 @@ export const getRecentRunsFirestore = async (limitCount: number = 10): Promise<L
     entries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     entries = entries.slice(0, limitCount);
 
-    // Enrich entries with player name colors
+    // Enrich entries with player display names and colors
     const enrichedEntries = await Promise.all(entries.map(async (entry) => {
       try {
         const player = await getPlayerByUidFirestore(entry.playerId);
-        if (player?.nameColor) {
-          entry.nameColor = player.nameColor;
+        if (player) {
+          // Use displayName from player document if available
+          if (player.displayName) {
+            entry.playerName = player.displayName;
+          }
+          if (player.nameColor) {
+            entry.nameColor = player.nameColor;
+          }
         }
-        // For co-op runs, also fetch player2 color
+        // For co-op runs, also fetch player2 display name and color
         if (entry.player2Name && entry.runType === 'co-op') {
           const player2 = await getPlayerByDisplayNameFirestore(entry.player2Name);
-          if (player2?.nameColor) {
-            entry.player2Color = player2.nameColor;
+          if (player2) {
+            // Update player2Name to use displayName from player document
+            entry.player2Name = player2.displayName;
+            if (player2.nameColor) {
+              entry.player2Color = player2.nameColor;
+            }
           }
         }
       } catch (error) {
-        // Silent fail - continue without name color
+        // Silent fail - continue without enrichment
       }
       return entry;
     }));
@@ -285,11 +304,17 @@ export const getPlayerRunsFirestore = async (playerId: string): Promise<Leaderbo
       .map(doc => ({ id: doc.id, ...doc.data() } as LeaderboardEntry))
       .filter(entry => !entry.isObsolete);
 
-    // Enrich with player name color
+    // Enrich with player display name and color
     const player = await getPlayerByUidFirestore(playerId);
     return entries.map(entry => {
-      if (player?.nameColor) {
-        entry.nameColor = player.nameColor;
+      if (player) {
+        // Use displayName from player document if available
+        if (player.displayName) {
+          entry.playerName = player.displayName;
+        }
+        if (player.nameColor) {
+          entry.nameColor = player.nameColor;
+        }
       }
       return entry;
     });
@@ -309,22 +334,32 @@ export const getUnverifiedLeaderboardEntriesFirestore = async (): Promise<Leader
     const querySnapshot = await getDocs(q);
     const entries = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LeaderboardEntry));
     
-    // Enrich entries with player name colors
+    // Enrich entries with player display names and colors
     const enrichedEntries = await Promise.all(entries.map(async (entry) => {
       try {
         const player = await getPlayerByUidFirestore(entry.playerId);
-        if (player?.nameColor) {
-          entry.nameColor = player.nameColor;
+        if (player) {
+          // Use displayName from player document if available
+          if (player.displayName) {
+            entry.playerName = player.displayName;
+          }
+          if (player.nameColor) {
+            entry.nameColor = player.nameColor;
+          }
         }
-        // For co-op runs, also fetch player2 color
+        // For co-op runs, also fetch player2 display name and color
         if (entry.player2Name && entry.runType === 'co-op') {
           const player2 = await getPlayerByDisplayNameFirestore(entry.player2Name);
-          if (player2?.nameColor) {
-            entry.player2Color = player2.nameColor;
+          if (player2) {
+            // Update player2Name to use displayName from player document
+            entry.player2Name = player2.displayName;
+            if (player2.nameColor) {
+              entry.player2Color = player2.nameColor;
+            }
           }
         }
       } catch (error) {
-        // Silent fail - continue without name color
+        // Silent fail - continue without enrichment
       }
       return entry;
     }));
@@ -343,21 +378,31 @@ export const getLeaderboardEntryByIdFirestore = async (runId: string): Promise<L
     if (runDocSnap.exists()) {
       const entry = { id: runDocSnap.id, ...runDocSnap.data() } as LeaderboardEntry;
       
-      // Enrich with player name colors
+      // Enrich with player display names and colors
       try {
         const player = await getPlayerByUidFirestore(entry.playerId);
-        if (player?.nameColor) {
-          entry.nameColor = player.nameColor;
+        if (player) {
+          // Use displayName from player document if available
+          if (player.displayName) {
+            entry.playerName = player.displayName;
+          }
+          if (player.nameColor) {
+            entry.nameColor = player.nameColor;
+          }
         }
-        // For co-op runs, also fetch player2 color
+        // For co-op runs, also fetch player2 display name and color
         if (entry.player2Name && entry.runType === 'co-op') {
           const player2 = await getPlayerByDisplayNameFirestore(entry.player2Name);
-          if (player2?.nameColor) {
-            entry.player2Color = player2.nameColor;
+          if (player2) {
+            // Update player2Name to use displayName from player document
+            entry.player2Name = player2.displayName;
+            if (player2.nameColor) {
+              entry.player2Color = player2.nameColor;
+            }
           }
         }
       } catch (error) {
-        // Silent fail - continue without name color
+        // Silent fail - continue without enrichment
       }
       
       return entry;
