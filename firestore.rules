@@ -31,10 +31,9 @@ service cloud.firestore {
       // Users can update their own player data (except isAdmin field)
       allow update: if isOwner(playerId) && 
                        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['isAdmin']));
-      // Admins can update any player's totalPoints (needed for point recalculation when verifying runs)
-      // Also allow updating other non-sensitive fields like totalRuns
+      // Admins can update any player's totalPoints and totalRuns (needed for point recalculation when verifying runs)
+      // Allow updating totalPoints and totalRuns as long as isAdmin is not being changed
       allow update: if isAdmin() && 
-                       'totalPoints' in request.resource.data.diff(resource.data).affectedKeys() &&
                        (!('isAdmin' in request.resource.data.diff(resource.data).affectedKeys()));
       // Only admins can update admin status (when changing from true to false or vice versa)
       allow update: if isAdmin() && 'isAdmin' in request.resource.data.diff(resource.data).affectedKeys();

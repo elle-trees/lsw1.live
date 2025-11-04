@@ -55,7 +55,7 @@ export function LeaderboardTable({ data, platforms = [], categories = [] }: Lead
                     ) : entry.rank === 3 ? (
                       <LegoStudIcon size={48} color="#C0C0C0" />
                     ) : (
-                      <span className="font-bold text-lg text-[hsl(220,17%,92%)] min-w-[2rem]">
+                      <span className="font-bold text-lg text-[hsl(220,17%,92%)] w-12 h-12 flex items-center justify-center">
                         #{entry.rank}
                       </span>
                     )}

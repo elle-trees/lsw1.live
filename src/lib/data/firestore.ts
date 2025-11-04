@@ -588,10 +588,19 @@ export const recalculatePlayerPointsFirestore = async (playerId: string): Promis
   try {
     // Get player's displayName to check for co-op runs where they are player2
     const playerDocRef = doc(db, "players", playerId);
-    const playerDocSnap = await getDoc(playerDocRef);
-    const playerDisplayName = playerDocSnap.exists() 
-      ? (playerDocSnap.data() as Player).displayName 
-      : null;
+    let playerDocSnap = null;
+    let playerDisplayName: string | null = null;
+    
+    try {
+      playerDocSnap = await getDoc(playerDocRef);
+      if (playerDocSnap && playerDocSnap.exists()) {
+        playerDisplayName = (playerDocSnap.data() as Player).displayName;
+      }
+    } catch (error) {
+      console.error(`Error reading player document ${playerId}:`, error);
+      // Continue - we'll try to get displayName from runs if player doc doesn't exist
+      playerDocSnap = null;
+    }
     
     // Get all verified runs where this player is player1
     const q = query(
@@ -653,6 +662,12 @@ export const recalculatePlayerPointsFirestore = async (playerId: string): Promis
     }
     
     // Calculate points for co-op runs where player is player2
+    // If we don't have displayName from player doc, try to get it from their runs
+    if (!playerDisplayName && querySnapshot.docs.length > 0) {
+      const firstRunData = querySnapshot.docs[0].data() as LeaderboardEntry;
+      playerDisplayName = firstRunData.playerName || null;
+    }
+    
     if (playerDisplayName && coOpRunsSnapshot?.docs) {
       for (const runDoc of coOpRunsSnapshot.docs) {
         try {
@@ -706,13 +721,14 @@ export const recalculatePlayerPointsFirestore = async (playerId: string): Promis
     }
     
     // Update or create player's total points
-    if (playerDocSnap.exists()) {
+    if (playerDocSnap && playerDocSnap.exists()) {
+      // Only update totalPoints to avoid permission issues
       await updateDoc(playerDocRef, { totalPoints });
     } else {
       // Create player document if it doesn't exist
       // Get player info from first run if available
       const firstRun = querySnapshot.docs[0]?.data() as LeaderboardEntry | undefined;
-      const playerData: Partial<Player> = {
+      const playerData: Omit<Player, 'id'> = {
         uid: playerId,
         displayName: firstRun?.playerName || "Unknown Player",
         email: "",
@@ -721,6 +737,8 @@ export const recalculatePlayerPointsFirestore = async (playerId: string): Promis
         bestRank: null,
         favoriteCategory: null,
         favoritePlatform: null,
+        nameColor: "#cba6f7",
+        isAdmin: false, // Explicitly set to false for new players
         totalPoints,
       };
       await setDoc(playerDocRef, playerData);

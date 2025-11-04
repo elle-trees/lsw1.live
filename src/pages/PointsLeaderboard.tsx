@@ -107,7 +107,7 @@ const PointsLeaderboard = () => {
                             ) : rank === 3 ? (
                               <LegoStudIcon size={56} color="#C0C0C0" />
                             ) : (
-                              <span className="font-bold text-xl text-[hsl(220,17%,92%)] min-w-[2.5rem]">
+                              <span className="font-bold text-xl text-[hsl(220,17%,92%)] w-14 h-14 flex items-center justify-center">
                                 #{rank}
                               </span>
                             )}

@@ -6,24 +6,15 @@ import { Card, CardContent } from '@/components/ui/card';
 
 const Live = () => {
   const [isLoaded, setIsLoaded] = useState(false);
+  // Get the current hostname for the 'parent' parameter required by Twitch embeds
+  // Twitch requires the parent parameter to match the domain where the embed is hosted
+  const parentDomain = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
   const channel = 'lsw1live';
 
   useEffect(() => {
     // Trigger animations after component mounts
     setIsLoaded(true);
   }, []);
-
-  // Get the current hostname for the 'parent' parameter required by Twitch embeds
-  // Twitch requires the parent parameter to match the domain where the embed is hosted
-  // Include both vercel.app and custom domain
-  const getParentDomains = () => {
-    if (typeof window === 'undefined') return 'localhost';
-    const hostname = window.location.hostname;
-    // Return current hostname - Twitch will validate it
-    return hostname;
-  };
-
-  const parentDomain = getParentDomains();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[hsl(240,21%,15%)] to-[hsl(235,19%,13%)] text-[hsl(220,17%,92%)] py-8">
@@ -55,7 +46,7 @@ const Live = () => {
           <div className="w-full h-[600px] lg:h-[calc(100vh-200px)] min-h-[400px] animate-fade-in-up">
             <div className="bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border border-[hsl(235,13%,30%)] rounded-lg overflow-hidden shadow-2xl group hover:shadow-[#89b4fa]/20 transition-all duration-500 hover:scale-[1.01] relative h-full">
               {/* Streaming indicator */}
-              <div className="absolute top-4 left-4 z-30 flex items-center gap-2 bg-black/70 backdrop-blur-sm rounded-full px-3 py-1.5 border border-[#89b4fa]/30 pointer-events-none">
+              <div className="absolute top-4 left-4 z-20 flex items-center gap-2 bg-black/70 backdrop-blur-sm rounded-full px-3 py-1.5 border border-[#89b4fa]/30 pointer-events-none">
                 <div className="relative">
                   <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
                   <div className="absolute top-0 left-0 w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
@@ -68,10 +59,9 @@ const Live = () => {
                 height="100%"
                 width="100%"
                 allowFullScreen
-                allow="autoplay; fullscreen; picture-in-picture"
-                className="w-full h-full block relative z-10"
+                className="w-full h-full block"
                 title={`${channel} Twitch Stream`}
-                style={{ border: 'none', minHeight: '400px' }}
+                style={{ border: 'none' }}
                 frameBorder="0"
                 scrolling="no"
               ></iframe>
@@ -82,7 +72,7 @@ const Live = () => {
           <div className="w-full h-[400px] lg:h-[calc(100vh-200px)] min-h-[400px] hidden lg:block animate-fade-in-up delay-300">
             <div className="bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border border-[hsl(235,13%,30%)] rounded-lg overflow-hidden shadow-2xl group hover:shadow-[#89b4fa]/20 transition-all duration-500 hover:scale-[1.01] relative h-full">
               {/* Chat header indicator */}
-              <div className="absolute top-4 left-4 z-30 flex items-center gap-2 bg-black/70 backdrop-blur-sm rounded-full px-3 py-1.5 border border-[#74c7ec]/30 pointer-events-none">
+              <div className="absolute top-4 left-4 z-20 flex items-center gap-2 bg-black/70 backdrop-blur-sm rounded-full px-3 py-1.5 border border-[#74c7ec]/30 pointer-events-none">
                 <Users className="h-4 w-4 text-[#74c7ec]" />
                 <span className="text-xs font-semibold text-white">Chat</span>
               </div>
@@ -91,10 +81,9 @@ const Live = () => {
                 src={`https://www.twitch.tv/embed/${channel}/chat?parent=${parentDomain}&darkpopout`}
                 height="100%"
                 width="100%"
-                allow="autoplay; fullscreen; picture-in-picture"
-                className="w-full h-full block relative z-10"
+                className="w-full h-full block"
                 title={`${channel} Twitch Chat`}
-                style={{ border: 'none', minHeight: '400px' }}
+                style={{ border: 'none' }}
                 frameBorder="0"
                 scrolling="no"
               ></iframe>
@@ -176,4 +165,3 @@ const Live = () => {
 };
 
 export default Live;
-
