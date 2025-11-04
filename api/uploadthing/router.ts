@@ -1,5 +1,6 @@
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 
+// Initialize UploadThing - this will use UPLOADTHING_SECRET and UPLOADTHING_APP_ID from env
 const f = createUploadthing();
 
 export const ourFileRouter = {
