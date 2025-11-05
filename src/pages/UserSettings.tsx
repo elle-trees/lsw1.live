@@ -16,7 +16,6 @@ import { useNavigate, Link } from "react-router-dom";
 import { Player, LeaderboardEntry } from "@/types/database";
 import { Badge } from "@/components/ui/badge";
 import { formatDate, formatTime } from "@/lib/utils";
-import { categories, platforms } from "@/lib/db";
 import { useUploadThing } from "@/lib/uploadthing";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
