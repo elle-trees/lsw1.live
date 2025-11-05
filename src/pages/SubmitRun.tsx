@@ -517,7 +517,7 @@ const SubmitRun = () => {
                               Video proof is optional for Nocuts Noships runs, but recommended.
                             </>
                           ) : (
-                            "Upload your run to YouTube or Twitch and provide the link for verification"
+                            "Upload your run to YouTube and provide the link for verification"
                           )}
                         </p>
                       </>

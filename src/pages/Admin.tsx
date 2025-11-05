@@ -81,7 +81,8 @@ const Admin = () => {
   const { startUpload, isUploading } = useUploadThing("downloadFile");
   
   const [firestoreCategories, setFirestoreCategories] = useState<{ id: string; name: string }[]>([]);
-  const [categoryLeaderboardType, setCategoryLeaderboardType] = useState<'regular' | 'individual-level' | 'community-golds'>('regular');
+  const [categoryLeaderboardType, setCategoryLeaderboardType] = useState<'regular' | 'individual-level'>('regular');
+  const [levelLeaderboardType, setLevelLeaderboardType] = useState<'individual-level' | 'community-golds'>('individual-level');
   const [newCategoryName, setNewCategoryName] = useState("");
   const [editingCategory, setEditingCategory] = useState<{ id: string; name: string } | null>(null);
   const [editingCategoryName, setEditingCategoryName] = useState("");
@@ -1718,10 +1719,10 @@ const Admin = () => {
               </CardHeader>
           <CardContent className="p-4">
             <Tabs value={categoryLeaderboardType} onValueChange={(value) => {
-              setCategoryLeaderboardType(value as 'regular' | 'individual-level' | 'community-golds');
-              fetchCategories(value as 'regular' | 'individual-level' | 'community-golds');
+              setCategoryLeaderboardType(value as 'regular' | 'individual-level');
+              fetchCategories(value as 'regular' | 'individual-level');
             }}>
-              <TabsList className="grid w-full grid-cols-3 bg-[hsl(240,21%,16%)] border border-[hsl(235,13%,30%)] mb-4">
+              <TabsList className="grid w-full grid-cols-2 bg-[hsl(240,21%,16%)] border border-[hsl(235,13%,30%)] mb-4">
                 <TabsTrigger value="regular" className="data-[state=active]:bg-[hsl(240,21%,18%)]">
                   <Trophy className="h-4 w-4 mr-2" />
                   Full Game
@@ -1729,10 +1730,6 @@ const Admin = () => {
                 <TabsTrigger value="individual-level" className="data-[state=active]:bg-[hsl(240,21%,18%)]">
                   <Star className="h-4 w-4 mr-2" />
                   Individual Level
-                </TabsTrigger>
-                <TabsTrigger value="community-golds" className="data-[state=active]:bg-[hsl(240,21%,18%)]">
-                  <Gem className="h-4 w-4 mr-2" />
-                  Community Golds
                 </TabsTrigger>
               </TabsList>
 
@@ -1880,48 +1877,63 @@ const Admin = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <div>
-                    <h3 className="text-base font-semibold mb-3">Add New Level</h3>
-                    <form onSubmit={(e) => { e.preventDefault(); handleAddLevel(); }} className="space-y-3">
+                <Tabs value={levelLeaderboardType} onValueChange={(value) => {
+                  setLevelLeaderboardType(value as 'individual-level' | 'community-golds');
+                }}>
+                  <TabsList className="grid w-full grid-cols-2 bg-[hsl(240,21%,16%)] border border-[hsl(235,13%,30%)] mb-4">
+                    <TabsTrigger value="individual-level" className="data-[state=active]:bg-[hsl(240,21%,18%)]">
+                      <Star className="h-4 w-4 mr-2" />
+                      Individual Level
+                    </TabsTrigger>
+                    <TabsTrigger value="community-golds" className="data-[state=active]:bg-[hsl(240,21%,18%)]">
+                      <Gem className="h-4 w-4 mr-2" />
+                      Community Golds
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value={levelLeaderboardType} className="mt-0">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="levelName" className="text-sm">Level Name</Label>
-                        <Input
-                          id="levelName"
-                          type="text"
-                          value={newLevelName}
-                          onChange={(e) => setNewLevelName(e.target.value)}
-                          placeholder="e.g., Level 1"
-                          required
-                          className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] h-9 text-sm"
-                        />
+                        <h3 className="text-base font-semibold mb-3">Add New Level</h3>
+                        <form onSubmit={(e) => { e.preventDefault(); handleAddLevel(); }} className="space-y-3">
+                          <div>
+                            <Label htmlFor="levelName" className="text-sm">Level Name</Label>
+                            <Input
+                              id="levelName"
+                              type="text"
+                              value={newLevelName}
+                              onChange={(e) => setNewLevelName(e.target.value)}
+                              placeholder="e.g., Level 1"
+                              required
+                              className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] h-9 text-sm"
+                            />
+                          </div>
+                          <Button 
+                            type="submit" 
+                            disabled={addingLevel}
+                            size="sm"
+                            className="bg-gradient-to-r from-[#cba6f7] to-[#b4a0e2] hover:from-[#b4a0e2] hover:to-[#cba6f7] text-[hsl(240,21%,15%)] font-bold flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                          >
+                            <PlusCircle className="h-3 w-3" />
+                            {addingLevel ? "Adding..." : "Add Level"}
+                          </Button>
+                        </form>
                       </div>
-                      <Button 
-                        type="submit" 
-                        disabled={addingLevel}
-                        size="sm"
-                        className="bg-gradient-to-r from-[#cba6f7] to-[#b4a0e2] hover:from-[#b4a0e2] hover:to-[#cba6f7] text-[hsl(240,21%,15%)] font-bold flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-                      >
-                        <PlusCircle className="h-3 w-3" />
-                        {addingLevel ? "Adding..." : "Add Level"}
-                      </Button>
-                    </form>
-                  </div>
-                  <div>
-                    <h3 className="text-base font-semibold mb-3">Existing Levels</h3>
-                    {availableLevels.length === 0 ? (
-                      <p className="text-[hsl(222,15%,60%)] text-center py-4 text-sm">No levels found.</p>
-                    ) : (
-                      <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="border-b border-[hsl(235,13%,30%)] hover:bg-transparent">
-                              <TableHead className="py-2 px-3 text-left text-xs">Name</TableHead>
-                              <TableHead className="py-2 px-3 text-center text-xs">Actions</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {availableLevels.map((level, index) => (
+                      <div>
+                        <h3 className="text-base font-semibold mb-3">Existing Levels</h3>
+                        {availableLevels.length === 0 ? (
+                          <p className="text-[hsl(222,15%,60%)] text-center py-4 text-sm">No levels found.</p>
+                        ) : (
+                          <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
+                            <Table>
+                              <TableHeader>
+                                <TableRow className="border-b border-[hsl(235,13%,30%)] hover:bg-transparent">
+                                  <TableHead className="py-2 px-3 text-left text-xs">Name</TableHead>
+                                  <TableHead className="py-2 px-3 text-center text-xs">Actions</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {availableLevels.map((level, index) => (
                               <TableRow key={level.id} className="border-b border-[hsl(235,13%,30%)] hover:bg-[hsl(235,19%,13%)] transition-all duration-200 hover:shadow-sm">
                                 <TableCell className="py-2 px-3 font-medium text-sm">
                                   {editingLevel?.id === level.id ? (
@@ -2006,6 +2018,8 @@ const Admin = () => {
                     )}
                   </div>
                 </div>
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
           </TabsContent>
