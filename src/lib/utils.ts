@@ -139,11 +139,6 @@ export function calculatePoints(
     basePoints = config.basePointsPerRun ?? 10;
   }
   
-  // Debug: Log rank #1 runs
-  if (numericRank === 1) {
-    console.log(`[calculatePoints] Rank #1 run detected! basePoints=${basePoints}, top3Bonus=${config.top3BonusPoints?.rank1 || 0}`);
-  }
-  
   // Start with base points
   let points = basePoints;
 

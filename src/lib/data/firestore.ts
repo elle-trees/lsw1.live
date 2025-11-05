@@ -3,6 +3,56 @@ import { collection, doc, getDoc, setDoc, updateDoc, deleteDoc, getDocs, query, 
 import { Player, LeaderboardEntry, DownloadEntry, Category, Platform, Level, PointsConfig } from "@/types/database";
 import { calculatePoints, parseTimeToSeconds } from "@/lib/utils";
 
+/**
+ * Helper function to calculate ranks for a group of runs
+ * Returns a map of run ID to rank (1-based)
+ * Only non-obsolete runs are ranked (obsolete runs get undefined rank)
+ */
+async function calculateRanksForGroup(
+  leaderboardType: 'regular' | 'individual-level' | 'community-golds',
+  categoryId: string,
+  platformId: string,
+  runType: 'solo' | 'co-op',
+  levelId?: string
+): Promise<Map<string, number>> {
+  if (!db) return new Map();
+  
+  const constraints: any[] = [
+    where("verified", "==", true),
+    where("leaderboardType", "==", leaderboardType),
+    where("category", "==", categoryId),
+    where("platform", "==", platformId),
+    where("runType", "==", runType),
+  ];
+  
+  if (leaderboardType !== 'regular' && levelId) {
+    constraints.push(where("level", "==", levelId));
+  }
+  
+  constraints.push(firestoreLimit(200));
+  
+  const rankQuery = query(collection(db, "leaderboardEntries"), ...constraints);
+  const rankSnapshot = await getDocs(rankQuery);
+  
+  // Filter out obsolete runs for ranking (only non-obsolete runs count for top 3)
+  const nonObsoleteRuns = rankSnapshot.docs
+    .map(doc => ({ id: doc.id, ...doc.data() } as LeaderboardEntry))
+    .filter(run => !run.isObsolete)
+    .sort((a, b) => {
+      const timeA = parseTimeToSeconds(a.time);
+      const timeB = parseTimeToSeconds(b.time);
+      return timeA - timeB;
+    });
+  
+  // Create rank map (1-based)
+  const rankMap = new Map<string, number>();
+  nonObsoleteRuns.forEach((run, index) => {
+    rankMap.set(run.id, index + 1);
+  });
+  
+  return rankMap;
+}
+
 export const getLeaderboardEntriesFirestore = async (
   categoryId?: string,
   platformId?: string,
@@ -797,46 +847,20 @@ export const updateLeaderboardEntryFirestore = async (runId: string, data: Parti
       // Get points config and calculate points with rank
       const pointsConfig = await getPointsConfigFirestore();
       
-      // Build query to get all verified runs for ranking
-      const constraints: any[] = [
-        where("verified", "==", true),
-        where("leaderboardType", "==", newLeaderboardType),
-        where("category", "==", newCategoryId),
-        where("platform", "==", newPlatformId),
-        where("runType", "==", (data.runType || runData.runType || 'solo')),
-      ];
-      
-      // For ILs and community golds, also filter by level
-      if (newLeaderboardType !== 'regular' && newLevel) {
-        constraints.push(where("level", "==", newLevel));
-      }
-      
-      constraints.push(firestoreLimit(200));
-      
-      const rankQuery = query(
-        collection(db, "leaderboardEntries"),
-        ...constraints
-      );
-      
-      const rankSnapshot = await getDocs(rankQuery);
-      // Filter out obsolete runs for ranking (only non-obsolete runs count for top 3)
+      // Calculate rank using helper function
       const isObsolete = data.isObsolete !== undefined ? data.isObsolete : runData.isObsolete;
-      const nonObsoleteRuns = rankSnapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() } as LeaderboardEntry))
-        .filter(run => !run.isObsolete)
-        .sort((a, b) => {
-          const timeA = parseTimeToSeconds(a.time);
-          const timeB = parseTimeToSeconds(b.time);
-          return timeA - timeB;
-        });
+      const rankMap = await calculateRanksForGroup(
+        newLeaderboardType,
+        newCategoryId,
+        newPlatformId,
+        (data.runType || runData.runType || 'solo') as 'solo' | 'co-op',
+        newLevel
+      );
       
       // Find the rank of this run
       let rank: number | undefined = undefined;
       if (!isObsolete) {
-        const rankIndex = nonObsoleteRuns.findIndex(run => run.id === runId);
-        if (rankIndex !== -1) {
-          rank = rankIndex + 1;
-        }
+        rank = rankMap.get(runId);
       }
       
       // Calculate points with rank
@@ -904,49 +928,22 @@ export const updateRunVerificationStatusFirestore = async (runId: string, verifi
       }
         
       // Get points config and calculate points with rank
-      // Fetch all verified runs for this category/platform/runType/level to calculate rank
       const pointsConfig = await getPointsConfigFirestore();
       
-      // Build query to get all verified runs for ranking
+      // Calculate rank using helper function
       const leaderboardType = runData.leaderboardType || 'regular';
-      const constraints: any[] = [
-        where("verified", "==", true),
-        where("leaderboardType", "==", leaderboardType),
-        where("category", "==", runData.category),
-        where("platform", "==", runData.platform),
-        where("runType", "==", runData.runType || 'solo'),
-      ];
-      
-      // For ILs and community golds, also filter by level
-      if (leaderboardType !== 'regular' && runData.level) {
-        constraints.push(where("level", "==", runData.level));
-      }
-      
-      constraints.push(firestoreLimit(200));
-      
-      const rankQuery = query(
-        collection(db, "leaderboardEntries"),
-        ...constraints
+      const rankMap = await calculateRanksForGroup(
+        leaderboardType,
+        runData.category,
+        runData.platform,
+        (runData.runType || 'solo') as 'solo' | 'co-op',
+        runData.level
       );
-      
-      const rankSnapshot = await getDocs(rankQuery);
-      // Filter out obsolete runs for ranking (only non-obsolete runs count for top 3)
-      const nonObsoleteRuns = rankSnapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() } as LeaderboardEntry))
-        .filter(run => !run.isObsolete)
-        .sort((a, b) => {
-          const timeA = parseTimeToSeconds(a.time);
-          const timeB = parseTimeToSeconds(b.time);
-          return timeA - timeB;
-        });
       
       // Find the rank of this run
       let rank: number | undefined = undefined;
       if (!runData.isObsolete) {
-        const rankIndex = nonObsoleteRuns.findIndex(run => run.id === runId);
-        if (rankIndex !== -1) {
-          rank = rankIndex + 1;
-        }
+        rank = rankMap.get(runId);
       }
       
       // Calculate points with rank
@@ -1151,56 +1148,18 @@ export const recalculatePlayerPointsFirestore = async (playerId: string): Promis
         runType = parts[4] || 'solo';
       }
       
-      // Build query constraints based on leaderboard type
-      const constraints: any[] = [
-        where("verified", "==", true),
-        where("leaderboardType", "==", leaderboardType),
-        where("category", "==", categoryId),
-        where("platform", "==", platformId),
-        where("runType", "==", runType || 'solo'),
-      ];
-      
-      // For ILs and community golds, also filter by level
-      if (leaderboardType !== 'regular' && levelId) {
-        constraints.push(where("level", "==", levelId));
-      }
-      
-      constraints.push(firestoreLimit(200));
-      
-      // Fetch all verified runs for this group combination
-      const groupQuery = query(
-        collection(db, "leaderboardEntries"),
-        ...constraints
+      // Calculate ranks using helper function
+      const rankMap = await calculateRanksForGroup(
+        leaderboardType,
+        categoryId,
+        platformId,
+        runType as 'solo' | 'co-op',
+        levelId
       );
-      
-      const groupSnapshot = await getDocs(groupQuery);
-      // Filter out obsolete runs for ranking purposes (only non-obsolete runs count for top 3)
-      const nonObsoleteRuns = groupSnapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() } as LeaderboardEntry))
-        .filter(run => !run.isObsolete)
-        .sort((a, b) => {
-          const timeA = parseTimeToSeconds(a.time);
-          const timeB = parseTimeToSeconds(b.time);
-          return timeA - timeB;
-        });
-      
-      // Assign ranks to non-obsolete runs only
-      const rankMap = new Map<string, number>();
-      nonObsoleteRuns.forEach((run, index) => {
-        const rank = index + 1;
-        rankMap.set(run.id, rank);
-        // Debug: Log rank #1 runs
-        if (rank === 1) {
-          console.log(`[recalculatePlayerPointsFirestore] Rank #1 run found: ${run.id} (${run.playerName}) - ${run.time} in ${groupKey}`);
-        }
-      });
       
       // Process all player runs (including obsolete) - obsolete runs get base points only
       for (const playerRun of runs) {
         const rank = playerRun.isObsolete ? undefined : rankMap.get(playerRun.id);
-        if (rank === 1) {
-          console.log(`[recalculatePlayerPointsFirestore] Processing rank #1 run: ${playerRun.id} (${playerRun.playerName})`);
-        }
         allRunsWithRanks.push({ run: playerRun, rank: rank });
       }
     }
@@ -1223,11 +1182,6 @@ export const recalculatePlayerPointsFirestore = async (playerId: string): Promis
         pointsConfig,
         rank
       );
-      
-      // Debug: Log rank #1 runs and their points
-      if (rank === 1) {
-        console.log(`[recalculatePlayerPointsFirestore] Rank #1 run ${runData.id} calculated points: ${points} (base: 100 + bonus: ${pointsConfig.top3BonusPoints?.rank1 || 0})`);
-      }
       
       // Always update the run with recalculated points
       runsToUpdate.push({ id: runData.id, points });
@@ -2002,18 +1956,14 @@ export const getPlayersByPointsFirestore = async (limit: number = 100): Promise<
 
     // Get points config once for all calculations
     const pointsConfig = await getPointsConfigFirestore();
-    console.log(`[getPlayersByPointsFirestore] Points config: enabled=${pointsConfig.enabled}, basePointsPerRun=${pointsConfig.basePointsPerRun}, top3Bonus=${JSON.stringify(pointsConfig.top3BonusPoints)}`);
     
     // If points are disabled, return empty array
     if (!pointsConfig.enabled) {
-      console.log(`[getPlayersByPointsFirestore] Points system is disabled, returning empty array`);
       return [];
     }
 
     // Group runs by category + platform + runType to calculate ranks
     const runsByGroup = new Map<string, LeaderboardEntry[]>();
-    
-    console.log(`[getPlayersByPointsFirestore] Processing ${runsSnapshot.docs.length} verified runs from initial query`);
     
     for (const runDoc of runsSnapshot.docs) {
       const runData = runDoc.data() as LeaderboardEntry;
@@ -2037,8 +1987,6 @@ export const getPlayersByPointsFirestore = async (limit: number = 100): Promise<
       runsByGroup.get(groupKey)!.push(runData);
     }
     
-    console.log(`[getPlayersByPointsFirestore] Grouped ${runsSnapshot.docs.length} runs into ${runsByGroup.size} groups`);
-
     // Calculate ranks for each group and assign points
     // For each group, we need to fetch all runs to calculate ranks properly
     const runsWithPoints: Array<{ run: LeaderboardEntry; points: number }> = [];
@@ -2065,7 +2013,16 @@ export const getPlayersByPointsFirestore = async (limit: number = 100): Promise<
         runType = parts[4] || 'solo';
       }
       
-      // Build query constraints based on leaderboard type
+      // Calculate ranks using helper function
+      const rankMap = await calculateRanksForGroup(
+        leaderboardType,
+        categoryId,
+        platformId,
+        runType as 'solo' | 'co-op',
+        levelId
+      );
+      
+      // Fetch all verified runs for this group to get all run data
       const constraints: any[] = [
         where("verified", "==", true),
         where("leaderboardType", "==", leaderboardType),
@@ -2074,47 +2031,15 @@ export const getPlayersByPointsFirestore = async (limit: number = 100): Promise<
         where("runType", "==", runType || 'solo'),
       ];
       
-      // For ILs and community golds, also filter by level
       if (leaderboardType !== 'regular' && levelId) {
         constraints.push(where("level", "==", levelId));
       }
       
       constraints.push(firestoreLimit(200));
       
-      // Fetch all verified runs for this group combination to calculate ranks
-      const groupQuery = query(
-        collection(db, "leaderboardEntries"),
-        ...constraints
-      );
-      
+      const groupQuery = query(collection(db, "leaderboardEntries"), ...constraints);
       const groupSnapshot = await getDocs(groupQuery);
-      // Filter out obsolete runs for ranking purposes (only non-obsolete runs count for top 3)
-      const nonObsoleteRuns = groupSnapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() } as LeaderboardEntry))
-        .filter(run => !run.isObsolete)
-        .sort((a, b) => {
-          const timeA = parseTimeToSeconds(a.time);
-          const timeB = parseTimeToSeconds(b.time);
-          return timeA - timeB;
-        });
-
-      // Create rank map for non-obsolete runs
-      const rankMap = new Map<string, number>();
-      nonObsoleteRuns.forEach((runData, index) => {
-        const rank = index + 1;
-        rankMap.set(runData.id, rank);
-        // Debug: Log rank #1 runs when creating the map
-        if (rank === 1) {
-          console.log(`[getPlayersByPointsFirestore] Creating rankMap: Rank #1 = ${runData.id} (${runData.playerName}) - ${runData.time}`);
-        }
-      });
-      console.log(`[getPlayersByPointsFirestore] Created rankMap with ${rankMap.size} entries for group ${groupKey}`);
-      
-      // Process all runs in this group (including obsolete) - obsolete runs get base points only
-      const allGroupRuns = groupSnapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() } as LeaderboardEntry));
-      
-      // Create a map of all group runs by ID for quick lookup
+      const allGroupRuns = groupSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LeaderboardEntry));
       const allGroupRunsMap = new Map(allGroupRuns.map(r => [r.id, r]));
       
       // Process all runs from the original group (runs from the initial query)
@@ -2124,23 +2049,8 @@ export const getPlayersByPointsFirestore = async (limit: number = 100): Promise<
         // Use originalRun.id to look up, but prefer the run from group query if available
         const runData = allGroupRunsMap.get(originalRun.id) || originalRun;
         
-        // Always recalculate points to ensure accuracy with current config and ranks
-        // This ensures we use the latest points calculation logic
-        // Use runData.id to look up rank (should match the ID used in rankMap)
+        // Get rank for this run (obsolete runs get undefined rank)
         const rank = runData.isObsolete ? undefined : rankMap.get(runData.id);
-        
-        // Debug: Log rank lookup for rank #1 runs
-        if (!runData.isObsolete && rank === 1) {
-          console.log(`[getPlayersByPointsFirestore] Rank #1 run found: ${runData.id} (${runData.playerName}) - ${runData.time} in ${groupKey}`);
-        } else if (!runData.isObsolete && rank === undefined) {
-          console.warn(`[getPlayersByPointsFirestore] Run ${runData.id} not found in rankMap. rankMap has ${rankMap.size} entries. Looking for ID: ${runData.id}`);
-          // Try to find if the run exists with a different ID structure
-          for (const [mapId, mapRank] of rankMap.entries()) {
-            if (mapRank === 1) {
-              console.log(`[getPlayersByPointsFirestore] Rank #1 entry in map: ${mapId}`);
-            }
-          }
-        }
         
         const categoryName = categoryMap.get(runData.category) || "Unknown";
         const platformName = platformMap.get(runData.platform) || "Unknown";
@@ -2154,11 +2064,6 @@ export const getPlayersByPointsFirestore = async (limit: number = 100): Promise<
           pointsConfig,
           rank
         );
-        
-        // Debug: Log rank #1 runs and their calculated points
-        if (rank === 1) {
-          console.log(`[getPlayersByPointsFirestore] Rank #1 run ${runData.id} calculated points: ${points} (base: 100 + bonus: ${pointsConfig.top3BonusPoints?.rank1 || 0})`);
-        }
         
         // Store run update for batch write (will batch all updates together)
         // Add all runs to runsWithPoints for aggregation
@@ -2196,7 +2101,6 @@ export const getPlayersByPointsFirestore = async (limit: number = 100): Promise<
     }
 
     // Aggregate points by player
-    console.log(`[getPlayersByPointsFirestore] Aggregating ${runsWithPoints.length} runs with points`);
     let zeroPointRuns = 0;
     let totalPointsCalculated = 0;
     
@@ -2257,9 +2161,6 @@ export const getPlayersByPointsFirestore = async (limit: number = 100): Promise<
       // Skip runs with 0 or invalid points
       if (!points || points <= 0) {
         zeroPointRuns++;
-        if (zeroPointRuns <= 5) {
-          console.log(`[getPlayersByPointsFirestore] Skipping run ${runData.id} (${runData.playerName}) with points: ${points}`);
-        }
         continue;
       }
       
@@ -2282,22 +2183,32 @@ export const getPlayersByPointsFirestore = async (limit: number = 100): Promise<
     }
 
     // Convert to Player array and fetch additional player data
-    // Debug: Log aggregated player data before filtering
-    const allPlayers = Array.from(playerMap.values());
-    console.log(`[getPlayersByPointsFirestore] Total points calculated across all runs: ${totalPointsCalculated}`);
-    console.log(`[getPlayersByPointsFirestore] Zero-point runs skipped: ${zeroPointRuns}`);
-    console.log(`[getPlayersByPointsFirestore] Found ${allPlayers.length} players with aggregated points`);
-    allPlayers.slice(0, 10).forEach(p => {
-      console.log(`[getPlayersByPointsFirestore] Player ${p.playerName}: ${p.totalPoints} points from ${p.totalRuns} runs`);
-    });
     
     const playersList = Array.from(playerMap.values())
       .filter(p => p.totalPoints > 0)
       .sort((a, b) => b.totalPoints - a.totalPoints)
       .slice(0, limit);
-    
-    console.log(`[getPlayersByPointsFirestore] After filtering: ${playersList.length} players with points > 0`);
 
+    // Update player documents with totalPoints before returning
+    let updateBatch = writeBatch(db);
+    let updateCount = 0;
+    for (const p of playersList) {
+      if (!p.isUnlinked) {
+        const playerDocRef = doc(db, "players", p.playerId);
+        updateBatch.update(playerDocRef, { totalPoints: p.totalPoints });
+        updateCount++;
+        
+        if (updateCount >= 500) {
+          await updateBatch.commit();
+          updateCount = 0;
+          updateBatch = writeBatch(db);
+        }
+      }
+    }
+    if (updateCount > 0) {
+      await updateBatch.commit();
+    }
+    
     // Fetch player documents for additional info (name color, etc.)
     const players: Player[] = await Promise.all(
       playersList.map(async (p) => {
@@ -2480,48 +2391,14 @@ export const backfillPointsForAllRunsFirestore = async (): Promise<{
           runType = parts[4] || 'solo';
         }
         
-        // Build query constraints
-        const constraints: any[] = [
-          where("verified", "==", true),
-          where("leaderboardType", "==", leaderboardType),
-          where("category", "==", categoryId),
-          where("platform", "==", platformId),
-          where("runType", "==", runType || 'solo'),
-        ];
-        
-        if (leaderboardType !== 'regular' && levelId) {
-          constraints.push(where("level", "==", levelId));
-        }
-        
-        constraints.push(firestoreLimit(200));
-        
-        // Fetch all verified runs for this group to calculate ranks
-        const groupQuery = query(
-          collection(db, "leaderboardEntries"),
-          ...constraints
+        // Calculate ranks using helper function
+        const rankMap = await calculateRanksForGroup(
+          leaderboardType,
+          categoryId,
+          platformId,
+          runType as 'solo' | 'co-op',
+          levelId
         );
-        
-        const groupSnapshot = await getDocs(groupQuery);
-        // Filter out obsolete runs for ranking (only non-obsolete runs count for top 3)
-        const nonObsoleteRuns = groupSnapshot.docs
-          .map(doc => ({ id: doc.id, ...doc.data() } as LeaderboardEntry))
-          .filter(run => !run.isObsolete)
-          .sort((a, b) => {
-            const timeA = parseTimeToSeconds(a.time);
-            const timeB = parseTimeToSeconds(b.time);
-            return timeA - timeB;
-          });
-
-        // Create rank map for non-obsolete runs
-        const rankMap = new Map<string, number>();
-        nonObsoleteRuns.forEach((runData, index) => {
-          const rank = index + 1;
-          rankMap.set(runData.id, rank);
-          // Debug: Log rank #1 runs
-          if (rank === 1) {
-            console.log(`[backfillPointsForAllRunsFirestore] Rank #1 run: ${runData.id} (${runData.playerName}) - ${runData.time} in ${groupKey}`);
-          }
-        });
         
         // Process all runs in this group (including obsolete) - obsolete runs get base points only
         for (const runData of runs) {
@@ -2529,11 +2406,6 @@ export const backfillPointsForAllRunsFirestore = async (): Promise<{
             const rank = runData.isObsolete ? undefined : rankMap.get(runData.id);
             const categoryName = categoryMap.get(runData.category) || "Unknown";
             const platformName = platformMap.get(runData.platform) || "Unknown";
-            
-            // Debug: Log if rank #1 run is not found in rankMap
-            if (!runData.isObsolete && rank === undefined) {
-              console.warn(`[backfillPointsForAllRunsFirestore] Run ${runData.id} not found in rankMap for group ${groupKey}`);
-            }
             
             const points = calculatePoints(
               runData.time, 
@@ -2544,11 +2416,6 @@ export const backfillPointsForAllRunsFirestore = async (): Promise<{
               pointsConfig,
               rank
             );
-            
-            // Debug: Log rank #1 runs and their calculated points
-            if (rank === 1) {
-              console.log(`[backfillPointsForAllRunsFirestore] Rank #1 run ${runData.id} calculated points: ${points} (base: 100 + bonus: ${pointsConfig.top3BonusPoints?.rank1 || 0})`);
-            }
             
             runsToUpdate.push({
               id: runData.id,
