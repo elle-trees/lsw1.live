@@ -141,8 +141,8 @@ export function RecentRuns({ runs, loading, showRankBadge = true }: RecentRunsPr
                     </div>
                   </div>
                   <div className="flex items-center gap-6 flex-shrink-0 ml-4">
-                    <div className="text-right min-w-[120px]">
-                      <div className="flex items-center gap-2 justify-end mb-1">
+                    <div className="text-left min-w-[120px]">
+                      <div className="flex items-center gap-2 justify-start mb-1">
                         <p className="text-base font-semibold text-ctp-text">
                           {formatTime(run.time)}
                         </p>

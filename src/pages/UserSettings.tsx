@@ -142,8 +142,8 @@ const UserSettings = () => {
         nameColor,
         email: currentUser.email || email || "",
         profilePicture: profilePicture || undefined,
-        bio: bio || undefined,
-        pronouns: pronouns || undefined
+        bio: bio.trim() || "",
+        pronouns: pronouns.trim() || ""
       });
 
       if (!success) {

@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, User, Users, Timer, Calendar, CheckCircle, UserCircle, Trophy, Edit2, Save, X, Trash2, Plus } from "lucide-react";
+import { ArrowLeft, User, Users, Calendar, CheckCircle, UserCircle, Trophy, Edit2, Save, X, Trash2, Plus } from "lucide-react";
+import LegoStudIcon from "@/components/icons/LegoStudIcon";
 import { getLeaderboardEntryById, getPlayerByUid, getPlayerByDisplayName, getCategories, getPlatforms, runTypes, updateLeaderboardEntry, deleteLeaderboardEntry } from "@/lib/db";
 import { LeaderboardEntry, Player } from "@/types/database";
 import { VideoEmbed } from "@/components/VideoEmbed";
@@ -527,7 +528,7 @@ const RunDetails = () => {
                             value={editFormData.time}
                             onChange={(e) => setEditFormData({ ...editFormData, time: e.target.value })}
                             placeholder="HH:MM:SS"
-                            className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] font-mono"
+                            className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
                           />
                         </div>
 
@@ -651,11 +652,44 @@ const RunDetails = () => {
 
                     <div>
                       <div className="text-base text-muted-foreground mb-2 font-medium">Time</div>
-                      <div className="font-mono text-3xl font-bold text-[#cdd6f4] flex items-center gap-3">
-                        <Timer className="h-7 w-7" />
+                      <div className="text-3xl font-bold text-ctp-text flex items-center gap-3">
                         {formatTime(run.time)}
                       </div>
                     </div>
+
+                    {run.rank && (
+                      <div>
+                        <div className="text-base text-muted-foreground mb-2 font-medium">Rank</div>
+                        <div className="flex items-center gap-2">
+                          {run.rank === 1 ? (
+                            <>
+                              <LegoStudIcon size={36} color="#0055BF" />
+                              <span className="font-bold text-base text-ctp-text">
+                                #{run.rank}
+                              </span>
+                            </>
+                          ) : run.rank === 2 ? (
+                            <>
+                              <LegoStudIcon size={36} color="#FFD700" />
+                              <span className="font-bold text-base text-ctp-text">
+                                #{run.rank}
+                              </span>
+                            </>
+                          ) : run.rank === 3 ? (
+                            <>
+                              <LegoStudIcon size={36} color="#C0C0C0" />
+                              <span className="font-bold text-base text-ctp-text">
+                                #{run.rank}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="font-bold text-base text-ctp-text">
+                              #{run.rank}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                     <div>
                       <div className="text-base text-muted-foreground mb-2 font-medium">Category</div>
@@ -687,21 +721,6 @@ const RunDetails = () => {
                       </div>
                     </div>
                   </>
-                )}
-
-                {run.rank && (
-                  <div>
-                    <div className="text-base text-muted-foreground mb-2 font-medium">Rank</div>
-                    <Badge
-                      variant={run.rank <= 3 ? "default" : "secondary"}
-                      className="flex items-center gap-2 w-fit text-base px-3 py-1.5"
-                    >
-                      {run.rank === 1 && <span className="w-4 h-4 rounded-full bg-[#0055BF]"></span>}
-                      {run.rank === 2 && <span className="w-4 h-4 rounded-full bg-[#FFD700]"></span>}
-                      {run.rank === 3 && <span className="w-4 h-4 rounded-full bg-[#A8A8A8]"></span>}
-                      #{run.rank}
-                    </Badge>
-                  </div>
                 )}
 
                 {/* Points */}

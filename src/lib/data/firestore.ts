@@ -263,12 +263,27 @@ export const updatePlayerProfileFirestore = async (uid: string, data: Partial<Pl
     const playerDocRef = doc(db, "players", uid);
     const docSnap = await getDoc(playerDocRef);
     
+    // Filter out undefined values and convert empty strings for bio/pronouns to deleteField
+    const updateData: any = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (value === undefined) {
+        // Skip undefined values
+        continue;
+      } else if ((key === 'bio' || key === 'pronouns') && value === '') {
+        // Use deleteField to remove the field when it's an empty string
+        updateData[key] = deleteField();
+      } else {
+        updateData[key] = value;
+      }
+    }
+    
     if (docSnap.exists()) {
-      await updateDoc(playerDocRef, data);
+      await updateDoc(playerDocRef, updateData);
     } else {
       // Create a complete player document if it doesn't exist
       const today = new Date().toISOString().split('T')[0];
-      const newPlayer: Omit<Player, 'id'> = {
+      // Build newPlayer object, only including bio/pronouns if they have values
+      const newPlayer: any = {
         uid: uid,
         displayName: data.displayName || "",
         email: data.email || "",
@@ -280,8 +295,19 @@ export const updatePlayerProfileFirestore = async (uid: string, data: Partial<Pl
         nameColor: data.nameColor || "#cba6f7",
         isAdmin: false,
         totalPoints: 0,
-        ...data, // Override with any provided data
       };
+      
+      // Only add bio/pronouns if they have non-empty values
+      if (data.bio && data.bio.trim()) {
+        newPlayer.bio = data.bio.trim();
+      }
+      if (data.pronouns && data.pronouns.trim()) {
+        newPlayer.pronouns = data.pronouns.trim();
+      }
+      if (data.profilePicture) {
+        newPlayer.profilePicture = data.profilePicture;
+      }
+      
       await setDoc(playerDocRef, newPlayer);
     }
     
