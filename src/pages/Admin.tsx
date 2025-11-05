@@ -1419,22 +1419,19 @@ const Admin = () => {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
 
-          {/* Tools Section */}
-          <TabsContent value="tools" className="space-y-4 animate-fade-in">
-            {/* Backfill Points Card */}
+            {/* Recalculate Points Card */}
             <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
               <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
                 <CardTitle className="flex items-center gap-2 text-xl text-[#f2cdcd]">
                   <span>
-                      Backfill Points for All Runs
+                      Recalculate All Points
                   </span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-6">
                 <p className="text-sm text-ctp-subtext1 leading-relaxed mb-4">
-                      Recalculate and update points for all verified runs using the current points formula. This will also recalculate all players' total points based on their verified runs. Obsolete runs will be excluded.
+                      Recalculate and update points for all verified runs using the current points formula. This will also recalculate all players' total points based on their verified runs. Includes all run types (Full Game, Individual Levels, Community Golds). Obsolete runs receive base points only.
                     </p>
                     {backfillingPoints && (
                   <p className="text-xs text-ctp-overlay0 mb-4 italic flex items-center gap-2">
@@ -1459,20 +1456,20 @@ const Admin = () => {
                         const result = await backfillPointsForAllRuns();
                         if (result.errors.length > 0) {
                           toast({
-                            title: "Backfill Complete with Errors",
+                            title: "Recalculation Complete with Errors",
                             description: `Updated ${result.runsUpdated} runs and ${result.playersUpdated} players. ${result.errors.length} error(s) occurred.`,
                             variant: "destructive",
                           });
                         } else {
                           toast({
-                            title: "Backfill Complete",
+                            title: "Recalculation Complete",
                             description: `Successfully recalculated points for ${result.runsUpdated} runs and updated ${result.playersUpdated} players.`,
                           });
                         }
                       } catch (error: any) {
                         toast({
                           title: "Error",
-                          description: error.message || "Failed to backfill points.",
+                          description: error.message || "Failed to recalculate points.",
                           variant: "destructive",
                         });
                       } finally {
@@ -1496,6 +1493,10 @@ const Admin = () => {
                   </Button>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Tools Section */}
+          <TabsContent value="tools" className="space-y-4 animate-fade-in">
 
             {/* Manual Run Input Section */}
             <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
@@ -1576,39 +1577,40 @@ const Admin = () => {
                     </div>
                   </div>
 
+                  {/* Leaderboard Type Tabs */}
                   <div>
-                    <Label htmlFor="manualLeaderboardType">Leaderboard Type *</Label>
-                    <Select 
-                      value={manualRunLeaderboardType} 
-                      onValueChange={(value) => {
-                        setManualRunLeaderboardType(value as 'regular' | 'individual-level' | 'community-golds');
-                        setManualRun(prev => ({ ...prev, category: "" }));
-                      }}
-                    >
-                      <SelectTrigger className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]">
-                        <SelectValue placeholder="Select leaderboard type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="regular">
-                          <div className="flex items-center gap-2">
-                            <Trophy className="h-4 w-4" />
-                            Full Game
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="individual-level">
-                          <div className="flex items-center gap-2">
-                            <Star className="h-4 w-4" />
-                            Individual Level
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="community-golds">
-                          <div className="flex items-center gap-2">
-                            <Gem className="h-4 w-4" />
-                            Community Golds
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label className="text-sm font-semibold mb-2 block">Leaderboard Type *</Label>
+                    <Tabs value={manualRunLeaderboardType} onValueChange={(value) => {
+                      setManualRunLeaderboardType(value as 'regular' | 'individual-level' | 'community-golds');
+                      setManualRun(prev => ({ ...prev, category: "", level: "" }));
+                    }}>
+                      <TabsList className="grid w-full grid-cols-3 p-0.5 gap-1">
+                        <TabsTrigger 
+                          value="regular" 
+                          className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap"
+                        >
+                          <Trophy className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
+                          <span className="hidden min-[375px]:inline">Full Game</span>
+                          <span className="min-[375px]:hidden">Game</span>
+                        </TabsTrigger>
+                        <TabsTrigger 
+                          value="individual-level" 
+                          className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap"
+                        >
+                          <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
+                          <span className="hidden sm:inline">Individual Levels</span>
+                          <span className="sm:hidden">ILs</span>
+                        </TabsTrigger>
+                        <TabsTrigger 
+                          value="community-golds"
+                          className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap"
+                        >
+                          <Gem className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
+                          <span className="hidden sm:inline">Community Golds</span>
+                          <span className="sm:hidden">Golds</span>
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
                   </div>
 
                   {/* Category Selection - Tabs */}
@@ -1620,9 +1622,14 @@ const Admin = () => {
                          'Category *'}
                       </Label>
                       <Tabs value={manualRun.category} onValueChange={(value) => setManualRun({ ...manualRun, category: value })}>
-                        <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${firestoreCategories.length}, 1fr)` }}>
-                          {firestoreCategories.map((category) => (
-                            <TabsTrigger key={category.id} value={category.id} className="data-[state=active]:bg-[hsl(240,21%,18%)] text-sm">
+                        <TabsList className="flex w-full p-0.5 gap-1 overflow-x-auto overflow-y-hidden scrollbar-hide" style={{ minWidth: 'max-content' }}>
+                          {firestoreCategories.map((category, index) => (
+                            <TabsTrigger 
+                              key={category.id} 
+                              value={category.id} 
+                              className="data-[state=active]:bg-[#94e2d5] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#94e2d5]/50 py-2 px-3 text-sm"
+                              style={{ animationDelay: `${index * 50}ms` }}
+                            >
                               {category.name}
                             </TabsTrigger>
                           ))}

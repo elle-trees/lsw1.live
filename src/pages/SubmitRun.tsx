@@ -283,36 +283,40 @@ const SubmitRun = () => {
               </CardHeader>
                 <CardContent className="p-6">
               <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Leaderboard Type Tabs */}
                 <div>
-                  <Label htmlFor="leaderboardType" className="text-sm font-semibold mb-1.5">Leaderboard Type *</Label>
-                  <Select value={leaderboardType} onValueChange={(value) => {
+                  <Label className="text-sm font-semibold mb-2 block">Leaderboard Type *</Label>
+                  <Tabs value={leaderboardType} onValueChange={(value) => {
                     setLeaderboardType(value as 'regular' | 'individual-level' | 'community-golds');
                     setFormData(prev => ({ ...prev, category: "", level: "" })); // Reset category and level when type changes
                   }}>
-                    <SelectTrigger className="bg-[hsl(240,21%,18%)] border-[hsl(235,13%,30%)] h-10 text-sm hover:border-[hsl(var(--mocha-mauve))] transition-colors">
-                      <SelectValue placeholder="Select leaderboard type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="regular" className="text-sm">
-                        <div className="flex items-center gap-2">
-                          <Trophy className="h-4 w-4" />
-                          Full Game
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="individual-level" className="text-sm">
-                        <div className="flex items-center gap-2">
-                          <Star className="h-4 w-4" />
-                          Individual Levels
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="community-golds" className="text-sm">
-                        <div className="flex items-center gap-2">
-                          <Gem className="h-4 w-4" />
-                          Community Golds
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <TabsList className="grid w-full grid-cols-3 p-0.5 gap-1">
+                      <TabsTrigger 
+                        value="regular" 
+                        className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap"
+                      >
+                        <Trophy className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
+                        <span className="hidden min-[375px]:inline">Full Game</span>
+                        <span className="min-[375px]:hidden">Game</span>
+                      </TabsTrigger>
+                      <TabsTrigger 
+                        value="individual-level" 
+                        className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap"
+                      >
+                        <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
+                        <span className="hidden sm:inline">Individual Levels</span>
+                        <span className="sm:hidden">ILs</span>
+                      </TabsTrigger>
+                      <TabsTrigger 
+                        value="community-golds"
+                        className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap"
+                      >
+                        <Gem className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
+                        <span className="hidden sm:inline">Community Golds</span>
+                        <span className="sm:hidden">Golds</span>
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
