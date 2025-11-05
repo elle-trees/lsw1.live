@@ -606,6 +606,76 @@ export const getLeaderboardEntryByIdFirestore = async (runId: string): Promise<L
     if (runDocSnap.exists()) {
       const entry = { id: runDocSnap.id, ...runDocSnap.data() } as LeaderboardEntry;
       
+      // Calculate rank if the run is verified
+      if (entry.verified && !entry.isObsolete) {
+        try {
+          // Build query constraints to get all verified entries for this run's category/platform/runType/leaderboardType/level
+          const constraints: any[] = [
+            where("verified", "==", true),
+            where("category", "==", entry.category),
+            where("platform", "==", entry.platform),
+            where("runType", "==", entry.runType || 'solo'),
+          ];
+
+          // Add leaderboardType filter
+          const leaderboardType = entry.leaderboardType || 'regular';
+          if (leaderboardType !== 'regular') {
+            constraints.push(where("leaderboardType", "==", leaderboardType));
+          }
+
+          // Add level filter for ILs and Community Golds
+          if (entry.level) {
+            constraints.push(where("level", "==", entry.level));
+          }
+
+          constraints.push(firestoreLimit(200));
+          
+          const q = query(collection(db, "leaderboardEntries"), ...constraints);
+          const querySnapshot = await getDocs(q);
+          
+          let entries: LeaderboardEntry[] = querySnapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() } as LeaderboardEntry))
+            .filter(e => !e.isObsolete && (e.leaderboardType || 'regular') === leaderboardType);
+
+          // Sort by time in ascending order (fastest times first)
+          const entriesWithTime = entries.map(e => {
+            const parts = e.time.split(':').map(Number);
+            let totalSeconds = 0;
+            if (parts.length === 3) {
+              totalSeconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+            } else if (parts.length === 2) {
+              totalSeconds = parts[0] * 60 + parts[1];
+            } else {
+              totalSeconds = Infinity;
+            }
+            return { entry: e, totalSeconds };
+          });
+          entriesWithTime.sort((a, b) => a.totalSeconds - b.totalSeconds);
+          
+          // Find the rank of the current entry
+          const currentTimeParts = entry.time.split(':').map(Number);
+          let currentTotalSeconds = 0;
+          if (currentTimeParts.length === 3) {
+            currentTotalSeconds = currentTimeParts[0] * 3600 + currentTimeParts[1] * 60 + currentTimeParts[2];
+          } else if (currentTimeParts.length === 2) {
+            currentTotalSeconds = currentTimeParts[0] * 60 + currentTimeParts[1];
+          }
+          
+          // Find the rank (1-based index)
+          const rankIndex = entriesWithTime.findIndex(e => e.entry.id === entry.id);
+          if (rankIndex !== -1) {
+            entry.rank = rankIndex + 1;
+          } else {
+            // If not found in sorted list, calculate rank based on time
+            const fasterCount = entriesWithTime.filter(e => e.totalSeconds < currentTotalSeconds).length;
+            entry.rank = fasterCount + 1;
+          }
+        } catch (error) {
+          // Silent fail - rank will remain undefined
+          console.error("Error calculating rank:", error);
+        }
+      }
+      
       // Enrich with player display names and colors
       try {
         const player = await getPlayerByUidFirestore(entry.playerId);
