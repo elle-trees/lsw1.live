@@ -343,40 +343,33 @@ const RunDetails = () => {
     }
 
     const calculateDisplayPoints = async () => {
+      // Always use stored points if available (most reliable)
+      if (run.points !== undefined && run.points !== null && run.points >= 0) {
+        setDisplayPoints(run.points);
+        return;
+      }
+
+      // Only calculate if points not stored and run is verified
+      if (!run.verified || run.isObsolete) {
+        setDisplayPoints(0);
+        return;
+      }
+
+      // Calculate points using stored rank and config
       const category = categories.find((c) => c.id === run.category);
       const platform = platforms.find((p) => p.id === run.platform);
-
-      if (run.points !== undefined && run.points !== null && run.points > 0) {
-        // Use stored points (should already include rank-based calculation)
-        setDisplayPoints(run.points);
-      } else if (run.verified && !run.isObsolete && run.rank) {
-        // Calculate with rank if available but points not stored
-        const config = await getPointsConfig();
-        const calculated = calculatePoints(
-          run.time,
-          category?.name || "Unknown",
-          platform?.name || "Unknown",
-          run.category,
-          run.platform,
-          config,
-          run.rank
-        );
-        setDisplayPoints(calculated);
-      } else if (run.verified && !run.isObsolete) {
-        // Fall back to base calculation without rank
-        const config = await getPointsConfig();
-        const calculated = calculatePoints(
-          run.time,
-          category?.name || "Unknown",
-          platform?.name || "Unknown",
-          run.category,
-          run.platform,
-          config
-        );
-        setDisplayPoints(calculated);
-      } else {
-        setDisplayPoints(0);
-      }
+      const config = await getPointsConfig();
+      
+      const calculated = calculatePoints(
+        run.time,
+        category?.name || "Unknown",
+        platform?.name || "Unknown",
+        run.category,
+        run.platform,
+        config,
+        run.rank
+      );
+      setDisplayPoints(calculated);
     };
     
     calculateDisplayPoints();

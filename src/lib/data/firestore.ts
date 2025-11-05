@@ -91,9 +91,6 @@ export const getLeaderboardEntriesFirestore = async (
     if (leaderboardType && leaderboardType !== 'regular') {
       constraints.push(where("leaderboardType", "==", leaderboardType));
     }
-    // Note: For regular type, we don't add a where clause for leaderboardType
-    // This allows us to get both entries with leaderboardType='regular' and legacy entries without the field
-    // We'll filter client-side to ensure we only get regular entries
 
     // Add category filter
     if (categoryId && categoryId !== "all") {
@@ -115,17 +112,28 @@ export const getLeaderboardEntriesFirestore = async (
       constraints.push(where("level", "==", levelId));
     }
 
-    // Fetch extra entries to account for client-side filtering (obsolete entries, legacy leaderboardType)
+    // Add isObsolete filter if not including obsolete runs
+    // Note: Firestore doesn't support filtering by isObsolete == false directly
+    // We'll fetch all and filter client-side, but use index for better performance
     constraints.push(firestoreLimit(200));
     
     const q = query(collection(db, "leaderboardEntries"), ...constraints);
     const querySnapshot = await getDocs(q);
     
+    // Process entries - ensure isObsolete is properly set (default to false if undefined)
     let entries: LeaderboardEntry[] = querySnapshot.docs
-      .map(doc => ({ id: doc.id, ...doc.data() } as LeaderboardEntry))
+      .map(doc => {
+        const data = doc.data();
+        return { 
+          id: doc.id, 
+          ...data,
+          isObsolete: data.isObsolete === true // Explicitly set to false if not true
+        } as LeaderboardEntry;
+      })
       .filter(entry => {
         // Filter obsolete entries if not including them
-        if (!includeObsolete && entry.isObsolete) return false;
+        // Treat undefined/null as false (non-obsolete)
+        if (!includeObsolete && entry.isObsolete === true) return false;
         
         // Filter out non-regular entries when querying for regular leaderboard type
         if (!leaderboardType || leaderboardType === 'regular') {
@@ -133,30 +141,45 @@ export const getLeaderboardEntriesFirestore = async (
           if (entryLeaderboardType !== 'regular') return false;
         }
         
-          return true;
-        });
+        return true;
+      });
 
     // Sort by time in ascending order (fastest times first)
-    const entriesWithTime = entries.map(entry => {
-      const parts = entry.time.split(':').map(Number);
-      let totalSeconds = 0;
-      if (parts.length === 3) {
-        totalSeconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
-      } else if (parts.length === 2) {
-        totalSeconds = parts[0] * 60 + parts[1];
-      } else {
-        totalSeconds = Infinity;
-      }
-      return { entry, totalSeconds };
-    });
-    entriesWithTime.sort((a, b) => a.totalSeconds - b.totalSeconds);
-    entries = entriesWithTime.map(item => item.entry);
-    entries = entries.slice(0, 100);
-
-    // Assign ranks
-    entries.forEach((entry, index) => {
+    // Separate obsolete and non-obsolete runs for proper ranking
+    const nonObsoleteEntries = entries.filter(e => !e.isObsolete || e.isObsolete === undefined);
+    const obsoleteEntries = entries.filter(e => e.isObsolete === true);
+    
+    // Sort both groups
+    const sortByTime = (entries: LeaderboardEntry[]) => {
+      return entries.map(entry => {
+        const parts = entry.time.split(':').map(Number);
+        let totalSeconds = 0;
+        if (parts.length === 3) {
+          totalSeconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+        } else if (parts.length === 2) {
+          totalSeconds = parts[0] * 60 + parts[1];
+        } else {
+          totalSeconds = Infinity;
+        }
+        return { entry, totalSeconds };
+      }).sort((a, b) => a.totalSeconds - b.totalSeconds).map(item => item.entry);
+    };
+    
+    const sortedNonObsolete = sortByTime(nonObsoleteEntries);
+    const sortedObsolete = sortByTime(obsoleteEntries);
+    
+    // Assign ranks: non-obsolete runs get sequential ranks starting from 1
+    // Obsolete runs get ranks that continue from non-obsolete runs
+    sortedNonObsolete.forEach((entry, index) => {
       entry.rank = index + 1;
     });
+    
+    sortedObsolete.forEach((entry, index) => {
+      entry.rank = sortedNonObsolete.length + index + 1;
+    });
+    
+    // Combine: non-obsolete first, then obsolete, limit to 100
+    entries = [...sortedNonObsolete, ...sortedObsolete].slice(0, 100);
 
     // Batch fetch all unique player IDs to avoid N+1 queries
     const playerIds = new Set<string>();
@@ -1945,39 +1968,13 @@ export const claimRunFirestore = async (runId: string, userId: string): Promise<
 
 /**
  * Get all players sorted by total points (descending)
- * This function queries verified runs and aggregates points by player for reliability
- * Includes all leaderboard types: regular, individual-level, and community-golds
+ * Uses stored totalPoints from player documents for fast querying with Firestore index
+ * Falls back gracefully if index is not yet deployed
  */
 export const getPlayersByPointsFirestore = async (limit: number = 100): Promise<Player[]> => {
   if (!db) return [];
   try {
-    // Get all verified runs (all leaderboard types)
-    const q = query(
-      collection(db, "leaderboardEntries"),
-      where("verified", "==", true),
-      firestoreLimit(5000) // Increased limit to include all run types
-    );
-    const runsSnapshot = await getDocs(q);
-
-    // Get all categories and platforms for lookup
-    const categories = await getCategoriesFirestore();
-    const platforms = await getPlatformsFirestore();
-    const categoryMap = new Map(categories.map(c => [c.id, c.name]));
-    const platformMap = new Map(platforms.map(p => [p.id, p.name]));
-
-    // Aggregate runs by player
-    // For unlinked players (without accounts), we aggregate by playerName
-    // For players with accounts, we aggregate by playerId
-    const playerMap = new Map<string, {
-      playerId: string;
-      playerName: string;
-      totalPoints: number;
-      totalRuns: number;
-      firstRunDate?: string;
-      isUnlinked: boolean;
-    }>();
-
-    // Get points config once for all calculations
+    // Get points config to check if enabled
     const pointsConfig = await getPointsConfigFirestore();
     
     // If points are disabled, return empty array
@@ -1985,332 +1982,27 @@ export const getPlayersByPointsFirestore = async (limit: number = 100): Promise<
       return [];
     }
 
-    // Group runs by category + platform + runType to calculate ranks
-    const runsByGroup = new Map<string, LeaderboardEntry[]>();
-    
-    for (const runDoc of runsSnapshot.docs) {
-      const runData = runDoc.data() as LeaderboardEntry;
-      
-      if (!runData.playerId) {
-        console.warn(`[getPlayersByPointsFirestore] Run ${runDoc.id} has no playerId, skipping`);
-        continue;
-      }
-
-      // Group runs by leaderboardType + level + category + platform + runType
-      const leaderboardType = runData.leaderboardType || 'regular';
-      const level = runData.level || '';
-      // For regular runs, group by category+platform+runType
-      // For ILs and community golds, also include level in the group key
-      const groupKey = leaderboardType === 'regular' 
-        ? `${leaderboardType}_${runData.category}_${runData.platform}_${runData.runType || 'solo'}`
-        : `${leaderboardType}_${level}_${runData.category}_${runData.platform}_${runData.runType || 'solo'}`;
-      if (!runsByGroup.has(groupKey)) {
-        runsByGroup.set(groupKey, []);
-      }
-      runsByGroup.get(groupKey)!.push(runData);
-    }
-    
-    // Calculate ranks for each group and assign points
-    // For each group, we need to fetch all runs to calculate ranks properly
-    const runsWithPoints: Array<{ run: LeaderboardEntry; points: number }> = [];
-    
-    for (const [groupKey, runs] of runsByGroup.entries()) {
-      const parts = groupKey.split('_');
-      const leaderboardType = parts[0] as 'regular' | 'individual-level' | 'community-golds';
-      
-      let categoryId: string;
-      let platformId: string;
-      let runType: string;
-      let levelId: string | undefined;
-      
-      if (leaderboardType === 'regular') {
-        // Format: regular_category_platform_runType
-        categoryId = parts[1]!;
-        platformId = parts[2]!;
-        runType = parts[3] || 'solo';
-      } else {
-        // Format: leaderboardType_level_category_platform_runType
-        levelId = parts[1];
-        categoryId = parts[2]!;
-        platformId = parts[3]!;
-        runType = parts[4] || 'solo';
-      }
-      
-      // Calculate ranks using helper function
-      const rankMap = await calculateRanksForGroup(
-        leaderboardType,
-        categoryId,
-        platformId,
-        runType as 'solo' | 'co-op',
-        levelId
-      );
-      
-      // Fetch all verified runs for this group to get all run data
-      const constraints: any[] = [
-        where("verified", "==", true),
-        where("leaderboardType", "==", leaderboardType),
-        where("category", "==", categoryId),
-        where("platform", "==", platformId),
-        where("runType", "==", runType || 'solo'),
-      ];
-      
-      if (leaderboardType !== 'regular' && levelId) {
-        constraints.push(where("level", "==", levelId));
-      }
-      
-      constraints.push(firestoreLimit(200));
-      
-      const groupQuery = query(collection(db, "leaderboardEntries"), ...constraints);
-      const groupSnapshot = await getDocs(groupQuery);
-      const allGroupRuns = groupSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LeaderboardEntry));
-      const allGroupRunsMap = new Map(allGroupRuns.map(r => [r.id, r]));
-      
-      // Process all runs from the original group (runs from the initial query)
-      // This ensures we process every run that was in our initial query
-      for (const originalRun of runs) {
-        // Get the run data from the group query (which has the latest data)
-        // Use originalRun.id to look up, but prefer the run from group query if available
-        const runData = allGroupRunsMap.get(originalRun.id) || originalRun;
-        
-        // Get rank for this run (obsolete runs get undefined rank)
-        const rank = runData.isObsolete ? undefined : rankMap.get(runData.id);
-        
-        const categoryName = categoryMap.get(runData.category) || "Unknown";
-        const platformName = platformMap.get(runData.platform) || "Unknown";
-        
-        const points = calculatePoints(
-          runData.time, 
-          categoryName, 
-          platformName,
-          runData.category,
-          runData.platform,
-          pointsConfig,
-          rank
-        );
-        
-        // Store run update for batch write (will batch all updates together)
-        // Add all runs to runsWithPoints for aggregation
-        // Use the run data from allGroupRuns (which has the latest points) but keep original run metadata
-        runsWithPoints.push({ 
-          run: { ...originalRun, points }, // Keep original run metadata but with updated points
-          points 
-        });
-      }
-    }
-
-    // Batch update runs with points (Firestore batch limit is 500)
-    const MAX_BATCH_SIZE = 500;
-    let batchCount = 0;
-    let batch = writeBatch(db);
-    
-    for (const { run: runData, points } of runsWithPoints) {
-      if (points > 0) {
-        const runDocRef = doc(db, "leaderboardEntries", runData.id);
-        batch.update(runDocRef, { points });
-        batchCount++;
-        
-        // Commit batch if it reaches the limit
-        if (batchCount >= MAX_BATCH_SIZE) {
-          await batch.commit();
-          batchCount = 0;
-          batch = writeBatch(db); // Create new batch for remaining updates
-        }
-      }
-    }
-    
-    // Commit remaining updates
-    if (batchCount > 0) {
-      await batch.commit();
-    }
-
-    // Aggregate points by player
-    let zeroPointRuns = 0;
-    let totalPointsCalculated = 0;
-    
-    // Collect all unique player2 names for batch lookup
-    const player2NamesSet = new Set<string>();
-    for (const { run: runData } of runsWithPoints) {
-      if (runData.runType === 'co-op' && runData.player2Name) {
-        player2NamesSet.add(runData.player2Name.trim());
-      }
-    }
-    
-    // Batch lookup all player2s
-    const player2Map = new Map<string, Player | null>();
-    const player2LookupPromises = Array.from(player2NamesSet).map(async (name) => {
-      try {
-        const player = await getPlayerByDisplayNameFirestore(name);
-        return { name: name.toLowerCase(), player };
-      } catch {
-        return { name: name.toLowerCase(), player: null };
-      }
-    });
-    const player2Lookups = await Promise.all(player2LookupPromises);
-    player2Lookups.forEach(({ name, player }) => {
-      player2Map.set(name, player);
-    });
-    
-    // Helper function to process a player's points
-    const processPlayerPoints = (playerId: string, playerName: string, points: number, runDate?: string) => {
-      if (!playerId || !playerName) return;
-      
-      const isUnlinked = playerId.startsWith("unlinked_");
-      const aggregationKey = isUnlinked 
-        ? `unlinked_${playerName.trim().toLowerCase()}`
-        : playerId;
-      
-      const existing = playerMap.get(aggregationKey);
-      if (existing) {
-        existing.totalPoints += points;
-        existing.totalRuns += 1;
-        if (runDate && (!existing.firstRunDate || runDate < existing.firstRunDate)) {
-          existing.firstRunDate = runDate;
-        }
-      } else {
-        playerMap.set(aggregationKey, {
-          playerId,
-          playerName,
-          totalPoints: points,
-          totalRuns: 1,
-          firstRunDate: runDate,
-          isUnlinked,
-        });
-      }
-    };
-    
-    for (const { run: runData, points } of runsWithPoints) {
-      totalPointsCalculated += points || 0;
-      
-      // Skip runs with 0 or invalid points
-      if (!points || points <= 0) {
-        zeroPointRuns++;
-        continue;
-      }
-      
-      // Process player1 (always gets points)
-      if (runData.playerId && runData.playerName) {
-        processPlayerPoints(runData.playerId, runData.playerName, points, runData.date);
-      }
-      
-      // Process player2 for co-op runs (also gets points) - use batched lookup
-      if (runData.runType === 'co-op' && runData.player2Name) {
-        const player2 = player2Map.get(runData.player2Name.trim().toLowerCase());
-        if (player2) {
-          processPlayerPoints(player2.uid, runData.player2Name, points, runData.date);
-        } else {
-          // Player2 not found - treat as unlinked player
-          const unlinkedId = `unlinked_${runData.player2Name.trim().toLowerCase()}`;
-          processPlayerPoints(unlinkedId, runData.player2Name, points, runData.date);
-        }
-      }
-    }
-
-    // Convert to Player array and fetch additional player data
-    
-    const playersList = Array.from(playerMap.values())
-      .filter(p => p.totalPoints > 0)
-      .sort((a, b) => b.totalPoints - a.totalPoints)
-      .slice(0, limit);
-
-    // Update player documents with totalPoints before returning
-    let updateBatch = writeBatch(db);
-    let updateCount = 0;
-    for (const p of playersList) {
-      if (!p.isUnlinked) {
-        const playerDocRef = doc(db, "players", p.playerId);
-        updateBatch.update(playerDocRef, { totalPoints: p.totalPoints });
-        updateCount++;
-        
-        if (updateCount >= 500) {
-          await updateBatch.commit();
-          updateCount = 0;
-          updateBatch = writeBatch(db);
-        }
-      }
-    }
-    if (updateCount > 0) {
-      await updateBatch.commit();
-    }
-    
-    // Fetch player documents for additional info (name color, etc.)
-    const players: Player[] = await Promise.all(
-      playersList.map(async (p) => {
-        // Skip fetching player doc for unlinked players - they don't have accounts
-        if (p.isUnlinked) {
-          return {
-            id: p.playerId,
-            uid: p.playerId,
-            displayName: p.playerName,
-            email: "",
-            joinDate: p.firstRunDate || "",
-            totalRuns: p.totalRuns,
-            bestRank: null,
-            favoriteCategory: null,
-            favoritePlatform: null,
-            nameColor: undefined,
-            isAdmin: false,
-            totalPoints: p.totalPoints,
-          } as Player;
-        }
-
-        try {
-          const playerDocRef = doc(db, "players", p.playerId);
-          const playerDocSnap = await getDoc(playerDocRef);
-          
-          if (playerDocSnap.exists()) {
-            const playerData = playerDocSnap.data() as Player;
-            return {
-              id: p.playerId,
-              uid: p.playerId,
-              displayName: playerData.displayName || p.playerName,
-              email: playerData.email || "",
-              joinDate: playerData.joinDate || p.firstRunDate || "",
-              totalRuns: p.totalRuns,
-              bestRank: playerData.bestRank || null,
-              favoriteCategory: playerData.favoriteCategory || null,
-              favoritePlatform: playerData.favoritePlatform || null,
-              nameColor: playerData.nameColor,
-              isAdmin: playerData.isAdmin || false,
-              totalPoints: p.totalPoints,
-            } as Player;
-          } else {
-            // Player doesn't exist in players collection, use run data
-            return {
-              id: p.playerId,
-              uid: p.playerId,
-              displayName: p.playerName,
-              email: "",
-              joinDate: p.firstRunDate || "",
-              totalRuns: p.totalRuns,
-              bestRank: null,
-              favoriteCategory: null,
-              favoritePlatform: null,
-              nameColor: undefined,
-              isAdmin: false,
-              totalPoints: p.totalPoints,
-            } as Player;
-          }
-        } catch (error) {
-          // Fallback if player fetch fails
-          return {
-            id: p.playerId,
-            uid: p.playerId,
-            displayName: p.playerName,
-            email: "",
-            joinDate: p.firstRunDate || "",
-            totalRuns: p.totalRuns,
-            bestRank: null,
-            favoriteCategory: null,
-            favoritePlatform: null,
-            nameColor: undefined,
-            isAdmin: false,
-            totalPoints: p.totalPoints,
-          } as Player;
-        }
-      })
+    // Use stored totalPoints from player documents for fast querying
+    // Query players sorted by totalPoints descending
+    const playersQuery = query(
+      collection(db, "players"),
+      orderBy("totalPoints", "desc"),
+      firestoreLimit(limit)
     );
-
-    return players;
+    
+    try {
+      const playersSnapshot = await getDocs(playersQuery);
+      const players = playersSnapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as Player))
+        .filter(p => (p.totalPoints || 0) > 0); // Only include players with points
+      
+      return players;
+    } catch (error: any) {
+      // If index doesn't exist yet, return empty array and log warning
+      // Admin should run recalculation to populate player totalPoints, then deploy index
+      console.warn("Points index not available. Please deploy firestore.indexes.json and run recalculation:", error);
+      return [];
+    }
   } catch (error) {
     console.error("Error getting players by points:", error);
     return [];
