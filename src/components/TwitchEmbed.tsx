@@ -14,8 +14,8 @@ const TwitchEmbed: React.FC<TwitchEmbedProps> = ({ channel }) => {
   const parentDomain = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
 
   return (
-    <Card className="w-full bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl overflow-hidden">
-      <div className="relative" style={{ paddingBottom: '56.25%' /* 16:9 Aspect Ratio */ }}>
+    <Card className="w-full h-full bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl overflow-hidden flex flex-col">
+      <div className="relative flex-shrink-0" style={{ paddingBottom: '56.25%' /* 16:9 Aspect Ratio */ }}>
         <iframe
           src={`https://player.twitch.tv/?channel=${channel}&parent=${parentDomain}&autoplay=false&muted=true`}
           height="100%"
@@ -25,9 +25,9 @@ const TwitchEmbed: React.FC<TwitchEmbedProps> = ({ channel }) => {
           title={`${channel} Twitch Stream`}
         ></iframe>
       </div>
-      <CardContent className="p-6 text-center space-y-3">
+      <CardContent className="p-4 sm:p-5 lg:p-6 text-center space-y-2 sm:space-y-3 flex-shrink-0">
         <div className="flex items-center justify-center gap-2 flex-wrap">
-        <p className="text-lg font-semibold text-[hsl(220,17%,92%)]">
+        <p className="text-base sm:text-lg font-semibold text-[hsl(220,17%,92%)]">
             Watch <span className="text-[#cba6f7]">{channel}</span> live on Twitch!
           </p>
           <Badge variant="outline" className="border-[#9147ff] bg-[#9147ff]/10 text-[#9147ff]">
@@ -37,7 +37,7 @@ const TwitchEmbed: React.FC<TwitchEmbedProps> = ({ channel }) => {
             </a>
           </Badge>
         </div>
-        <p className="text-sm text-[hsl(222,15%,60%)]">
+        <p className="text-xs sm:text-sm text-[hsl(222,15%,60%)]">
           (Stream is muted by default. Click the player to unmute.)
         </p>
       </CardContent>

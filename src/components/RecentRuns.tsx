@@ -47,15 +47,15 @@ export function RecentRuns({ runs, loading, showRankBadge = true }: RecentRunsPr
   };
 
   return (
-    <Card className="bg-gradient-to-br from-[hsl(240,21%,15%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
-      <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
+    <Card className="bg-gradient-to-br from-[hsl(240,21%,15%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl h-full flex flex-col">
+      <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)] flex-shrink-0">
         <CardTitle className="flex items-center gap-2 text-ctp-text">
           <span>
             Recent Runs
           </span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-6 sm:p-8">
+      <CardContent className="p-6 sm:p-8 flex-1 overflow-y-auto">
         {loading ? (
           <LoadingSpinner size="sm" className="py-12" />
         ) : runs.length === 0 ? (

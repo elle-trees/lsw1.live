@@ -991,7 +991,18 @@ export const updateRunVerificationStatusFirestore = async (runId: string, verifi
       // Find the rank of this run
       let rank: number | undefined = undefined;
       if (!runData.isObsolete) {
-        rank = rankMap.get(runId);
+        const calculatedRank = rankMap.get(runId);
+        if (calculatedRank !== undefined) {
+          // Ensure rank is a valid number
+          if (typeof calculatedRank === 'number' && !isNaN(calculatedRank) && calculatedRank > 0) {
+            rank = calculatedRank;
+          } else {
+            const parsed = Number(calculatedRank);
+            if (!isNaN(parsed) && parsed > 0) {
+              rank = parsed;
+            }
+          }
+        }
       }
       
       // Calculate points with rank
@@ -1209,7 +1220,23 @@ export const recalculatePlayerPointsFirestore = async (playerId: string): Promis
       
       // Process all player runs (including obsolete) - obsolete runs get base points only
       for (const playerRun of runs) {
-        const rank = playerRun.isObsolete ? undefined : rankMap.get(playerRun.id);
+        let rank: number | undefined = undefined;
+        if (!playerRun.isObsolete) {
+          // Try to get rank from the calculated rankMap first
+          const calculatedRank = rankMap.get(playerRun.id);
+          if (calculatedRank !== undefined) {
+            rank = calculatedRank;
+          } else {
+            // If not in rankMap (e.g., beyond top 200), check if run already has a stored rank
+            // Only use stored rank if it's 1, 2, or 3 (for bonus points)
+            if (playerRun.rank !== undefined && playerRun.rank !== null) {
+              const storedRank = typeof playerRun.rank === 'number' ? playerRun.rank : Number(playerRun.rank);
+              if (!isNaN(storedRank) && storedRank >= 1 && storedRank <= 3) {
+                rank = storedRank;
+              }
+            }
+          }
+        }
         allRunsWithRanks.push({ run: playerRun, rank: rank });
       }
     }
@@ -1223,17 +1250,30 @@ export const recalculatePlayerPointsFirestore = async (playerId: string): Promis
       const categoryName = categoryMap.get(runData.category) || "Unknown";
       const platformName = platformMap.get(runData.platform) || "Unknown";
       
+      // Ensure rank is a valid number if provided
+      let numericRank: number | undefined = undefined;
+      if (rank !== undefined && rank !== null) {
+        if (typeof rank === 'number' && !isNaN(rank) && rank > 0) {
+          numericRank = rank;
+        } else {
+          const parsed = Number(rank);
+          if (!isNaN(parsed) && parsed > 0) {
+            numericRank = parsed;
+          }
+        }
+      }
+      
       const points = calculatePoints(
         runData.time, 
         categoryName, 
         platformName,
         runData.category,
         runData.platform,
-        rank
+        numericRank
       );
       
       // Always update the run with recalculated points and rank
-      runsToUpdate.push({ id: runData.id, points, rank });
+      runsToUpdate.push({ id: runData.id, points, rank: numericRank });
       
       totalPoints += points;
     }
@@ -1267,13 +1307,16 @@ export const recalculatePlayerPointsFirestore = async (playerId: string): Promis
       await batch.commit();
     }
     
-    // Update or create player's total points
+    // Calculate total verified runs (including both player1 and player2 runs)
+    const totalVerifiedRuns = querySnapshot.docs.length + player2Runs.length;
+    
+    // Update or create player's total points and total runs
     if (playerDocSnap && playerDocSnap.exists()) {
-      // Only update totalPoints to avoid permission issues
+      // Update both totalPoints and totalRuns
       try {
-      await updateDoc(playerDocRef, { totalPoints });
+      await updateDoc(playerDocRef, { totalPoints, totalRuns: totalVerifiedRuns });
       } catch (error: any) {
-        console.error(`Error updating player ${playerId} totalPoints:`, error?.code, error?.message);
+        console.error(`Error updating player ${playerId} totalPoints and totalRuns:`, error?.code, error?.message);
         throw error; // Re-throw to be caught by outer catch
       }
     } else {
@@ -1285,7 +1328,7 @@ export const recalculatePlayerPointsFirestore = async (playerId: string): Promis
         displayName: firstRun?.playerName || "Unknown Player",
         email: "",
         joinDate: firstRun?.date || new Date().toISOString().split('T')[0],
-        totalRuns: querySnapshot.docs.length,
+        totalRuns: totalVerifiedRuns,
         bestRank: null,
         favoriteCategory: null,
         favoritePlatform: null,
@@ -1988,16 +2031,41 @@ export const getPlayersByPointsFirestore = async (limit: number = 100): Promise<
     const playersQuery = query(
       collection(db, "players"),
       orderBy("totalPoints", "desc"),
-      firestoreLimit(limit)
+      firestoreLimit(limit * 2) // Fetch more to account for potential duplicates
     );
     
     try {
       const playersSnapshot = await getDocs(playersQuery);
-      const players = playersSnapshot.docs
+      const allPlayers = playersSnapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as Player))
         .filter(p => (p.totalPoints || 0) > 0); // Only include players with points
       
-      return players;
+      // Deduplicate by UID - keep the player with the highest totalPoints
+      // If points are equal, keep the first one encountered
+      const playerMap = new Map<string, Player>();
+      for (const player of allPlayers) {
+        if (!player.uid) continue; // Skip players without UID
+        
+        const existing = playerMap.get(player.uid);
+        if (!existing) {
+          playerMap.set(player.uid, player);
+        } else {
+          // If we find a duplicate, keep the one with higher points
+          // If points are equal, keep the existing one (first encountered)
+          const existingPoints = existing.totalPoints || 0;
+          const currentPoints = player.totalPoints || 0;
+          if (currentPoints > existingPoints) {
+            playerMap.set(player.uid, player);
+          }
+        }
+      }
+      
+      // Convert map to array and sort by points (descending) again after deduplication
+      const uniquePlayers = Array.from(playerMap.values())
+        .sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0))
+        .slice(0, limit); // Apply limit after deduplication
+      
+      return uniquePlayers;
     } catch (error: any) {
       // If index doesn't exist yet, return empty array and log warning
       // Admin should run recalculation to populate player totalPoints, then deploy index
@@ -2116,7 +2184,22 @@ export const backfillPointsForAllRunsFirestore = async (): Promise<{
         // Process all runs in this group (including obsolete) - obsolete runs get base points only
         for (const runData of runs) {
           try {
-            const rank = runData.isObsolete ? undefined : rankMap.get(runData.id);
+            let rank: number | undefined = undefined;
+            if (!runData.isObsolete) {
+              const calculatedRank = rankMap.get(runData.id);
+              if (calculatedRank !== undefined) {
+                // Ensure rank is a valid number
+                if (typeof calculatedRank === 'number' && !isNaN(calculatedRank) && calculatedRank > 0) {
+                  rank = calculatedRank;
+                } else {
+                  const parsed = Number(calculatedRank);
+                  if (!isNaN(parsed) && parsed > 0) {
+                    rank = parsed;
+                  }
+                }
+              }
+            }
+            
             const categoryName = categoryMap.get(runData.category) || "Unknown";
             const platformName = platformMap.get(runData.platform) || "Unknown";
             

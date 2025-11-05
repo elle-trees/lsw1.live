@@ -128,32 +128,49 @@ const Index = () => {
           </div>
 
           {/* Bottom Row - Twitch Embed and Recent Runs */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 lg:gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 lg:gap-8 items-stretch">
             {/* Left Side - Twitch Embed (under Verified Runs) */}
-            <div className="lg:col-span-8 min-w-0">
-              <div className="flex justify-center overflow-x-auto h-full">
-                <div className="w-full max-w-full">
-                  <TwitchEmbed channel="lsw1live" />
-                </div>
-              </div>
+            <div className="lg:col-span-8 min-w-0 flex flex-col">
+              <TwitchEmbed channel="lsw1live" />
             </div>
 
             {/* Right Side - Recent Runs */}
-            <div className="lg:col-span-4 min-w-0">
-              <div className="mb-3">
+            <div className="lg:col-span-4 min-w-0 flex flex-col">
+              <div className="mb-3 flex-shrink-0">
                 <h2 className="text-lg sm:text-xl lg:text-2xl font-bold mb-1.5 text-ctp-text">Recent Runs</h2>
                 <p className="text-sm lg:text-base text-ctp-subtext1">
                   Latest submissions
                 </p>
               </div>
 
-              <div className="overflow-x-auto">
-                <div className="[&_header]:hidden [&_div[class*='CardContent']]:!p-4 [&_div[class*='space-y-5']]:!space-y-3">
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <style>{`
+                  .homepage-recent-runs [class*="CardContent"] { padding: 0.75rem !important; }
+                  .homepage-recent-runs [class*="space-y-5"] > * + * { margin-top: 0.5rem !important; }
+                  .homepage-recent-runs div[class*="p-6"], .homepage-recent-runs div[class*="p-8"] { padding: 0.75rem !important; }
+                  .homepage-recent-runs .text-xl { font-size: 1rem !important; }
+                  .homepage-recent-runs .text-2xl { font-size: 1.25rem !important; }
+                  .homepage-recent-runs div[class*="min-w-"] { min-width: 180px !important; }
+                  .homepage-recent-runs .text-sm { font-size: 0.625rem !important; }
+                  .homepage-recent-runs span[class*="px-3"] { padding-left: 0.375rem !important; padding-right: 0.375rem !important; }
+                  .homepage-recent-runs span[class*="py-1"] { padding-top: 0.125rem !important; padding-bottom: 0.125rem !important; }
+                  .homepage-recent-runs div[class*="gap-8"] { gap: 1rem !important; }
+                  .homepage-recent-runs div[class*="gap-6"] { gap: 0.5rem !important; }
+                  .homepage-recent-runs div[class*="gap-3"] { gap: 0.375rem !important; }
+                  .homepage-recent-runs .mb-3 { margin-bottom: 0.5rem !important; }
+                  .homepage-recent-runs .mb-2 { margin-bottom: 0.25rem !important; }
+                  .homepage-recent-runs .mt-2 { margin-top: 0.25rem !important; }
+                  .homepage-recent-runs a[class*="text-xl"] { font-size: 1.125rem !important; font-weight: 700 !important; }
+                  .homepage-recent-runs a[class*="text-2xl"] { font-size: 1.375rem !important; font-weight: 700 !important; }
+                  .homepage-recent-runs p[class*="text-xl"] { font-size: 1.125rem !important; }
+                  .homepage-recent-runs p[class*="text-2xl"] { font-size: 1.375rem !important; }
+                `}</style>
+                <div className="homepage-recent-runs [&_header]:hidden h-full">
                   <RecentRuns runs={recentRunsData} loading={loading} showRankBadge={false} />
                 </div>
               </div>
 
-              <div className="mt-4 text-center">
+              <div className="mt-4 text-center flex-shrink-0">
                 <Button variant="outline" size="sm" className="text-sm lg:text-base text-ctp-text border-ctp-surface1 bg-transparent hover:bg-ctp-blue/10 hover:border-ctp-blue transition-all duration-300 hover:scale-105 hover:shadow-lg whitespace-nowrap px-4 lg:px-6 py-2 lg:py-3" asChild>
                   <Link to="/leaderboards">View Full Leaderboards</Link>
                 </Button>

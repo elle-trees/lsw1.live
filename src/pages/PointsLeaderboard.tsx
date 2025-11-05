@@ -16,7 +16,29 @@ const PointsLeaderboard = () => {
       setLoading(true);
       try {
         const playersData = await getPlayersByPoints(100);
-        setPlayers(playersData);
+        
+        // Additional deduplication by UID as a safety measure
+        const uniquePlayers = new Map<string, Player>();
+        for (const player of playersData) {
+          if (!player.uid) continue;
+          const existing = uniquePlayers.get(player.uid);
+          if (!existing) {
+            uniquePlayers.set(player.uid, player);
+          } else {
+            // Keep the one with higher points if duplicate found
+            const existingPoints = existing.totalPoints || 0;
+            const currentPoints = player.totalPoints || 0;
+            if (currentPoints > existingPoints) {
+              uniquePlayers.set(player.uid, player);
+            }
+          }
+        }
+        
+        // Convert back to array and sort by points
+        const deduplicatedPlayers = Array.from(uniquePlayers.values())
+          .sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0));
+        
+        setPlayers(deduplicatedPlayers);
       } catch (error) {
         // Silent fail
       } finally {
