@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, ShieldAlert, ExternalLink, Download, PlusCircle, Trash2, Wrench, Edit2, FolderTree, Play, ArrowUp, ArrowDown, Gamepad2, UserPlus, UserMinus, Trophy, Upload } from "lucide-react";
+import { CheckCircle, XCircle, ShieldAlert, ExternalLink, Download, PlusCircle, Trash2, Wrench, Edit2, FolderTree, Play, ArrowUp, ArrowDown, Gamepad2, UserPlus, UserMinus, Trophy, Upload, Star, Gem } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
@@ -75,6 +75,7 @@ const Admin = () => {
   const { startUpload, isUploading } = useUploadThing("downloadFile");
   
   const [firestoreCategories, setFirestoreCategories] = useState<{ id: string; name: string }[]>([]);
+  const [categoryLeaderboardType, setCategoryLeaderboardType] = useState<'regular' | 'individual-level' | 'community-golds'>('regular');
   const [newCategoryName, setNewCategoryName] = useState("");
   const [editingCategory, setEditingCategory] = useState<{ id: string; name: string } | null>(null);
   const [editingCategoryName, setEditingCategoryName] = useState("");
@@ -90,6 +91,7 @@ const Admin = () => {
   const [updatingPlatform, setUpdatingPlatform] = useState(false);
   const [reorderingPlatform, setReorderingPlatform] = useState<string | null>(null);
   
+  const [manualRunLeaderboardType, setManualRunLeaderboardType] = useState<'regular' | 'individual-level' | 'community-golds'>('regular');
   const [manualRun, setManualRun] = useState({
     playerName: "",
     playerUsername: "",
@@ -117,6 +119,7 @@ const Admin = () => {
 
   useEffect(() => {
     fetchPlatforms();
+    fetchCategories('regular'); // Load regular categories by default
   }, []);
 
   useEffect(() => {
@@ -125,6 +128,12 @@ const Admin = () => {
     }
   }, [firestorePlatforms]);
 
+  useEffect(() => {
+    // Fetch categories when leaderboard type changes for manual run
+    fetchCategories(manualRunLeaderboardType);
+    setManualRun(prev => ({ ...prev, category: "" })); // Reset category when type changes
+  }, [manualRunLeaderboardType]);
+
   const fetchAllData = async () => {
     if (hasFetchedData) return;
     setLoading(true);
@@ -132,7 +141,7 @@ const Admin = () => {
       const [unverifiedData, downloadData, categoriesData] = await Promise.all([
         getUnverifiedLeaderboardEntries(),
         getDownloadEntries(),
-        getCategoriesFromFirestore()
+        getCategoriesFromFirestore('regular')
       ]);
       setUnverifiedRuns(unverifiedData);
       setDownloadEntries(downloadData);
@@ -149,9 +158,10 @@ const Admin = () => {
     }
   };
   
-  const fetchCategories = async () => {
+  const fetchCategories = async (leaderboardType?: 'regular' | 'individual-level' | 'community-golds') => {
     try {
-      const categoriesData = await getCategoriesFromFirestore();
+      const type = leaderboardType || categoryLeaderboardType;
+      const categoriesData = await getCategoriesFromFirestore(type);
       setFirestoreCategories(categoriesData);
     } catch (error) {
       toast({
@@ -450,14 +460,14 @@ const Admin = () => {
     
     setAddingCategory(true);
     try {
-      const result = await addCategory(newCategoryName.trim());
+      const result = await addCategory(newCategoryName.trim(), categoryLeaderboardType);
       if (result) {
         toast({
           title: "Category Added",
           description: "New category has been added.",
         });
         setNewCategoryName("");
-        fetchCategories();
+        fetchCategories(categoryLeaderboardType);
       } else {
         throw new Error("Category with this name already exists.");
       }
@@ -497,7 +507,7 @@ const Admin = () => {
         });
         setEditingCategory(null);
         setEditingCategoryName("");
-        fetchCategories();
+        fetchCategories(categoryLeaderboardType);
       } else {
         throw new Error("Another category with this name already exists.");
       }
@@ -870,6 +880,7 @@ const Admin = () => {
         category: manualRun.category,
         platform: manualRun.platform,
         runType: manualRun.runType,
+        leaderboardType: manualRunLeaderboardType,
         time: manualRun.time,
         date: manualRun.date,
         verified: manualRun.verified,
@@ -914,6 +925,7 @@ const Admin = () => {
                           verified: true,
                           verifiedBy: "",
                         });
+                        setManualRunLeaderboardType('regular');
         fetchUnverifiedRuns();
       } else {
         throw new Error("Failed to add run.");
@@ -1154,6 +1166,41 @@ const Admin = () => {
                         className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
                       />
                     </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="manualLeaderboardType">Leaderboard Type *</Label>
+                    <Select 
+                      value={manualRunLeaderboardType} 
+                      onValueChange={(value) => {
+                        setManualRunLeaderboardType(value as 'regular' | 'individual-level' | 'community-golds');
+                        setManualRun(prev => ({ ...prev, category: "" }));
+                      }}
+                    >
+                      <SelectTrigger className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]">
+                        <SelectValue placeholder="Select leaderboard type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="regular">
+                          <div className="flex items-center gap-2">
+                            <Trophy className="h-4 w-4" />
+                            Regular Leaderboard
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="individual-level">
+                          <div className="flex items-center gap-2">
+                            <Star className="h-4 w-4" />
+                            Individual Level
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="community-golds">
+                          <div className="flex items-center gap-2">
+                            <Gem className="h-4 w-4" />
+                            Community Golds
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1472,132 +1519,154 @@ const Admin = () => {
                 </CardTitle>
               </CardHeader>
           <CardContent className="p-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div>
-                <h3 className="text-base font-semibold mb-3">Add New Category</h3>
-                <form onSubmit={handleAddCategory} className="space-y-3">
+            <Tabs value={categoryLeaderboardType} onValueChange={(value) => {
+              setCategoryLeaderboardType(value as 'regular' | 'individual-level' | 'community-golds');
+              fetchCategories(value as 'regular' | 'individual-level' | 'community-golds');
+            }}>
+              <TabsList className="grid w-full grid-cols-3 bg-[hsl(240,21%,16%)] border border-[hsl(235,13%,30%)] mb-4">
+                <TabsTrigger value="regular" className="data-[state=active]:bg-[hsl(240,21%,18%)]">
+                  <Trophy className="h-4 w-4 mr-2" />
+                  Regular
+                </TabsTrigger>
+                <TabsTrigger value="individual-level" className="data-[state=active]:bg-[hsl(240,21%,18%)]">
+                  <Star className="h-4 w-4 mr-2" />
+                  Individual Level
+                </TabsTrigger>
+                <TabsTrigger value="community-golds" className="data-[state=active]:bg-[hsl(240,21%,18%)]">
+                  <Gem className="h-4 w-4 mr-2" />
+                  Community Golds
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value={categoryLeaderboardType} className="mt-0">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="categoryName" className="text-sm">Category Name</Label>
-                    <Input
-                      id="categoryName"
-                      type="text"
-                      value={newCategoryName}
-                      onChange={(e) => setNewCategoryName(e.target.value)}
-                      placeholder="e.g., 100% Glitchless"
-                      required
-                      className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] h-9 text-sm"
-                    />
+                    <h3 className="text-base font-semibold mb-3">Add New Category</h3>
+                    <form onSubmit={handleAddCategory} className="space-y-3">
+                      <div>
+                        <Label htmlFor="categoryName" className="text-sm">Category Name</Label>
+                        <Input
+                          id="categoryName"
+                          type="text"
+                          value={newCategoryName}
+                          onChange={(e) => setNewCategoryName(e.target.value)}
+                          placeholder="e.g., 100% Glitchless"
+                          required
+                          className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] h-9 text-sm"
+                        />
+                      </div>
+                      <Button 
+                        type="submit" 
+                        disabled={addingCategory}
+                        size="sm"
+                        className="bg-gradient-to-r from-[#cba6f7] to-[#b4a0e2] hover:from-[#b4a0e2] hover:to-[#cba6f7] text-[hsl(240,21%,15%)] font-bold flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                      >
+                        <PlusCircle className="h-3 w-3" />
+                        {addingCategory ? "Adding..." : "Add Category"}
+                      </Button>
+                    </form>
                   </div>
-                  <Button 
-                    type="submit" 
-                    disabled={addingCategory}
-                    size="sm"
-                    className="bg-gradient-to-r from-[#cba6f7] to-[#b4a0e2] hover:from-[#b4a0e2] hover:to-[#cba6f7] text-[hsl(240,21%,15%)] font-bold flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-                  >
-                    <PlusCircle className="h-3 w-3" />
-                    {addingCategory ? "Adding..." : "Add Category"}
-                  </Button>
-                </form>
-              </div>
-              <div>
-                <h3 className="text-base font-semibold mb-3">Existing Categories</h3>
-                {firestoreCategories.length === 0 ? (
-                  <p className="text-[hsl(222,15%,60%)] text-center py-4 text-sm">No categories found. Using default categories.</p>
-                ) : (
-                  <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="border-b border-[hsl(235,13%,30%)] hover:bg-transparent">
-                          <TableHead className="py-2 px-3 text-left text-xs">Name</TableHead>
-                          <TableHead className="py-2 px-3 text-center text-xs">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {firestoreCategories.map((category, index) => (
-                          <TableRow key={category.id} className="border-b border-[hsl(235,13%,30%)] hover:bg-[hsl(235,19%,13%)] transition-all duration-200 hover:shadow-sm">
-                            <TableCell className="py-2 px-3 font-medium text-sm">
+                  <div>
+                    <h3 className="text-base font-semibold mb-3">Existing Categories</h3>
+                    {firestoreCategories.length === 0 ? (
+                      <p className="text-[hsl(222,15%,60%)] text-center py-4 text-sm">No categories found. Add your first category!</p>
+                    ) : (
+                      <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="border-b border-[hsl(235,13%,30%)] hover:bg-transparent">
+                              <TableHead className="py-2 px-3 text-left text-xs">Name</TableHead>
+                              <TableHead className="py-2 px-3 text-center text-xs">Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {firestoreCategories.map((category, index) => (
+                              <TableRow key={category.id} className="border-b border-[hsl(235,13%,30%)] hover:bg-[hsl(235,19%,13%)] transition-all duration-200 hover:shadow-sm">
+                                <TableCell className="py-2 px-3 font-medium text-sm">
+                                  {editingCategory?.id === category.id ? (
+                                    <Input
+                                      value={editingCategoryName}
+                                      onChange={(e) => setEditingCategoryName(e.target.value)}
+                                      className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] h-8 text-sm"
+                                      autoFocus
+                                    />
+                                  ) : (
+                                    category.name
+                                  )}
+                                </TableCell>
+                                <TableCell className="py-2 px-3 text-center space-x-1">
                               {editingCategory?.id === category.id ? (
-                                <Input
-                                  value={editingCategoryName}
-                                  onChange={(e) => setEditingCategoryName(e.target.value)}
-                                  className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] h-8 text-sm"
-                                  autoFocus
-                                />
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleSaveEditCategory}
+                                    disabled={updatingCategory}
+                                    className="text-green-500 hover:bg-green-900/20"
+                                  >
+                                    Save
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleCancelEditCategory}
+                                    disabled={updatingCategory}
+                                    className="text-gray-500 hover:bg-gray-900/20"
+                                  >
+                                    Cancel
+                                  </Button>
+                                </>
                               ) : (
-                                category.name
+                                <>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleMoveCategoryUp(category.id)}
+                                  disabled={reorderingCategory === category.id || index === 0}
+                                  className="text-purple-500 hover:bg-purple-900/20 disabled:opacity-50 h-7 w-7 p-0 transition-all duration-200 hover:scale-110"
+                                  title="Move up"
+                                >
+                                  <ArrowUp className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleMoveCategoryDown(category.id)}
+                                  disabled={reorderingCategory === category.id || index === firestoreCategories.length - 1}
+                                  className="text-purple-500 hover:bg-purple-900/20 disabled:opacity-50 h-7 w-7 p-0 transition-all duration-200 hover:scale-110"
+                                  title="Move down"
+                                >
+                                  <ArrowDown className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleStartEditCategory(category)}
+                                  className="text-blue-500 hover:bg-blue-900/20 h-7 w-7 p-0 transition-all duration-200 hover:scale-110"
+                                >
+                                  <Edit2 className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteCategory(category.id)}
+                                  className="text-red-500 hover:bg-red-900/20 h-7 w-7 p-0 transition-all duration-200 hover:scale-110"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                                </>
                               )}
                             </TableCell>
-                            <TableCell className="py-2 px-3 text-center space-x-1">
-                          {editingCategory?.id === category.id ? (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleSaveEditCategory}
-                                disabled={updatingCategory}
-                                className="text-green-500 hover:bg-green-900/20"
-                              >
-                                Save
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleCancelEditCategory}
-                                disabled={updatingCategory}
-                                className="text-gray-500 hover:bg-gray-900/20"
-                              >
-                                Cancel
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleMoveCategoryUp(category.id)}
-                              disabled={reorderingCategory === category.id || index === 0}
-                              className="text-purple-500 hover:bg-purple-900/20 disabled:opacity-50 h-7 w-7 p-0 transition-all duration-200 hover:scale-110"
-                              title="Move up"
-                            >
-                              <ArrowUp className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleMoveCategoryDown(category.id)}
-                              disabled={reorderingCategory === category.id || index === firestoreCategories.length - 1}
-                              className="text-purple-500 hover:bg-purple-900/20 disabled:opacity-50 h-7 w-7 p-0 transition-all duration-200 hover:scale-110"
-                              title="Move down"
-                            >
-                              <ArrowDown className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleStartEditCategory(category)}
-                              className="text-blue-500 hover:bg-blue-900/20 h-7 w-7 p-0 transition-all duration-200 hover:scale-110"
-                            >
-                              <Edit2 className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteCategory(category.id)}
-                              className="text-red-500 hover:bg-red-900/20 h-7 w-7 p-0 transition-all duration-200 hover:scale-110"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                            </>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
+                </div>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
           </TabsContent>

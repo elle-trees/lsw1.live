@@ -7,7 +7,8 @@ export const getLeaderboardEntriesFirestore = async (
   categoryId?: string,
   platformId?: string,
   runType?: 'solo' | 'co-op',
-  includeObsolete?: boolean
+  includeObsolete?: boolean,
+  leaderboardType?: 'regular' | 'individual-level' | 'community-golds'
 ): Promise<LeaderboardEntry[]> => {
   if (!db) return [];
   
@@ -28,6 +29,10 @@ export const getLeaderboardEntriesFirestore = async (
         if (categoryId && categoryId !== "all" && entry.category !== categoryId) return false;
         if (platformId && platformId !== "all" && entry.platform !== platformId) return false;
         if (runType && (runType === "solo" || runType === "co-op") && entry.runType !== runType) return false;
+        // Filter by leaderboardType - default to 'regular' if not specified
+        const entryLeaderboardType = entry.leaderboardType || 'regular';
+        const requestedType = leaderboardType || 'regular';
+        if (entryLeaderboardType !== requestedType) return false;
         return true;
       });
 
@@ -45,6 +50,10 @@ export const getLeaderboardEntriesFirestore = async (
           if (categoryId && categoryId !== "all" && entry.category !== categoryId) return false;
           if (platformId && platformId !== "all" && entry.platform !== platformId) return false;
           if (runType && (runType === "solo" || runType === "co-op") && entry.runType !== runType) return false;
+          // Filter by leaderboardType - default to 'regular' if not specified
+          const entryLeaderboardType = entry.leaderboardType || 'regular';
+          const requestedType = leaderboardType || 'regular';
+          if (entryLeaderboardType !== requestedType) return false;
           return true;
         });
     }
@@ -123,6 +132,7 @@ export const addLeaderboardEntryFirestore = async (entry: Omit<LeaderboardEntry,
       category: entry.category,
       platform: entry.platform,
       runType: entry.runType,
+      leaderboardType: entry.leaderboardType || 'regular', // Default to 'regular' if not specified
       time: entry.time,
       date: entry.date || new Date().toISOString().split('T')[0],
       verified: entry.verified ?? false, 
@@ -1058,11 +1068,20 @@ export const moveDownloadDownFirestore = async (downloadId: string): Promise<boo
   }
 };
 
-export const getCategoriesFirestore = async (): Promise<Category[]> => {
+export const getCategoriesFirestore = async (leaderboardType?: 'regular' | 'individual-level' | 'community-golds'): Promise<Category[]> => {
+  if (!db) return [];
   try {
     let q = query(collection(db, "categories"));
     const querySnapshot = await getDocs(q);
-    const categories = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
+    let categories = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
+    
+    // Filter by leaderboardType if specified
+    if (leaderboardType) {
+      categories = categories.filter(cat => {
+        const catType = cat.leaderboardType || 'regular';
+        return catType === leaderboardType;
+      });
+    }
     
     categories.sort((a, b) => {
       const orderA = a.order !== undefined ? a.order : Infinity;
@@ -1079,7 +1098,7 @@ export const getCategoriesFirestore = async (): Promise<Category[]> => {
   }
 };
 
-export const addCategoryFirestore = async (name: string): Promise<string | null> => {
+export const addCategoryFirestore = async (name: string, leaderboardType?: 'regular' | 'individual-level' | 'community-golds'): Promise<string | null> => {
   if (!db) return null;
   try {
     const trimmedName = name.trim();
@@ -1089,15 +1108,29 @@ export const addCategoryFirestore = async (name: string): Promise<string | null>
     
     const q = query(collection(db, "categories"));
     const existingSnapshot = await getDocs(q);
+    const typeToCheck = leaderboardType || 'regular';
+    
+    // Check for duplicate name within the same leaderboard type
     const existingCategory = existingSnapshot.docs.find(
-      doc => doc.data().name?.trim().toLowerCase() === trimmedName.toLowerCase()
+      doc => {
+        const data = doc.data();
+        const catType = data.leaderboardType || 'regular';
+        return data.name?.trim().toLowerCase() === trimmedName.toLowerCase() && catType === typeToCheck;
+      }
     );
     
     if (existingCategory) {
       return null;
     }
     
-    const existingCategories = existingSnapshot.docs.map(doc => doc.data());
+    // Get max order for this leaderboard type
+    const existingCategories = existingSnapshot.docs
+      .map(doc => doc.data())
+      .filter(cat => {
+        const catType = cat.leaderboardType || 'regular';
+        return catType === typeToCheck;
+      });
+    
     const maxOrder = existingCategories.reduce((max, cat) => {
       const order = cat.order !== undefined ? cat.order : -1;
       return Math.max(max, order);
@@ -1105,7 +1138,11 @@ export const addCategoryFirestore = async (name: string): Promise<string | null>
     const nextOrder = maxOrder + 1;
     
     const newDocRef = doc(collection(db, "categories"));
-    await setDoc(newDocRef, { name: trimmedName, order: nextOrder });
+    await setDoc(newDocRef, { 
+      name: trimmedName, 
+      order: nextOrder,
+      leaderboardType: typeToCheck
+    });
     return newDocRef.id;
   } catch (error) {
     return null;

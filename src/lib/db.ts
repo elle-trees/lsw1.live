@@ -60,13 +60,15 @@ export const initializeDefaultCategories = async (): Promise<void> => {
   }
 };
 
-export const getCategories = async (): Promise<{ id: string; name: string }[]> => {
+export const getCategories = async (leaderboardType?: 'regular' | 'individual-level' | 'community-golds'): Promise<{ id: string; name: string }[]> => {
   try {
-    let firestoreCategories = await getCategoriesFirestore();
+    const type = leaderboardType || 'regular';
+    let firestoreCategories = await getCategoriesFirestore(type);
     
-    if (firestoreCategories.length === 0) {
+    // Only initialize default categories for regular leaderboard type
+    if (firestoreCategories.length === 0 && type === 'regular') {
       await initializeDefaultCategories();
-      firestoreCategories = await getCategoriesFirestore();
+      firestoreCategories = await getCategoriesFirestore(type);
     }
     
     return firestoreCategories;
@@ -119,7 +121,15 @@ export const runTypes = [
   { id: "co-op", name: "Co-op" },
 ];
 
-export const getLeaderboardEntries = getLeaderboardEntriesFirestore;
+export const getLeaderboardEntries = async (
+  categoryId?: string,
+  platformId?: string,
+  runType?: 'solo' | 'co-op',
+  includeObsolete?: boolean,
+  leaderboardType?: 'regular' | 'individual-level' | 'community-golds'
+): Promise<LeaderboardEntry[]> => {
+  return getLeaderboardEntriesFirestore(categoryId, platformId, runType, includeObsolete, leaderboardType);
+};
 export const getLeaderboardEntryById = getLeaderboardEntryByIdFirestore;
 export const addLeaderboardEntry = addLeaderboardEntryFirestore;
 export const getPlayerByUid = getPlayerByUidFirestore;
@@ -151,8 +161,12 @@ export const updateDownloadOrder = updateDownloadOrderFirestore;
 export const moveDownloadUp = moveDownloadUpFirestore;
 export const moveDownloadDown = moveDownloadDownFirestore;
 
-export const getCategoriesFromFirestore = getCategoriesFirestore;
-export const addCategory = addCategoryFirestore;
+export const getCategoriesFromFirestore = async (leaderboardType?: 'regular' | 'individual-level' | 'community-golds'): Promise<Category[]> => {
+  return getCategoriesFirestore(leaderboardType);
+};
+export const addCategory = async (name: string, leaderboardType?: 'regular' | 'individual-level' | 'community-golds'): Promise<string | null> => {
+  return addCategoryFirestore(name, leaderboardType);
+};
 export const updateCategory = updateCategoryFirestore;
 export const deleteCategory = deleteCategoryFirestore;
 export const moveCategoryUp = moveCategoryUpFirestore;

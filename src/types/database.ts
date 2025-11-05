@@ -6,6 +6,7 @@ export interface LeaderboardEntry {
   category: string;
   platform: string;
   runType: 'solo' | 'co-op'; // New field for run type
+  leaderboardType?: 'regular' | 'individual-level' | 'community-golds'; // Type of leaderboard
   time: string; // Format: HH:MM:SS
   date: string; // Format: YYYY-MM-DD
   videoUrl?: string;
@@ -39,6 +40,7 @@ export interface Category {
   id: string;
   name: string;
   order?: number; // Order for displaying categories (lower numbers appear first)
+  leaderboardType?: 'regular' | 'individual-level' | 'community-golds'; // Type of leaderboard this category belongs to
 }
 
 export interface Platform {

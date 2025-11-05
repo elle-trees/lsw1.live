@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Filter, User, Users, Trophy, Sparkles, TrendingUp } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Filter, User, Users, Trophy, Sparkles, TrendingUp, Star, Gem } from "lucide-react";
 import { LeaderboardTable } from "@/components/LeaderboardTable";
 import { getLeaderboardEntries, getCategories, getPlatforms, runTypes } from "@/lib/db";
 import { LeaderboardEntry } from "@/types/database";
@@ -11,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import LegoGoldBrickIcon from "@/components/icons/LegoGoldBrickIcon";
 
 const Leaderboards = () => {
+  const [leaderboardType, setLeaderboardType] = useState<'regular' | 'individual-level' | 'community-golds'>('regular');
   const [availableCategories, setAvailableCategories] = useState<{ id: string; name: string }[]>([]);
   const [availablePlatforms, setAvailablePlatforms] = useState<{ id: string; name: string }[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -26,13 +28,15 @@ const Leaderboards = () => {
       setCategoriesLoading(true);
       try {
         const [fetchedCategories, fetchedPlatforms] = await Promise.all([
-          getCategories(),
+          getCategories(leaderboardType),
           getPlatforms()
         ]);
         setAvailableCategories(fetchedCategories);
         setAvailablePlatforms(fetchedPlatforms);
-        if (fetchedCategories.length > 0 && !selectedCategory) {
+        if (fetchedCategories.length > 0) {
           setSelectedCategory(fetchedCategories[0].id);
+        } else {
+          setSelectedCategory("");
         }
         if (fetchedPlatforms.length > 0 && !selectedPlatform) {
           setSelectedPlatform(fetchedPlatforms[0].id);
@@ -45,7 +49,7 @@ const Leaderboards = () => {
     };
     
     fetchData();
-  }, []);
+  }, [leaderboardType]);
 
   useEffect(() => {
     const fetchLeaderboardData = async () => {
@@ -55,7 +59,8 @@ const Leaderboards = () => {
           selectedCategory,
           selectedPlatform,
           selectedRunType,
-          showObsoleteRuns === "true"
+          showObsoleteRuns === "true",
+          leaderboardType
         );
         setLeaderboardData(data);
       } catch (error) {
@@ -68,7 +73,7 @@ const Leaderboards = () => {
     if (selectedCategory && selectedPlatform && selectedRunType) {
       fetchLeaderboardData();
     }
-  }, [selectedCategory, selectedPlatform, selectedRunType, showObsoleteRuns]);
+  }, [selectedCategory, selectedPlatform, selectedRunType, showObsoleteRuns, leaderboardType]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[hsl(240,21%,15%)] to-[hsl(235,19%,13%)] text-[hsl(220,17%,92%)] py-6">
@@ -87,8 +92,26 @@ const Leaderboards = () => {
           </p>
         </div>
 
-        {/* Filters */}
-        <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl mb-6">
+        {/* Tabs */}
+        <Tabs value={leaderboardType} onValueChange={(value) => setLeaderboardType(value as 'regular' | 'individual-level' | 'community-golds')} className="mb-6">
+          <TabsList className="grid w-full grid-cols-3 bg-[hsl(240,21%,16%)] border border-[hsl(235,13%,30%)] mb-6">
+            <TabsTrigger value="regular" className="data-[state=active]:bg-[hsl(240,21%,18%)]">
+              <Trophy className="h-4 w-4 mr-2" />
+              Regular
+            </TabsTrigger>
+            <TabsTrigger value="individual-level" className="data-[state=active]:bg-[hsl(240,21%,18%)]">
+              <Star className="h-4 w-4 mr-2" />
+              Individual Level
+            </TabsTrigger>
+            <TabsTrigger value="community-golds" className="data-[state=active]:bg-[hsl(240,21%,18%)]">
+              <Gem className="h-4 w-4 mr-2" />
+              Community Golds
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value={leaderboardType} className="mt-0">
+            {/* Filters */}
+            <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl mb-6">
           <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
             <CardTitle className="flex items-center gap-2 text-xl">
               <div className="p-1.5 rounded-lg bg-gradient-to-br from-[#cba6f7] to-[#b4a0e2]">
@@ -190,6 +213,8 @@ const Leaderboards = () => {
             )}
           </CardContent>
         </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

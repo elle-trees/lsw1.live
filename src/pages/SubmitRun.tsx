@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Gamepad2, Timer, User, Users, FileText, Sparkles, CheckCircle, Calendar, ChevronDown, ChevronUp } from "lucide-react";
+import { Upload, Gamepad2, Timer, User, Users, FileText, Sparkles, CheckCircle, Calendar, ChevronDown, ChevronUp, Trophy, Star, Gem } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
@@ -19,6 +19,7 @@ const SubmitRun = () => {
   
   const [availableCategories, setAvailableCategories] = useState<{ id: string; name: string }[]>([]);
   const [availablePlatforms, setAvailablePlatforms] = useState<{ id: string; name: string }[]>([]);
+  const [leaderboardType, setLeaderboardType] = useState<'regular' | 'individual-level' | 'community-golds'>('regular');
   
   const [formData, setFormData] = useState({
     playerName: currentUser?.displayName || "",
@@ -39,18 +40,23 @@ const SubmitRun = () => {
     const fetchData = async () => {
       try {
         const [fetchedCategories, fetchedPlatforms] = await Promise.all([
-          getCategories(),
+          getCategories(leaderboardType),
           getPlatforms()
         ]);
         setAvailableCategories(fetchedCategories);
         setAvailablePlatforms(fetchedPlatforms);
+        if (fetchedCategories.length > 0 && !formData.category) {
+          setFormData(prev => ({ ...prev, category: fetchedCategories[0].id }));
+        } else if (fetchedCategories.length === 0) {
+          setFormData(prev => ({ ...prev, category: "" }));
+        }
       } catch (error) {
         // Silent fail
       }
     };
     
     fetchData();
-  }, []);
+  }, [leaderboardType]);
 
   // Update playerName when currentUser loads (if field is still empty)
   useEffect(() => {
@@ -162,6 +168,7 @@ const SubmitRun = () => {
         category: formData.category,
         platform: formData.platform,
         runType: formData.runType as 'solo' | 'co-op',
+        leaderboardType: leaderboardType,
         time: formData.time.trim(),
         date: formData.date,
         verified: false,
@@ -251,6 +258,37 @@ const SubmitRun = () => {
                 </CardHeader>
                 <CardContent className="p-6">
               <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <Label htmlFor="leaderboardType" className="text-sm font-semibold mb-1.5">Leaderboard Type *</Label>
+                  <Select value={leaderboardType} onValueChange={(value) => {
+                    setLeaderboardType(value as 'regular' | 'individual-level' | 'community-golds');
+                    setFormData(prev => ({ ...prev, category: "" })); // Reset category when type changes
+                  }}>
+                    <SelectTrigger className="bg-[hsl(240,21%,18%)] border-[hsl(235,13%,30%)] h-10 text-sm hover:border-[hsl(var(--mocha-mauve))] transition-colors">
+                      <SelectValue placeholder="Select leaderboard type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="regular" className="text-sm">
+                        <div className="flex items-center gap-2">
+                          <Trophy className="h-4 w-4" />
+                          Regular Leaderboard
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="individual-level" className="text-sm">
+                        <div className="flex items-center gap-2">
+                          <Star className="h-4 w-4" />
+                          Individual Level
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="community-golds" className="text-sm">
+                        <div className="flex items-center gap-2">
+                          <Gem className="h-4 w-4" />
+                          Community Golds
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="playerName" className="text-sm font-semibold mb-1.5">Player 1 Name *</Label>
