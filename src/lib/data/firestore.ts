@@ -1,6 +1,6 @@
 import { db } from "@/lib/firebase";
 import { collection, doc, getDoc, setDoc, updateDoc, deleteDoc, getDocs, query, where, orderBy, limit as firestoreLimit, deleteField, startAfter, and } from "firebase/firestore";
-import { Player, LeaderboardEntry, DownloadEntry, Category, Platform, Level } from "@/types/database";
+import { Player, LeaderboardEntry, DownloadEntry, Category, Platform, Level, PointsConfig } from "@/types/database";
 import { calculatePoints } from "@/lib/utils";
 
 export const getLeaderboardEntriesFirestore = async (
@@ -793,8 +793,16 @@ export const updateLeaderboardEntryFirestore = async (runId: string, data: Parti
         // Silent fail - use default
       }
       
-      // Recalculate points
-      const points = calculatePoints(newTime, categoryName, platformName);
+      // Get points config and recalculate points
+      const pointsConfig = await getPointsConfigFirestore();
+      const points = calculatePoints(
+        newTime, 
+        categoryName, 
+        platformName,
+        newCategoryId,
+        newPlatformId,
+        pointsConfig || undefined
+      );
       updateData.points = points;
       
       // Recalculate player's total points
@@ -857,7 +865,16 @@ export const updateRunVerificationStatusFirestore = async (runId: string, verifi
         // Silent fail - use default
       }
       
-      const points = calculatePoints(runData.time, categoryName, platformName);
+      // Get points config and calculate points
+      const pointsConfig = await getPointsConfigFirestore();
+      const points = calculatePoints(
+        runData.time, 
+        categoryName, 
+        platformName,
+        runData.category,
+        runData.platform,
+        pointsConfig || undefined
+      );
       updateData.points = points;
       
       // Update the document first to mark it as verified, then recalculate points
@@ -1003,8 +1020,18 @@ export const recalculatePlayerPointsFirestore = async (playerId: string): Promis
       const categoryName = categoryMap.get(runData.category) || "Unknown";
       const platformName = platformMap.get(runData.platform) || "Unknown";
       
+      // Get points config for calculation
+      const pointsConfig = await getPointsConfigFirestore();
+      
       // Recalculate points for all solo runs with the new formula
-      const points = calculatePoints(runData.time, categoryName, platformName);
+      const points = calculatePoints(
+        runData.time, 
+        categoryName, 
+        platformName,
+        runData.category,
+        runData.platform,
+        pointsConfig || undefined
+      );
       runsToUpdate.push({ id: runDoc.id, points });
       totalPoints += points;
     }
@@ -1765,10 +1792,20 @@ export const getPlayersByPointsFirestore = async (limit: number = 100): Promise<
         continue;
       }
 
+      // Get points config for calculation
+      const pointsConfig = await getPointsConfigFirestore();
+      
       // Recalculate points for all solo runs with the new formula
       const categoryName = categoryMap.get(runData.category) || "Unknown";
       const platformName = platformMap.get(runData.platform) || "Unknown";
-      const points = calculatePoints(runData.time, categoryName, platformName);
+      const points = calculatePoints(
+        runData.time, 
+        categoryName, 
+        platformName,
+        runData.category,
+        runData.platform,
+        pointsConfig || undefined
+      );
       
       // Update the run with recalculated points (async, don't wait)
       try {
@@ -1961,10 +1998,20 @@ export const backfillPointsForAllRunsFirestore = async (): Promise<{
           continue;
         }
 
+        // Get points config for calculation
+        const pointsConfig = await getPointsConfigFirestore();
+        
         // Recalculate points for all runs with the current formula
         const categoryName = categoryMap.get(runData.category) || "Unknown";
         const platformName = platformMap.get(runData.platform) || "Unknown";
-        const points = calculatePoints(runData.time, categoryName, platformName);
+        const points = calculatePoints(
+          runData.time, 
+          categoryName, 
+          platformName,
+          runData.category,
+          runData.platform,
+          pointsConfig || undefined
+        );
         
         runsToUpdate.push({
           id: runData.id,
@@ -2184,6 +2231,54 @@ export const moveLevelDownFirestore = async (id: string): Promise<boolean> => {
     
     return true;
   } catch (error) {
+    return false;
+  }
+};
+
+// Points Configuration Management
+const DEFAULT_POINTS_CONFIG: Omit<PointsConfig, 'id'> = {
+  baseMultiplier: 800,
+  minPoints: 10,
+  eligiblePlatforms: [], // Will be populated with GameCube platform ID
+  eligibleCategories: [], // Will be populated with Any% and Nocuts Noships category IDs
+  categoryScaleFactors: {}, // Will be populated
+  categoryMilestones: {}, // Will be populated
+  enabled: true,
+};
+
+export const getPointsConfigFirestore = async (): Promise<PointsConfig | null> => {
+  if (!db) return null;
+  try {
+    const configDocRef = doc(db, "pointsConfig", "default");
+    const configDocSnap = await getDoc(configDocRef);
+    
+    if (configDocSnap.exists()) {
+      return { id: configDocSnap.id, ...configDocSnap.data() } as PointsConfig;
+    }
+    
+    // Return default config if none exists
+    return { id: "default", ...DEFAULT_POINTS_CONFIG };
+  } catch (error) {
+    console.error("Error fetching points config:", error);
+    return null;
+  }
+};
+
+export const updatePointsConfigFirestore = async (config: Partial<PointsConfig>): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const configDocRef = doc(db, "pointsConfig", "default");
+    const configDocSnap = await getDoc(configDocRef);
+    
+    if (configDocSnap.exists()) {
+      await updateDoc(configDocRef, config);
+    } else {
+      await setDoc(configDocRef, { id: "default", ...DEFAULT_POINTS_CONFIG, ...config });
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error updating points config:", error);
     return false;
   }
 };

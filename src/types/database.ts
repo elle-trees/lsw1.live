@@ -81,3 +81,18 @@ import { User as FirebaseAuthUser } from "firebase/auth";
 export interface CustomUser extends FirebaseAuthUser {
   isAdmin?: boolean;
 }
+
+export interface PointsConfig {
+  id: string;
+  baseMultiplier: number;
+  minPoints: number;
+  eligiblePlatforms: string[]; // Platform IDs or names
+  eligibleCategories: string[]; // Category IDs or names
+  categoryScaleFactors: Record<string, number>; // Category ID -> scale factor
+  categoryMilestones: Record<string, {
+    thresholdSeconds: number;
+    minMultiplier: number;
+    maxMultiplier: number;
+  }>; // Category ID -> milestone config
+  enabled: boolean; // Master switch to enable/disable points
+}

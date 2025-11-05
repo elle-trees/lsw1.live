@@ -1,8 +1,8 @@
-# 🎮 lsw1.dev
+# lsw1.dev
 
 A modern, fast, speedrunning leaderboard platform for LEGO Star Wars: The Video Game. Built with React, TypeScript, and Vite as an alternative to traditional database sites.
 
-## ✨ Features
+## Features
 
 ### Leaderboards
 - **Full Game Leaderboards** - Track runs across different categories (Any%, 100%, Free Play, etc.)
@@ -10,7 +10,7 @@ A modern, fast, speedrunning leaderboard platform for LEGO Star Wars: The Video 
 - **Community Golds** - Community Gold splits leaderboard for each category and level
 - **Multi-platform Support** - PC, PS2, Xbox, GameCube
 - **Run Types** - Solo and Co-op runs
-- **Filtering & Search** - Filter by category, platform, run type, and level for ILs and CGs
+- **Filtering** - Filter by category, platform, run type, and level for ILs and CGs
 - **Real-time Rankings** - Automatic rank calculation with stud icons for top 3 positions
 
 ### Points System

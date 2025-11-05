@@ -45,9 +45,11 @@ import {
   moveLevelUp,
   moveLevelDown,
   backfillPointsForAllRuns,
+  getPointsConfig,
+  updatePointsConfig,
 } from "@/lib/db";
 import { useUploadThing } from "@/lib/uploadthing";
-import { LeaderboardEntry, DownloadEntry } from "@/types/database";
+import { LeaderboardEntry, DownloadEntry, PointsConfig } from "@/types/database";
 import { useNavigate } from "react-router-dom";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { formatTime } from "@/lib/utils";
@@ -132,12 +134,38 @@ const Admin = () => {
   const [searchingPlayer, setSearchingPlayer] = useState(false);
   const [backfillingPoints, setBackfillingPoints] = useState(false);
   const [activeTab, setActiveTab] = useState("runs");
+  const [pointsConfig, setPointsConfig] = useState<PointsConfig | null>(null);
+  const [loadingPointsConfig, setLoadingPointsConfig] = useState(false);
+  const [savingPointsConfig, setSavingPointsConfig] = useState(false);
 
   useEffect(() => {
     fetchPlatforms();
     fetchCategories('regular'); // Load regular categories by default
     fetchLevels();
+    fetchPointsConfig();
   }, []);
+
+  const fetchPointsConfig = async () => {
+    setLoadingPointsConfig(true);
+    try {
+      const config = await getPointsConfig();
+      setPointsConfig(config);
+      
+      // Also fetch all categories for the eligible categories list
+      // Fetch regular categories if not already loaded
+      if (firestoreCategories.length === 0) {
+        await fetchCategories('regular');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load points configuration.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingPointsConfig(false);
+    }
+  };
 
   const fetchLevels = async () => {
     try {
@@ -1155,7 +1183,7 @@ const Admin = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 mb-6 p-0.5 gap-1 overflow-x-auto">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-7 mb-6 p-0.5 gap-1 overflow-x-auto">
             <TabsTrigger 
               value="runs" 
               className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap"
@@ -1187,12 +1215,322 @@ const Admin = () => {
               Downloads
             </TabsTrigger>
             <TabsTrigger 
+              value="points" 
+              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap"
+            >
+              Points
+            </TabsTrigger>
+            <TabsTrigger 
               value="tools" 
               className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap"
             >
               Tools
             </TabsTrigger>
           </TabsList>
+
+          {/* Points Configuration Section */}
+          <TabsContent value="points" className="space-y-4 animate-fade-in">
+            <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
+              <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
+                <CardTitle className="flex items-center gap-2 text-xl text-[#f2cdcd]">
+                  <span>
+                    Points Configuration
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                {loadingPointsConfig ? (
+                  <div className="flex items-center justify-center py-8">
+                    <LoadingSpinner size="md" />
+                  </div>
+                ) : pointsConfig ? (
+                  <form onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!pointsConfig) return;
+                    
+                    setSavingPointsConfig(true);
+                    try {
+                      const success = await updatePointsConfig(pointsConfig);
+                      if (success) {
+                        toast({
+                          title: "Success",
+                          description: "Points configuration updated successfully.",
+                        });
+                      } else {
+                        throw new Error("Failed to update configuration");
+                      }
+                    } catch (error: any) {
+                      toast({
+                        title: "Error",
+                        description: error.message || "Failed to update points configuration.",
+                        variant: "destructive",
+                      });
+                    } finally {
+                      setSavingPointsConfig(false);
+                    }
+                  }} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <Label htmlFor="pointsEnabled">Enable Points System</Label>
+                        <Select
+                          value={pointsConfig.enabled ? "true" : "false"}
+                          onValueChange={(value) => setPointsConfig({ ...pointsConfig, enabled: value === "true" })}
+                        >
+                          <SelectTrigger className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="true">Enabled</SelectItem>
+                            <SelectItem value="false">Disabled</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-sm text-ctp-overlay0 mt-1">
+                          Master switch to enable or disable the entire points system.
+                        </p>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="baseMultiplier">Base Multiplier</Label>
+                        <Input
+                          id="baseMultiplier"
+                          type="number"
+                          value={pointsConfig.baseMultiplier}
+                          onChange={(e) => setPointsConfig({ ...pointsConfig, baseMultiplier: Number(e.target.value) })}
+                          min="1"
+                          step="1"
+                          className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
+                        />
+                        <p className="text-sm text-ctp-overlay0 mt-1">
+                          Base multiplier for exponential point calculation. Default: 800
+                        </p>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="minPoints">Minimum Points</Label>
+                        <Input
+                          id="minPoints"
+                          type="number"
+                          value={pointsConfig.minPoints}
+                          onChange={(e) => setPointsConfig({ ...pointsConfig, minPoints: Number(e.target.value) })}
+                          min="0"
+                          step="1"
+                          className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
+                        />
+                        <p className="text-sm text-ctp-overlay0 mt-1">
+                          Minimum points awarded (floor value). Default: 10
+                        </p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label>Eligible Platforms</Label>
+                      <div className="mt-2 space-y-2 max-h-48 overflow-y-auto">
+                        {firestorePlatforms.map((platform) => {
+                          const isSelected = pointsConfig.eligiblePlatforms.includes(platform.id) || 
+                                            pointsConfig.eligiblePlatforms.includes(platform.name);
+                          return (
+                            <div key={platform.id} className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id={`platform-${platform.id}`}
+                                checked={isSelected}
+                                onChange={(e) => {
+                                  const newPlatforms = e.target.checked
+                                    ? [...pointsConfig.eligiblePlatforms, platform.id]
+                                    : pointsConfig.eligiblePlatforms.filter(p => p !== platform.id && p !== platform.name);
+                                  setPointsConfig({ ...pointsConfig, eligiblePlatforms: newPlatforms });
+                                }}
+                                className="w-4 h-4"
+                              />
+                              <Label htmlFor={`platform-${platform.id}`} className="cursor-pointer">
+                                {platform.name}
+                              </Label>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <p className="text-sm text-ctp-overlay0 mt-1">
+                        Select which platforms are eligible for points.
+                      </p>
+                    </div>
+
+                    <div>
+                      <Label>Eligible Categories</Label>
+                      <div className="mt-2 space-y-2 max-h-48 overflow-y-auto">
+                        {firestoreCategories.map((category) => {
+                          const isSelected = pointsConfig.eligibleCategories.includes(category.id) || 
+                                            pointsConfig.eligibleCategories.includes(category.name);
+                          return (
+                            <div key={category.id} className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id={`category-${category.id}`}
+                                checked={isSelected}
+                                onChange={(e) => {
+                                  const newCategories = e.target.checked
+                                    ? [...pointsConfig.eligibleCategories, category.id]
+                                    : pointsConfig.eligibleCategories.filter(c => c !== category.id && c !== category.name);
+                                  setPointsConfig({ ...pointsConfig, eligibleCategories: newCategories });
+                                }}
+                                className="w-4 h-4"
+                              />
+                              <Label htmlFor={`category-${category.id}`} className="cursor-pointer">
+                                {category.name}
+                              </Label>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <p className="text-sm text-ctp-overlay0 mt-1">
+                        Select which categories are eligible for points.
+                      </p>
+                    </div>
+
+                    <div>
+                      <Label>Category Scale Factors</Label>
+                      <p className="text-sm text-ctp-overlay0 mb-2">
+                        Configure the exponential scale factor for each category. Higher values = slower decay.
+                      </p>
+                      <div className="space-y-3 max-h-64 overflow-y-auto">
+                        {pointsConfig.eligibleCategories.map((categoryId) => {
+                          const category = firestoreCategories.find(c => c.id === categoryId || c.name === categoryId);
+                          const categoryKey = categoryId;
+                          const currentValue = pointsConfig.categoryScaleFactors[categoryKey] || (categoryId.toLowerCase().includes("nocuts") ? 1400 : 2400);
+                          return (
+                            <div key={categoryKey} className="flex items-center gap-4">
+                              <Label className="w-32 text-sm">{category?.name || categoryId}</Label>
+                              <Input
+                                type="number"
+                                value={currentValue}
+                                onChange={(e) => {
+                                  const newScaleFactors = {
+                                    ...pointsConfig.categoryScaleFactors,
+                                    [categoryKey]: Number(e.target.value)
+                                  };
+                                  setPointsConfig({ ...pointsConfig, categoryScaleFactors: newScaleFactors });
+                                }}
+                                min="100"
+                                step="100"
+                                className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] flex-1"
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label>Category Milestones</Label>
+                      <p className="text-sm text-ctp-overlay0 mb-2">
+                        Configure milestone bonuses for each category. Set threshold time (in seconds) and multiplier range.
+                      </p>
+                      <div className="space-y-4 max-h-96 overflow-y-auto">
+                        {pointsConfig.eligibleCategories.map((categoryId) => {
+                          const category = firestoreCategories.find(c => c.id === categoryId || c.name === categoryId);
+                          const categoryKey = categoryId;
+                          const milestone = pointsConfig.categoryMilestones[categoryKey] || {
+                            thresholdSeconds: categoryId.toLowerCase().includes("nocuts") ? 1740 : 3300,
+                            minMultiplier: categoryId.toLowerCase().includes("nocuts") ? 1.3 : 1.2,
+                            maxMultiplier: categoryId.toLowerCase().includes("nocuts") ? 2.2 : 2.0,
+                          };
+                          return (
+                            <Card key={categoryKey} className="bg-[hsl(240,21%,16%)] border-[hsl(235,13%,30%)] p-4">
+                              <h4 className="font-semibold mb-3">{category?.name || categoryId}</h4>
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                  <Label className="text-xs">Threshold (seconds)</Label>
+                                  <Input
+                                    type="number"
+                                    value={milestone.thresholdSeconds}
+                                    onChange={(e) => {
+                                      const newMilestones = {
+                                        ...pointsConfig.categoryMilestones,
+                                        [categoryKey]: {
+                                          ...milestone,
+                                          thresholdSeconds: Number(e.target.value)
+                                        }
+                                      };
+                                      setPointsConfig({ ...pointsConfig, categoryMilestones: newMilestones });
+                                    }}
+                                    min="1"
+                                    step="1"
+                                    className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-xs">Min Multiplier</Label>
+                                  <Input
+                                    type="number"
+                                    value={milestone.minMultiplier}
+                                    onChange={(e) => {
+                                      const newMilestones = {
+                                        ...pointsConfig.categoryMilestones,
+                                        [categoryKey]: {
+                                          ...milestone,
+                                          minMultiplier: Number(e.target.value)
+                                        }
+                                      };
+                                      setPointsConfig({ ...pointsConfig, categoryMilestones: newMilestones });
+                                    }}
+                                    min="1"
+                                    step="0.1"
+                                    className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-xs">Max Multiplier</Label>
+                                  <Input
+                                    type="number"
+                                    value={milestone.maxMultiplier}
+                                    onChange={(e) => {
+                                      const newMilestones = {
+                                        ...pointsConfig.categoryMilestones,
+                                        [categoryKey]: {
+                                          ...milestone,
+                                          maxMultiplier: Number(e.target.value)
+                                        }
+                                      };
+                                      setPointsConfig({ ...pointsConfig, categoryMilestones: newMilestones });
+                                    }}
+                                    min="1"
+                                    step="0.1"
+                                    className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
+                                  />
+                                </div>
+                              </div>
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-4">
+                      <Button
+                        type="submit"
+                        disabled={savingPointsConfig}
+                        className="bg-gradient-to-r from-[#cba6f7] to-[#b4a0e2] hover:from-[#b4a0e2] hover:to-[#cba6f7] text-[hsl(240,21%,15%)] font-bold"
+                      >
+                        {savingPointsConfig ? "Saving..." : "Save Configuration"}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={fetchPointsConfig}
+                        disabled={savingPointsConfig}
+                        className="border-[hsl(235,13%,30%)]"
+                      >
+                        Reset to Saved
+                      </Button>
+                    </div>
+                  </form>
+                ) : (
+                  <p className="text-ctp-subtext1 text-center py-8">
+                    Failed to load points configuration.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* Tools Section */}
           <TabsContent value="tools" className="space-y-4 animate-fade-in">
