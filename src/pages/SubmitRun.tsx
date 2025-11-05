@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Gamepad2, Timer, User, Users, FileText, Sparkles, CheckCircle, Calendar, ChevronDown, ChevronUp, Trophy, Star, Gem } from "lucide-react";
+import { Upload, Gamepad2, Timer, User, Users, FileText, Sparkles, CheckCircle, Calendar, ChevronDown, ChevronUp, Trophy, Star, Gem, BookOpen } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/components/AuthProvider";
@@ -120,6 +120,16 @@ const SubmitRun = () => {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // For ILs and Community Golds, level is required
+    if ((leaderboardType === 'individual-level' || leaderboardType === 'community-golds') && !formData.level) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a level for Individual Level or Community Gold runs.",
         variant: "destructive",
       });
       return;
@@ -282,7 +292,7 @@ const SubmitRun = () => {
                   <Label htmlFor="leaderboardType" className="text-sm font-semibold mb-1.5">Leaderboard Type *</Label>
                   <Select value={leaderboardType} onValueChange={(value) => {
                     setLeaderboardType(value as 'regular' | 'individual-level' | 'community-golds');
-                    setFormData(prev => ({ ...prev, category: "" })); // Reset category when type changes
+                    setFormData(prev => ({ ...prev, category: "", level: "" })); // Reset category and level when type changes
                   }}>
                     <SelectTrigger className="bg-[hsl(240,21%,18%)] border-[hsl(235,13%,30%)] h-10 text-sm hover:border-[hsl(var(--mocha-mauve))] transition-colors">
                       <SelectValue placeholder="Select leaderboard type" />
@@ -297,7 +307,7 @@ const SubmitRun = () => {
                       <SelectItem value="individual-level" className="text-sm">
                         <div className="flex items-center gap-2">
                           <Star className="h-4 w-4" />
-                          Individual Level
+                          Individual Levels
                         </div>
                       </SelectItem>
                       <SelectItem value="community-golds" className="text-sm">
@@ -392,29 +402,60 @@ const SubmitRun = () => {
                 {/* Category Selection - Tabs for all types */}
                 {availableCategories.length > 0 && (
                   <div>
-                    <Label className="text-sm font-semibold mb-2 block">
-                      {leaderboardType === 'individual-level' ? 'Category Type *' : 
-                       leaderboardType === 'community-golds' ? 'Full Game Category *' : 
-                       'Category *'}
+                    <Label className="text-sm font-semibold mb-2 block flex items-center gap-2">
+                      {leaderboardType === 'individual-level' ? (
+                        <>
+                          <BookOpen className="h-3.5 w-3.5 text-[#cba6f7]" />
+                          Category Type * (Story or Free Play)
+                        </>
+                      ) : leaderboardType === 'community-golds' ? (
+                        <>
+                          <Trophy className="h-3.5 w-3.5 text-[#FFD700]" />
+                          Full Game Category *
+                        </>
+                      ) : (
+                        <>
+                          <Trophy className="h-3.5 w-3.5 text-[#cba6f7]" />
+                          Category *
+                        </>
+                      )}
                     </Label>
                     <Tabs value={formData.category} onValueChange={(value) => handleSelectChange("category", value)}>
-                      <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${availableCategories.length}, 1fr)` }}>
-                        {availableCategories.map((category) => (
-                          <TabsTrigger key={category.id} value={category.id} className="data-[state=active]:bg-[hsl(240,21%,18%)] text-sm">
+                      <TabsList className="grid w-full rounded-lg p-1 bg-[hsl(240,21%,14%)] border border-[hsl(235,13%,25%)] transition-all duration-300 hover:border-[hsl(235,13%,35%)]" style={{ gridTemplateColumns: `repeat(${availableCategories.length}, 1fr)` }}>
+                        {availableCategories.map((category, index) => (
+                          <TabsTrigger 
+                            key={category.id} 
+                            value={category.id} 
+                            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#cba6f7] data-[state=active]:to-[#b4a0e2] data-[state=active]:text-[hsl(240,21%,15%)] data-[state=active]:shadow-lg transition-all duration-300 rounded-md font-medium hover:bg-[hsl(240,21%,18%)] hover:scale-105 text-sm"
+                            style={{ animationDelay: `${index * 50}ms` }}
+                          >
                             {category.name}
                           </TabsTrigger>
                         ))}
                       </TabsList>
                     </Tabs>
+                    {leaderboardType === 'individual-level' && (
+                      <p className="text-xs text-[hsl(222,15%,60%)] mt-1">
+                        Choose "Story" for story mode levels or "Free Play" for free play levels
+                      </p>
+                    )}
+                    {leaderboardType === 'community-golds' && (
+                      <p className="text-xs text-[hsl(222,15%,60%)] mt-1">
+                        Select the full game category this Community Gold applies to
+                      </p>
+                    )}
                   </div>
                 )}
 
                 {/* Level Selection for ILs and Community Golds */}
                 {(leaderboardType === 'individual-level' || leaderboardType === 'community-golds') && (
                   <div>
-                    <Label htmlFor="level" className="text-sm font-semibold mb-1.5">Level *</Label>
+                    <Label htmlFor="level" className="text-sm font-semibold mb-1.5 flex items-center gap-2">
+                      <Sparkles className="h-3.5 w-3.5 text-[#cba6f7]" />
+                      Level *
+                    </Label>
                     <Select value={formData.level} onValueChange={(value) => handleSelectChange("level", value)}>
-                      <SelectTrigger className="bg-[hsl(240,21%,18%)] border-[hsl(235,13%,30%)] h-10 text-sm hover:border-[hsl(var(--mocha-mauve))] transition-colors">
+                      <SelectTrigger className="bg-gradient-to-br from-[hsl(240,21%,18%)] to-[hsl(240,21%,16%)] border-[hsl(235,13%,30%)] h-10 text-sm hover:border-[#cba6f7] hover:bg-gradient-to-br hover:from-[hsl(240,21%,20%)] hover:to-[hsl(240,21%,18%)] transition-all duration-300 hover:shadow-lg hover:shadow-[#cba6f7]/20">
                         <SelectValue placeholder="Select level" />
                       </SelectTrigger>
                       <SelectContent>
@@ -425,6 +466,11 @@ const SubmitRun = () => {
                         ))}
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-[hsl(222,15%,60%)] mt-1">
+                      {leaderboardType === 'individual-level' 
+                        ? "Select the level for this Individual Level run"
+                        : "Select the level for this Community Gold run"}
+                    </p>
                   </div>
                 )}
 

@@ -30,10 +30,18 @@ export const getLeaderboardEntriesFirestore = async (
         if (categoryId && categoryId !== "all" && entry.category !== categoryId) return false;
         if (platformId && platformId !== "all" && entry.platform !== platformId) return false;
         if (runType && (runType === "solo" || runType === "co-op") && entry.runType !== runType) return false;
-        // Filter by leaderboardType - default to 'regular' if not specified
-        const entryLeaderboardType = entry.leaderboardType || 'regular';
-        const requestedType = leaderboardType || 'regular';
-        if (entryLeaderboardType !== requestedType) return false;
+        // Filter by leaderboardType - strict matching
+        // If a specific leaderboardType is requested, only show entries with that exact type
+        // If leaderboardType is not specified or is 'regular', show entries with 'regular' or undefined (legacy entries)
+        if (leaderboardType && leaderboardType !== 'regular') {
+          // For individual-level or community-golds, only show entries with that exact type
+          const entryLeaderboardType = entry.leaderboardType;
+          if (entryLeaderboardType !== leaderboardType) return false;
+        } else {
+          // For regular leaderboard, show entries with 'regular' or undefined (legacy entries)
+          const entryLeaderboardType = entry.leaderboardType || 'regular';
+          if (entryLeaderboardType !== 'regular') return false;
+        }
         // Filter by level if specified
         if (levelId && levelId !== "all" && entry.level !== levelId) return false;
         return true;
@@ -57,6 +65,8 @@ export const getLeaderboardEntriesFirestore = async (
           const entryLeaderboardType = entry.leaderboardType || 'regular';
           const requestedType = leaderboardType || 'regular';
           if (entryLeaderboardType !== requestedType) return false;
+          // Filter by level if specified
+          if (levelId && levelId !== "all" && entry.level !== levelId) return false;
           return true;
         });
     }
