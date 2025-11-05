@@ -94,14 +94,20 @@ export function formatTime(timeString: string): string {
  * - Both solo and co-op runs are eligible
  * 
  * Points calculation:
- * - Base points: flat amount for all verified runs
- * - Top 3 bonus: additional points for runs ranked 1st, 2nd, or 3rd in their category/platform/runType/level combination
+ * - Base points: configured basePointsPerRun for all verified runs
+ * - Top 3 bonus: additional bonus points for runs ranked 1st, 2nd, or 3rd (from top3BonusPoints config)
  * 
- * @param timeString - Time string in HH:MM:SS format (not used in new system but kept for compatibility)
- * @param categoryName - Name of the category (not used in new system but kept for compatibility)
- * @param platformName - Name of the platform (not used in new system but kept for compatibility)
- * @param categoryId - Optional category ID (not used in new system but kept for compatibility)
- * @param platformId - Optional platform ID (not used in new system but kept for compatibility)
+ * Formula:
+ * - Rank 1: basePointsPerRun + top3BonusPoints.rank1
+ * - Rank 2: basePointsPerRun + top3BonusPoints.rank2
+ * - Rank 3: basePointsPerRun + top3BonusPoints.rank3
+ * - All others: basePointsPerRun
+ * 
+ * @param timeString - Time string in HH:MM:SS format (not used but kept for compatibility)
+ * @param categoryName - Name of the category (not used but kept for compatibility)
+ * @param platformName - Name of the platform (not used but kept for compatibility)
+ * @param categoryId - Optional category ID (not used but kept for compatibility)
+ * @param platformId - Optional platform ID (not used but kept for compatibility)
  * @param pointsConfig - Points configuration with basePointsPerRun and top3BonusPoints
  * @param rank - Optional rank of the run in its category (1-3 for bonus points)
  * @returns Points awarded for the run
@@ -128,36 +134,25 @@ export function calculatePoints(
   const enabled = config.enabled !== false; // Default to true if not specified
   if (!enabled) return 0;
 
-  // Rank #1 runs get 100 base points, all other runs use configured basePointsPerRun
   // Ensure rank is a number for comparison
   const numericRank = typeof rank === 'number' ? rank : (rank !== undefined ? Number(rank) : undefined);
   
-  let basePoints: number;
-  if (numericRank === 1) {
-    basePoints = 100;
-  } else {
-    // Use the configured basePointsPerRun, or default to 10 if not set
-    basePoints = config.basePointsPerRun !== undefined ? config.basePointsPerRun : 10;
-  }
+  // All runs get the configured basePointsPerRun (default to 10 if not set)
+  const basePoints = config.basePointsPerRun !== undefined ? config.basePointsPerRun : 10;
   
   // Start with base points
   let points = basePoints;
 
-  // Add top 3 bonus if applicable (use numericRank for comparison)
+  // Add top 3 bonus if applicable
   if (numericRank !== undefined && numericRank >= 1 && numericRank <= 3) {
-    const top3Bonus = config.top3BonusPoints || { rank1: 50, rank2: 30, rank3: 20 };
-    if (numericRank === 1 && top3Bonus.rank1) {
+    const top3Bonus = config.top3BonusPoints || {};
+    if (numericRank === 1 && top3Bonus.rank1 !== undefined) {
       points += top3Bonus.rank1;
-    } else if (numericRank === 2 && top3Bonus.rank2) {
+    } else if (numericRank === 2 && top3Bonus.rank2 !== undefined) {
       points += top3Bonus.rank2;
-    } else if (numericRank === 3 && top3Bonus.rank3) {
+    } else if (numericRank === 3 && top3Bonus.rank3 !== undefined) {
       points += top3Bonus.rank3;
     }
-  }
-
-  // Debug logging for points calculation
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`[calculatePoints] rank=${numericRank}, basePoints=${basePoints}, config.basePointsPerRun=${config.basePointsPerRun}, finalPoints=${Math.round(points)}`);
   }
 
   return Math.round(points);
