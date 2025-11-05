@@ -1329,81 +1329,93 @@ const Admin = () => {
                         <div className="space-y-4">
                           <div>
                             <Label htmlFor="anyPercentThreshold">Any% Threshold Time</Label>
-                            <div className="flex items-center gap-4 mt-2">
-                              <Input
-                                id="anyPercentThreshold"
-                                type="text"
-                                value={(() => {
-                                  const seconds = pointsConfig.anyPercentThreshold ?? 3300;
-                                  const hours = Math.floor(seconds / 3600);
-                                  const minutes = Math.floor((seconds % 3600) / 60);
-                                  const secs = seconds % 60;
-                                  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-                                })()}
-                                onChange={(e) => {
-                                  const timeStr = e.target.value.trim();
-                                  const parts = timeStr.split(':').map(Number);
-                                  let totalSeconds = 3300;
-                                  if (parts.length === 3) {
-                                    totalSeconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
-                                  } else if (parts.length === 2) {
-                                    totalSeconds = parts[0] * 60 + parts[1];
-                                  } else if (parts.length === 1 && !isNaN(parts[0])) {
+                            <Input
+                              id="anyPercentThreshold"
+                              type="text"
+                              value={(() => {
+                                const seconds = pointsConfig.anyPercentThreshold ?? 3300;
+                                const hours = Math.floor(seconds / 3600);
+                                const minutes = Math.floor((seconds % 3600) / 60);
+                                const secs = seconds % 60;
+                                return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                              })()}
+                              onChange={(e) => {
+                                const timeStr = e.target.value.trim();
+                                // Parse HH:MM:SS format
+                                const parts = timeStr.split(':').map(Number);
+                                let totalSeconds = pointsConfig.anyPercentThreshold ?? 3300;
+                                
+                                if (parts.length === 3 && parts.every(p => !isNaN(p))) {
+                                  // HH:MM:SS format
+                                  totalSeconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+                                } else if (parts.length === 2 && parts.every(p => !isNaN(p))) {
+                                  // MM:SS format (treat as minutes:seconds)
+                                  totalSeconds = parts[0] * 60 + parts[1];
+                                } else if (parts.length === 1 && !isNaN(parts[0]) && parts[0] >= 0) {
+                                  // Just a number - treat as seconds if reasonable, or as minutes if large
+                                  if (parts[0] < 10000) {
                                     totalSeconds = parts[0];
+                                  } else {
+                                    // Assume it's minutes if > 10000
+                                    totalSeconds = parts[0] * 60;
                                   }
-                                  if (totalSeconds > 0) {
-                                    setPointsConfig({ ...pointsConfig, anyPercentThreshold: totalSeconds });
-                                  }
-                                }}
-                                placeholder="HH:MM:SS or MM:SS"
-                                className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] font-mono flex-1"
-                              />
-                              <span className="text-xs text-ctp-overlay0 w-32">
-                                ({Math.floor((pointsConfig.anyPercentThreshold ?? 3300) / 60)}m {(pointsConfig.anyPercentThreshold ?? 3300) % 60}s) - Default: 55:00
-                              </span>
-                            </div>
+                                }
+                                
+                                if (totalSeconds > 0) {
+                                  setPointsConfig({ ...pointsConfig, anyPercentThreshold: totalSeconds });
+                                }
+                              }}
+                              placeholder="HH:MM:SS"
+                              className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] font-mono"
+                            />
                             <p className="text-sm text-ctp-overlay0 mt-1">
-                              Only Any% runs under this time will receive points.
+                              Only Any% runs under this time will receive points. Default: 00:55:00 (55 minutes)
                             </p>
                           </div>
 
                           <div>
                             <Label htmlFor="nocutsNoshipsThreshold">Nocuts Noships Threshold Time</Label>
-                            <div className="flex items-center gap-4 mt-2">
-                              <Input
-                                id="nocutsNoshipsThreshold"
-                                type="text"
-                                value={(() => {
-                                  const seconds = pointsConfig.nocutsNoshipsThreshold ?? 1740;
-                                  const hours = Math.floor(seconds / 3600);
-                                  const minutes = Math.floor((seconds % 3600) / 60);
-                                  const secs = seconds % 60;
-                                  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-                                })()}
-                                onChange={(e) => {
-                                  const timeStr = e.target.value.trim();
-                                  const parts = timeStr.split(':').map(Number);
-                                  let totalSeconds = 1740;
-                                  if (parts.length === 3) {
-                                    totalSeconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
-                                  } else if (parts.length === 2) {
-                                    totalSeconds = parts[0] * 60 + parts[1];
-                                  } else if (parts.length === 1 && !isNaN(parts[0])) {
+                            <Input
+                              id="nocutsNoshipsThreshold"
+                              type="text"
+                              value={(() => {
+                                const seconds = pointsConfig.nocutsNoshipsThreshold ?? 1740;
+                                const hours = Math.floor(seconds / 3600);
+                                const minutes = Math.floor((seconds % 3600) / 60);
+                                const secs = seconds % 60;
+                                return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                              })()}
+                              onChange={(e) => {
+                                const timeStr = e.target.value.trim();
+                                // Parse HH:MM:SS format
+                                const parts = timeStr.split(':').map(Number);
+                                let totalSeconds = pointsConfig.nocutsNoshipsThreshold ?? 1740;
+                                
+                                if (parts.length === 3 && parts.every(p => !isNaN(p))) {
+                                  // HH:MM:SS format
+                                  totalSeconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+                                } else if (parts.length === 2 && parts.every(p => !isNaN(p))) {
+                                  // MM:SS format (treat as minutes:seconds)
+                                  totalSeconds = parts[0] * 60 + parts[1];
+                                } else if (parts.length === 1 && !isNaN(parts[0]) && parts[0] >= 0) {
+                                  // Just a number - treat as seconds if reasonable, or as minutes if large
+                                  if (parts[0] < 10000) {
                                     totalSeconds = parts[0];
+                                  } else {
+                                    // Assume it's minutes if > 10000
+                                    totalSeconds = parts[0] * 60;
                                   }
-                                  if (totalSeconds > 0) {
-                                    setPointsConfig({ ...pointsConfig, nocutsNoshipsThreshold: totalSeconds });
-                                  }
-                                }}
-                                placeholder="HH:MM:SS or MM:SS"
-                                className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] font-mono flex-1"
-                              />
-                              <span className="text-xs text-ctp-overlay0 w-32">
-                                ({Math.floor((pointsConfig.nocutsNoshipsThreshold ?? 1740) / 60)}m {(pointsConfig.nocutsNoshipsThreshold ?? 1740) % 60}s) - Default: 29:00
-                              </span>
-                            </div>
+                                }
+                                
+                                if (totalSeconds > 0) {
+                                  setPointsConfig({ ...pointsConfig, nocutsNoshipsThreshold: totalSeconds });
+                                }
+                              }}
+                              placeholder="HH:MM:SS"
+                              className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] font-mono"
+                            />
                             <p className="text-sm text-ctp-overlay0 mt-1">
-                              Only Nocuts Noships runs under this time will receive points.
+                              Only Nocuts Noships runs under this time will receive points. Default: 00:29:00 (29 minutes)
                             </p>
                           </div>
                         </div>
