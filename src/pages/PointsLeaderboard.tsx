@@ -119,7 +119,6 @@ const PointsLeaderboard = () => {
                               </span>
                             </div>
                             <div className="flex items-center gap-1.5 text-xs text-[hsl(222,15%,70%)]">
-                              <Trophy className="h-3.5 w-3.5" />
                               <span>{player.totalRuns || 0} verified run{player.totalRuns !== 1 ? 's' : ''}</span>
                             </div>
                           </div>
