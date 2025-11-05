@@ -52,7 +52,7 @@ const Downloads = () => {
               <Download className="h-12 w-12 text-[#cba6f7] relative z-10 animate-bounce-slow" />
             </div>
           </div>
-          <h1 className="text-5xl font-bold mb-4 flex items-center justify-center gap-3 text-ctp-green">
+          <h1 className="text-5xl font-bold mb-4 flex items-center justify-center gap-3 text-[#cba6f7]">
             Downloads & Resources
           </h1>
           <p className="text-[hsl(222,15%,60%)] max-w-2xl mx-auto text-lg leading-relaxed animate-fade-in-delay">

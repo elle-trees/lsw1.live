@@ -64,6 +64,12 @@ const Live = () => {
   return (
     <div className="min-h-screen bg-[#1e1e2e] text-[hsl(220,17%,92%)] py-8">
       <div className="max-w-7xl mx-auto px-4">
+        {/* Page Title */}
+        <div className="text-center mb-8 animate-fade-in">
+          <h1 className="text-3xl md:text-4xl font-bold text-[#f38ba8] mb-4">
+            Live
+          </h1>
+        </div>
         {/* Stream and Chat Container */}
         <div className={`grid grid-cols-1 lg:grid-cols-[1fr_280px] xl:grid-cols-[1fr_320px] gap-6 items-stretch transition-all duration-1000 delay-500 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           {/* Stream Player */}

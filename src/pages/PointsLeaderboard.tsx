@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { Trophy, TrendingUp, Sparkles, Zap } from "lucide-react";
+import { TrendingUp, Sparkles, Zap } from "lucide-react";
 import { Player } from "@/types/database";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { getPlayersByPoints } from "@/lib/db";
@@ -35,14 +35,9 @@ const PointsLeaderboard = () => {
     <div className="min-h-screen bg-[#1e1e2e] text-[hsl(220,17%,92%)] py-6">
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-8 animate-fade-in">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-[#FFD700] to-[#FFA500] shadow-lg">
-              <Trophy className="h-7 w-7 text-[hsl(240,21%,15%)]" />
-            </div>
-            <h1 className="text-3xl md:text-4xl font-bold text-[#fab387]">
-              Points Leaderboard
-            </h1>
-          </div>
+          <h1 className="text-3xl md:text-4xl font-bold text-[#fab387] mb-4">
+            Points Leaderboard
+          </h1>
           <p className="text-base text-[hsl(222,15%,70%)] max-w-3xl mx-auto">
             Top players ranked by their total points. Points are only awarded for <strong className="text-[#cba6f7]">GameCube</strong> runs in <strong className="text-[#cba6f7]">Any%</strong> and <strong className="text-[#cba6f7]">Nocuts Noships</strong> categories. Points are calculated exponentially for faster times, with special bonuses for exceptional milestone times!
           </p>

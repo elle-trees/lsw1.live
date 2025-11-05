@@ -1149,7 +1149,7 @@ const Admin = () => {
                 <ShieldAlert className="h-8 w-8 text-[hsl(240,21%,15%)]" />
               </div>
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-ctp-red">
+            <h1 className="text-4xl md:text-5xl font-bold text-[#f2cdcd]">
               Admin Panel
             </h1>
           </div>
@@ -1159,40 +1159,40 @@ const Admin = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-6 mb-6 bg-[hsl(240,21%,18%)] border border-[hsl(235,13%,30%)] rounded-lg p-1 shadow-lg">
+          <TabsList className="grid w-full grid-cols-6 mb-6 rounded-lg p-0.5 gap-1">
             <TabsTrigger 
               value="runs" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#cba6f7] data-[state=active]:to-[#b4a0e2] data-[state=active]:text-[hsl(240,21%,15%)] data-[state=active]:shadow-lg transition-all duration-300 rounded-md font-medium hover:bg-[hsl(240,21%,20%)]"
+              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 rounded-md font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-sm py-2 px-3"
             >
               Unverified Runs
             </TabsTrigger>
             <TabsTrigger 
               value="categories" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#cba6f7] data-[state=active]:to-[#b4a0e2] data-[state=active]:text-[hsl(240,21%,15%)] data-[state=active]:shadow-lg transition-all duration-300 rounded-md font-medium hover:bg-[hsl(240,21%,20%)]"
+              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 rounded-md font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-sm py-2 px-3"
             >
               Categories
             </TabsTrigger>
             <TabsTrigger 
               value="levels" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#cba6f7] data-[state=active]:to-[#b4a0e2] data-[state=active]:text-[hsl(240,21%,15%)] data-[state=active]:shadow-lg transition-all duration-300 rounded-md font-medium hover:bg-[hsl(240,21%,20%)]"
+              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 rounded-md font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-sm py-2 px-3"
             >
               Levels
             </TabsTrigger>
             <TabsTrigger 
               value="platforms" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#cba6f7] data-[state=active]:to-[#b4a0e2] data-[state=active]:text-[hsl(240,21%,15%)] data-[state=active]:shadow-lg transition-all duration-300 rounded-md font-medium hover:bg-[hsl(240,21%,20%)]"
+              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 rounded-md font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-sm py-2 px-3"
             >
               Platforms
             </TabsTrigger>
             <TabsTrigger 
               value="downloads" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#cba6f7] data-[state=active]:to-[#b4a0e2] data-[state=active]:text-[hsl(240,21%,15%)] data-[state=active]:shadow-lg transition-all duration-300 rounded-md font-medium hover:bg-[hsl(240,21%,20%)]"
+              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 rounded-md font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-sm py-2 px-3"
             >
               Downloads
             </TabsTrigger>
             <TabsTrigger 
               value="tools" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#cba6f7] data-[state=active]:to-[#b4a0e2] data-[state=active]:text-[hsl(240,21%,15%)] data-[state=active]:shadow-lg transition-all duration-300 rounded-md font-medium hover:bg-[hsl(240,21%,20%)]"
+              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 rounded-md font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-sm py-2 px-3"
             >
               Tools
             </TabsTrigger>

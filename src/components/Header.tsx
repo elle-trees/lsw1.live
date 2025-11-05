@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Upload, User, Settings, ShieldAlert, Download, Radio, Trophy, Github, Menu } from "lucide-react";
+import { Upload, User, Settings, ShieldAlert, Download, Radio, Trophy, Github, Menu, Plus } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import LegoStudIcon from "@/components/icons/LegoStudIcon";
 import { useAuth } from "@/components/AuthProvider";
@@ -40,54 +40,66 @@ export function Header() {
         onClick={() => setIsMobileMenuOpen(false)}
       >
         <Trophy className="h-4 w-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12" />
-        <span>Leaderboards</span>
-        <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#a6e3a1] via-ctp-green to-[#a6e3a1] transition-all duration-300 group-hover:w-full"></span>
+        <span className="relative">
+          Leaderboards
+          <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#a6e3a1] via-ctp-green to-[#a6e3a1] transition-all duration-300 group-hover:w-full"></span>
+        </span>
       </Link>
       <Link 
         to="/points" 
         className="text-[#fab387] hover:text-[#fab387] flex items-center gap-1 transition-all duration-300 relative group"
         onClick={() => setIsMobileMenuOpen(false)}
       >
-        <Trophy className="h-4 w-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12" />
-        <span>Points</span>
-        <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#fab387] via-ctp-pink to-[#fab387] transition-all duration-300 group-hover:w-full"></span>
+        <Plus className="h-4 w-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12" />
+        <span className="relative">
+          Points
+          <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#fab387] via-ctp-pink to-[#fab387] transition-all duration-300 group-hover:w-full"></span>
+        </span>
       </Link>
       <Link 
         to="/submit" 
-        className="text-ctp-pink hover:text-ctp-pink flex items-center gap-1 transition-all duration-300 relative group"
+        className="text-[#eba0ac] hover:text-[#eba0ac] flex items-center gap-1 transition-all duration-300 relative group"
         onClick={() => setIsMobileMenuOpen(false)}
       >
         <Upload className="h-4 w-4 transition-transform duration-300 group-hover:scale-110 group-hover:translate-y-[-2px]" />
-        <span>Submit Run</span>
-        <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-ctp-pink via-ctp-mauve to-ctp-pink transition-all duration-300 group-hover:w-full"></span>
+        <span className="relative">
+          Submit Run
+          <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#eba0ac] via-ctp-mauve to-[#eba0ac] transition-all duration-300 group-hover:w-full"></span>
+        </span>
       </Link>
       <Link 
         to="/live" 
-        className="text-ctp-blue hover:text-ctp-blue flex items-center gap-1 transition-all duration-300 relative group"
+        className="text-[#f38ba8] hover:text-[#f38ba8] flex items-center gap-1 transition-all duration-300 relative group"
         onClick={() => setIsMobileMenuOpen(false)}
       >
         <Radio className="h-4 w-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12" />
-        <span>Live</span>
-        <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-ctp-blue via-ctp-sapphire to-ctp-blue transition-all duration-300 group-hover:w-full"></span>
+        <span className="relative">
+          Live
+          <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#f38ba8] via-ctp-sapphire to-[#f38ba8] transition-all duration-300 group-hover:w-full"></span>
+        </span>
       </Link>
       <Link 
         to="/downloads" 
-        className="text-ctp-green hover:text-ctp-green flex items-center gap-1 transition-all duration-300 relative group"
+        className="text-[#cba6f7] hover:text-[#cba6f7] flex items-center gap-1 transition-all duration-300 relative group"
         onClick={() => setIsMobileMenuOpen(false)}
       >
         <Download className="h-4 w-4 transition-transform duration-300 group-hover:scale-110 group-hover:translate-y-[2px]" />
-        <span>Downloads</span>
-        <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-ctp-green via-ctp-sky to-ctp-green transition-all duration-300 group-hover:w-full"></span>
+        <span className="relative">
+          Downloads
+          <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#cba6f7] via-ctp-sky to-[#cba6f7] transition-all duration-300 group-hover:w-full"></span>
+        </span>
       </Link>
       {currentUser?.isAdmin && (
         <Link 
           to="/admin" 
-          className="text-ctp-red hover:text-ctp-red flex items-center gap-1 transition-all duration-300 relative group"
+          className="text-[#f2cdcd] hover:text-[#f2cdcd] flex items-center gap-1 transition-all duration-300 relative group"
           onClick={() => setIsMobileMenuOpen(false)}
         >
           <ShieldAlert className="h-4 w-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12" />
-          <span>Admin</span>
-          <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-ctp-red via-ctp-pink to-ctp-red transition-all duration-300 group-hover:w-full"></span>
+          <span className="relative">
+            Admin
+            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#f2cdcd] via-ctp-pink to-[#f2cdcd] transition-all duration-300 group-hover:w-full"></span>
+          </span>
         </Link>
       )}
     </>

@@ -149,21 +149,21 @@ const Leaderboards = () => {
           <TabsList className="grid w-full grid-cols-3 mb-6 rounded-lg p-0.5 gap-1">
             <TabsTrigger 
               value="regular" 
-              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 rounded-md font-medium hover:bg-ctp-surface1 text-sm py-2 px-3"
+              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 rounded-md font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-sm py-2 px-3"
             >
               <Trophy className="h-3.5 w-3.5 mr-1.5" />
               Full Game
             </TabsTrigger>
             <TabsTrigger 
               value="individual-level" 
-              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 rounded-md font-medium hover:bg-ctp-surface1 text-sm py-2 px-3"
+              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 rounded-md font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-sm py-2 px-3"
             >
               <Star className="h-3.5 w-3.5 mr-1.5" />
               Individual Levels
             </TabsTrigger>
             <TabsTrigger 
               value="community-golds" 
-              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 rounded-md font-medium hover:bg-ctp-surface1 text-sm py-2 px-3"
+              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 rounded-md font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-sm py-2 px-3"
             >
               <Gem className="h-3.5 w-3.5 mr-1.5" />
               Community Golds
@@ -180,7 +180,7 @@ const Leaderboards = () => {
                       <TabsTrigger 
                         key={category.id} 
                         value={category.id} 
-                        className="data-[state=active]:bg-[#94e2d5] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 rounded-md font-medium hover:bg-ctp-surface1 py-2 px-3 text-sm"
+                        className="data-[state=active]:bg-[#94e2d5] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 rounded-md font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#94e2d5]/50 py-2 px-3 text-sm"
                         style={{ animationDelay: `${index * 50}ms` }}
                       >
                         {category.name}

@@ -248,7 +248,7 @@ const SubmitRun = () => {
             <div className="p-2 rounded-xl bg-gradient-to-br from-ctp-mauve to-ctp-lavender shadow-lg">
               <Upload className="h-8 w-8 text-ctp-crust" />
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-ctp-mauve via-ctp-pink to-ctp-mauve bg-clip-text text-transparent">
+            <h1 className="text-4xl md:text-5xl font-bold text-[#eba0ac]">
               Submit Your Run
             </h1>
           </div>
@@ -426,7 +426,7 @@ const SubmitRun = () => {
                           <TabsTrigger 
                             key={category.id} 
                             value={category.id} 
-                            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-ctp-mauve data-[state=active]:to-ctp-lavender data-[state=active]:text-ctp-crust bg-ctp-surface0 text-ctp-text transition-all duration-300 rounded-md font-medium hover:bg-ctp-surface1 py-2 px-3 text-sm"
+                            className="data-[state=active]:bg-[#94e2d5] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 rounded-md font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#94e2d5]/50 py-2 px-3 text-sm"
                             style={{ animationDelay: `${index * 50}ms` }}
                           >
                             {category.name}
