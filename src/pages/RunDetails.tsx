@@ -16,6 +16,7 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { formatDate, calculatePoints, formatTime } from "@/lib/utils";
+import { getPointsConfig } from "@/lib/db";
 
 const RunDetails = () => {
   const { runId } = useParams<{ runId: string }>();
@@ -351,10 +352,53 @@ const RunDetails = () => {
   const platform = platforms.find((p) => p.id === run.platform);
   const runType = runTypes.find((rt) => rt.id === run.runType);
   
-  // Calculate points for display if not already set
-  const displayPoints = run.points || (run.verified && !run.isObsolete 
-    ? calculatePoints(run.time, category?.name || "Unknown", platform?.name)
-    : 0);
+  // Use stored points if available (they should be calculated with rank during recalculation)
+  // If points are not stored but we have rank, calculate with rank
+  // Otherwise, fall back to base calculation
+  const [displayPoints, setDisplayPoints] = useState<number | null>(null);
+  
+  useEffect(() => {
+    const calculateDisplayPoints = async () => {
+      if (run.points !== undefined && run.points !== null && run.points > 0) {
+        // Use stored points (should already include rank-based calculation)
+        setDisplayPoints(run.points);
+      } else if (run.verified && !run.isObsolete && run.rank) {
+        // Calculate with rank if available but points not stored
+        const config = await getPointsConfig();
+        const calculated = calculatePoints(
+          run.time,
+          category?.name || "Unknown",
+          platform?.name || "Unknown",
+          run.category,
+          run.platform,
+          config,
+          run.rank
+        );
+        setDisplayPoints(calculated);
+      } else if (run.verified && !run.isObsolete) {
+        // Fall back to base calculation without rank
+        const config = await getPointsConfig();
+        const calculated = calculatePoints(
+          run.time,
+          category?.name || "Unknown",
+          platform?.name || "Unknown",
+          run.category,
+          run.platform,
+          config
+        );
+        setDisplayPoints(calculated);
+      } else {
+        setDisplayPoints(0);
+      }
+    };
+    
+    if (run) {
+      calculateDisplayPoints();
+    }
+  }, [run?.points, run?.verified, run?.isObsolete, run?.rank, run?.time, run?.category, run?.platform, category?.name, platform?.name]);
+  
+  // Use stored points as fallback while calculating
+  const finalDisplayPoints = displayPoints !== null ? displayPoints : (run.points || 0);
 
   return (
     <div className="min-h-screen bg-[#1e1e2e] text-ctp-text py-8 overflow-x-hidden">
@@ -724,13 +768,13 @@ const RunDetails = () => {
                 )}
 
                 {/* Points */}
-                {run.verified && !run.isObsolete && displayPoints > 0 && (
+                {run.verified && !run.isObsolete && finalDisplayPoints > 0 && (
                   <div>
                     <div className="text-base text-muted-foreground mb-2 font-medium">Points Earned</div>
                     <div className="flex items-center gap-2 text-lg">
                       <Plus className="h-5 w-5 text-[#fab387]" />
                       <span className="font-bold text-[#fab387]">
-                        +{displayPoints.toLocaleString()}
+                        +{finalDisplayPoints.toLocaleString()}
                       </span>
                       <span className="text-muted-foreground text-sm">points</span>
                     </div>

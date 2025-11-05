@@ -129,24 +129,32 @@ export function calculatePoints(
   if (!enabled) return 0;
 
   // Rank #1 runs get 100 base points, all other runs use configured basePointsPerRun
+  // Ensure rank is a number for comparison
+  const numericRank = typeof rank === 'number' ? rank : (rank !== undefined ? Number(rank) : undefined);
+  
   let basePoints: number;
-  if (rank === 1) {
+  if (numericRank === 1) {
     basePoints = 100;
   } else {
     basePoints = config.basePointsPerRun ?? 10;
   }
   
+  // Debug: Log rank #1 runs
+  if (numericRank === 1) {
+    console.log(`[calculatePoints] Rank #1 run detected! basePoints=${basePoints}, top3Bonus=${config.top3BonusPoints?.rank1 || 0}`);
+  }
+  
   // Start with base points
   let points = basePoints;
 
-  // Add top 3 bonus if applicable
-  if (rank !== undefined && rank >= 1 && rank <= 3) {
+  // Add top 3 bonus if applicable (use numericRank for comparison)
+  if (numericRank !== undefined && numericRank >= 1 && numericRank <= 3) {
     const top3Bonus = config.top3BonusPoints || { rank1: 50, rank2: 30, rank3: 20 };
-    if (rank === 1 && top3Bonus.rank1) {
+    if (numericRank === 1 && top3Bonus.rank1) {
       points += top3Bonus.rank1;
-    } else if (rank === 2 && top3Bonus.rank2) {
+    } else if (numericRank === 2 && top3Bonus.rank2) {
       points += top3Bonus.rank2;
-    } else if (rank === 3 && top3Bonus.rank3) {
+    } else if (numericRank === 3 && top3Bonus.rank3) {
       points += top3Bonus.rank3;
     }
   }

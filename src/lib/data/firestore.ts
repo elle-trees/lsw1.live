@@ -1991,14 +1991,25 @@ export const getPlayersByPointsFirestore = async (limit: number = 100): Promise<
     // Get points config once for all calculations
     const pointsConfig = await getPointsConfigFirestore();
     console.log(`[getPlayersByPointsFirestore] Points config: enabled=${pointsConfig.enabled}, basePointsPerRun=${pointsConfig.basePointsPerRun}, top3Bonus=${JSON.stringify(pointsConfig.top3BonusPoints)}`);
+    
+    // If points are disabled, return empty array
+    if (!pointsConfig.enabled) {
+      console.log(`[getPlayersByPointsFirestore] Points system is disabled, returning empty array`);
+      return [];
+    }
 
     // Group runs by category + platform + runType to calculate ranks
     const runsByGroup = new Map<string, LeaderboardEntry[]>();
     
+    console.log(`[getPlayersByPointsFirestore] Processing ${runsSnapshot.docs.length} verified runs from initial query`);
+    
     for (const runDoc of runsSnapshot.docs) {
       const runData = runDoc.data() as LeaderboardEntry;
       
-      if (!runData.playerId) continue;
+      if (!runData.playerId) {
+        console.warn(`[getPlayersByPointsFirestore] Run ${runDoc.id} has no playerId, skipping`);
+        continue;
+      }
 
       // Group runs by leaderboardType + level + category + platform + runType
       const leaderboardType = runData.leaderboardType || 'regular';
@@ -2013,6 +2024,8 @@ export const getPlayersByPointsFirestore = async (limit: number = 100): Promise<
       }
       runsByGroup.get(groupKey)!.push(runData);
     }
+    
+    console.log(`[getPlayersByPointsFirestore] Grouped ${runsSnapshot.docs.length} runs into ${runsByGroup.size} groups`);
 
     // Calculate ranks for each group and assign points
     // For each group, we need to fetch all runs to calculate ranks properly
@@ -2078,19 +2091,45 @@ export const getPlayersByPointsFirestore = async (limit: number = 100): Promise<
       nonObsoleteRuns.forEach((runData, index) => {
         const rank = index + 1;
         rankMap.set(runData.id, rank);
+        // Debug: Log rank #1 runs when creating the map
+        if (rank === 1) {
+          console.log(`[getPlayersByPointsFirestore] Creating rankMap: Rank #1 = ${runData.id} (${runData.playerName}) - ${runData.time}`);
+        }
       });
+      console.log(`[getPlayersByPointsFirestore] Created rankMap with ${rankMap.size} entries for group ${groupKey}`);
       
       // Process all runs in this group (including obsolete) - obsolete runs get base points only
       const allGroupRuns = groupSnapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as LeaderboardEntry));
       
-      // Create a map of original runs by ID for quick lookup
-      const originalRunsMap = new Map(runs.map(r => [r.id, r]));
+      // Create a map of all group runs by ID for quick lookup
+      const allGroupRunsMap = new Map(allGroupRuns.map(r => [r.id, r]));
       
-      for (const runData of allGroupRuns) {
+      // Process all runs from the original group (runs from the initial query)
+      // This ensures we process every run that was in our initial query
+      for (const originalRun of runs) {
+        // Get the run data from the group query (which has the latest data)
+        // Use originalRun.id to look up, but prefer the run from group query if available
+        const runData = allGroupRunsMap.get(originalRun.id) || originalRun;
+        
         // Always recalculate points to ensure accuracy with current config and ranks
         // This ensures we use the latest points calculation logic
+        // Use runData.id to look up rank (should match the ID used in rankMap)
         const rank = runData.isObsolete ? undefined : rankMap.get(runData.id);
+        
+        // Debug: Log rank lookup for rank #1 runs
+        if (!runData.isObsolete && rank === 1) {
+          console.log(`[getPlayersByPointsFirestore] Rank #1 run found: ${runData.id} (${runData.playerName}) - ${runData.time} in ${groupKey}`);
+        } else if (!runData.isObsolete && rank === undefined) {
+          console.warn(`[getPlayersByPointsFirestore] Run ${runData.id} not found in rankMap. rankMap has ${rankMap.size} entries. Looking for ID: ${runData.id}`);
+          // Try to find if the run exists with a different ID structure
+          for (const [mapId, mapRank] of rankMap.entries()) {
+            if (mapRank === 1) {
+              console.log(`[getPlayersByPointsFirestore] Rank #1 entry in map: ${mapId}`);
+            }
+          }
+        }
+        
         const categoryName = categoryMap.get(runData.category) || "Unknown";
         const platformName = platformMap.get(runData.platform) || "Unknown";
         
@@ -2104,6 +2143,11 @@ export const getPlayersByPointsFirestore = async (limit: number = 100): Promise<
           rank
         );
         
+        // Debug: Log rank #1 runs and their calculated points
+        if (rank === 1) {
+          console.log(`[getPlayersByPointsFirestore] Rank #1 run ${runData.id} calculated points: ${points} (base: 100 + bonus: ${pointsConfig.top3BonusPoints?.rank1 || 0})`);
+        }
+        
         // Update the run with calculated points (async, don't wait)
         if (points > 0) {
           try {
@@ -2112,22 +2156,51 @@ export const getPlayersByPointsFirestore = async (limit: number = 100): Promise<
           } catch {}
         }
         
-        // Only add to runsWithPoints if this run is one of the runs we're processing
-        const originalRun = originalRunsMap.get(runData.id);
-        if (originalRun) {
-          // Use the run data from allGroupRuns (which has the latest points) but keep original run metadata
-          runsWithPoints.push({ 
-            run: { ...originalRun, points }, // Use original run but with updated points
-            points 
-          });
-        }
+        // Add all runs to runsWithPoints for aggregation
+        // Use the run data from allGroupRuns (which has the latest points) but keep original run metadata
+        runsWithPoints.push({ 
+          run: { ...originalRun, points }, // Keep original run metadata but with updated points
+          points 
+        });
       }
     }
 
     // Aggregate points by player
     console.log(`[getPlayersByPointsFirestore] Aggregating ${runsWithPoints.length} runs with points`);
     let zeroPointRuns = 0;
+    let totalPointsCalculated = 0;
+    
+    // Helper function to process a player's points
+    const processPlayerPoints = (playerId: string, playerName: string, points: number, runDate?: string) => {
+      if (!playerId || !playerName) return;
+      
+      const isUnlinked = playerId.startsWith("unlinked_");
+      const aggregationKey = isUnlinked 
+        ? `unlinked_${playerName.trim().toLowerCase()}`
+        : playerId;
+      
+      const existing = playerMap.get(aggregationKey);
+      if (existing) {
+        existing.totalPoints += points;
+        existing.totalRuns += 1;
+        if (runDate && (!existing.firstRunDate || runDate < existing.firstRunDate)) {
+          existing.firstRunDate = runDate;
+        }
+      } else {
+        playerMap.set(aggregationKey, {
+          playerId,
+          playerName,
+          totalPoints: points,
+          totalRuns: 1,
+          firstRunDate: runDate,
+          isUnlinked,
+        });
+      }
+    };
+    
     for (const { run: runData, points } of runsWithPoints) {
+      totalPointsCalculated += points || 0;
+      
       // Skip runs with 0 or invalid points
       if (!points || points <= 0) {
         zeroPointRuns++;
@@ -2137,45 +2210,39 @@ export const getPlayersByPointsFirestore = async (limit: number = 100): Promise<
         continue;
       }
       
-      // Determine aggregation key: use playerName for unlinked players, playerId for others
-      const isUnlinked = runData.playerId.startsWith("unlinked_");
-      const aggregationKey = isUnlinked 
-        ? `unlinked_${runData.playerName.trim().toLowerCase()}` // Group by name for unlinked
-        : runData.playerId; // Use playerId for real accounts
-
-      // Get or create player entry
-      const existing = playerMap.get(aggregationKey);
-      if (existing) {
-        existing.totalPoints += points;
-        existing.totalRuns += 1;
-        if (runData.date && (!existing.firstRunDate || runData.date < existing.firstRunDate)) {
-          existing.firstRunDate = runData.date;
+      // Process player1 (always gets points)
+      if (runData.playerId && runData.playerName) {
+        processPlayerPoints(runData.playerId, runData.playerName, points, runData.date);
+      }
+      
+      // Process player2 for co-op runs (also gets points)
+      if (runData.runType === 'co-op' && runData.player2Name) {
+        // For co-op runs, both players get the same points
+        // Try to find player2's ID by name
+        try {
+          const player2 = await getPlayerByDisplayNameFirestore(runData.player2Name);
+          if (player2) {
+            processPlayerPoints(player2.uid, runData.player2Name, points, runData.date);
+          } else {
+            // Player2 not found - treat as unlinked player
+            const unlinkedId = `unlinked_${runData.player2Name.trim().toLowerCase()}`;
+            processPlayerPoints(unlinkedId, runData.player2Name, points, runData.date);
+          }
+        } catch (error) {
+          // If lookup fails, treat as unlinked player
+          const unlinkedId = `unlinked_${runData.player2Name.trim().toLowerCase()}`;
+          processPlayerPoints(unlinkedId, runData.player2Name, points, runData.date);
         }
-        // Update playerId to use the first one encountered (for display purposes)
-        // This ensures we can still track which playerId was used
-        if (isUnlinked && !existing.playerId.startsWith("unlinked_")) {
-          // Keep existing playerId if it's from a real account
-        } else if (isUnlinked) {
-          // For unlinked players, use the first playerId encountered (doesn't matter which one)
-          existing.playerId = runData.playerId;
-        }
-      } else {
-        playerMap.set(aggregationKey, {
-          playerId: runData.playerId,
-          playerName: runData.playerName || "Unknown Player",
-          totalPoints: points,
-          totalRuns: 1,
-          firstRunDate: runData.date,
-          isUnlinked: isUnlinked,
-        });
       }
     }
 
     // Convert to Player array and fetch additional player data
     // Debug: Log aggregated player data before filtering
     const allPlayers = Array.from(playerMap.values());
+    console.log(`[getPlayersByPointsFirestore] Total points calculated across all runs: ${totalPointsCalculated}`);
+    console.log(`[getPlayersByPointsFirestore] Zero-point runs skipped: ${zeroPointRuns}`);
     console.log(`[getPlayersByPointsFirestore] Found ${allPlayers.length} players with aggregated points`);
-    allPlayers.slice(0, 5).forEach(p => {
+    allPlayers.slice(0, 10).forEach(p => {
       console.log(`[getPlayersByPointsFirestore] Player ${p.playerName}: ${p.totalPoints} points from ${p.totalRuns} runs`);
     });
     
@@ -2412,6 +2479,10 @@ export const backfillPointsForAllRunsFirestore = async (): Promise<{
         nonObsoleteRuns.forEach((runData, index) => {
           const rank = index + 1;
           rankMap.set(runData.id, rank);
+          // Debug: Log rank #1 runs
+          if (rank === 1) {
+            console.log(`[backfillPointsForAllRunsFirestore] Rank #1 run: ${runData.id} (${runData.playerName}) - ${runData.time} in ${groupKey}`);
+          }
         });
         
         // Process all runs in this group (including obsolete) - obsolete runs get base points only
@@ -2420,6 +2491,11 @@ export const backfillPointsForAllRunsFirestore = async (): Promise<{
             const rank = runData.isObsolete ? undefined : rankMap.get(runData.id);
             const categoryName = categoryMap.get(runData.category) || "Unknown";
             const platformName = platformMap.get(runData.platform) || "Unknown";
+            
+            // Debug: Log if rank #1 run is not found in rankMap
+            if (!runData.isObsolete && rank === undefined) {
+              console.warn(`[backfillPointsForAllRunsFirestore] Run ${runData.id} not found in rankMap for group ${groupKey}`);
+            }
             
             const points = calculatePoints(
               runData.time, 
@@ -2430,6 +2506,11 @@ export const backfillPointsForAllRunsFirestore = async (): Promise<{
               pointsConfig,
               rank
             );
+            
+            // Debug: Log rank #1 runs and their calculated points
+            if (rank === 1) {
+              console.log(`[backfillPointsForAllRunsFirestore] Rank #1 run ${runData.id} calculated points: ${points} (base: 100 + bonus: ${pointsConfig.top3BonusPoints?.rank1 || 0})`);
+            }
             
             runsToUpdate.push({
               id: runData.id,

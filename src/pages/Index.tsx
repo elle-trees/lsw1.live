@@ -114,7 +114,7 @@ const Index = () => {
                   {statsLoading ? (
                     <Skeleton className="h-12 w-40 mb-2" />
                   ) : (
-                    <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-ctp-text font-mono transition-all duration-300 truncate">
+                    <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-ctp-text transition-all duration-300 truncate">
                       {totalTime}
                     </div>
                   )}
