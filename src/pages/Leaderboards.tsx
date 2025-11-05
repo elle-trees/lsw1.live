@@ -101,7 +101,7 @@ const Leaderboards = () => {
   }, [selectedCategory, selectedPlatform, selectedRunType, selectedLevel, showObsoleteRuns, leaderboardType]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[hsl(240,21%,15%)] to-[hsl(235,19%,13%)] text-[hsl(220,17%,92%)] py-6">
+    <div className="min-h-screen bg-gradient-to-b from-ctp-base to-ctp-mantle text-ctp-text py-6">
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-8 animate-fade-in">
           <h1 className="text-3xl md:text-4xl font-bold text-ctp-yellow mb-4">

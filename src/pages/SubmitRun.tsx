@@ -241,33 +241,33 @@ const SubmitRun = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[hsl(240,21%,15%)] to-[hsl(235,19%,13%)] text-[hsl(220,17%,92%)] py-6">
+    <div className="min-h-screen bg-gradient-to-b from-ctp-base to-ctp-mantle text-ctp-text py-6">
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-6 animate-fade-in">
           <div className="flex items-center justify-center gap-3 mb-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-[#cba6f7] to-[#b4a0e2] shadow-lg">
-              <Upload className="h-8 w-8 text-[hsl(240,21%,15%)]" />
+            <div className="p-2 rounded-xl bg-gradient-to-br from-ctp-mauve to-ctp-lavender shadow-lg">
+              <Upload className="h-8 w-8 text-ctp-crust" />
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-[#cba6f7] via-[#f5c2e7] to-[#cba6f7] bg-clip-text text-transparent">
+            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-ctp-mauve via-ctp-pink to-ctp-mauve bg-clip-text text-transparent">
               Submit Your Run
             </h1>
           </div>
-          <p className="text-lg text-[hsl(222,15%,70%)] max-w-3xl mx-auto">
+          <p className="text-lg text-ctp-subtext1 max-w-3xl mx-auto">
             Share your PB with the community. Make sure to follow our submission guidelines!
           </p>
         </div>
 
         {!currentUser ? (
-          <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl max-w-2xl mx-auto">
+          <Card className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl max-w-2xl mx-auto">
             <CardContent className="p-12 text-center">
               <div className="mb-6">
-                <Sparkles className="h-16 w-16 mx-auto mb-4 text-[hsl(222,15%,60%)] opacity-50" />
-                <h2 className="text-3xl font-bold mb-4">Authentication Required</h2>
-                <p className="text-lg text-[hsl(222,15%,70%)] mb-8">
+                <Sparkles className="h-16 w-16 mx-auto mb-4 text-ctp-subtext1 opacity-50" />
+                <h2 className="text-3xl font-bold mb-4 text-ctp-text">Authentication Required</h2>
+                <p className="text-lg text-ctp-subtext1 mb-8">
                   Please log in to submit your run to the leaderboard.
                 </p>
               </div>
-              <Button className="bg-gradient-to-r from-[#cba6f7] to-[#b4a0e2] hover:from-[#b4a0e2] hover:to-[#cba6f7] text-[hsl(240,21%,15%)] font-bold px-8 py-6 text-lg transition-all duration-300 hover:scale-105 hover:shadow-lg">
+              <Button className="bg-gradient-to-r from-ctp-mauve to-ctp-lavender hover:from-ctp-lavender hover:to-ctp-mauve text-ctp-crust font-bold px-8 py-6 text-lg transition-all duration-300 hover:scale-105 hover:shadow-lg">
                 Log In to Submit
               </Button>
             </CardContent>
