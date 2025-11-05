@@ -42,7 +42,7 @@ const PointsLeaderboard = () => {
             </h1>
           </div>
           <p className="text-base text-ctp-subtext1 max-w-3xl mx-auto animate-fade-in-delay">
-            Top players ranked by their total points. Points are only awarded for <strong className="text-[#cba6f7]">GameCube</strong> runs in <strong className="text-[#cba6f7]">Any%</strong> and <strong className="text-[#cba6f7]">Nocuts Noships</strong> categories. Points are calculated exponentially for faster times, with special bonuses for exceptional milestone times!
+            Top players ranked by their total points. Points are only awarded for GameCube runs in Any% and Nocuts Noships. Points are calculated exponentially for faster times, with special bonuses for exceptional milestone times!
           </p>
         </div>
 
@@ -105,7 +105,7 @@ const PointsLeaderboard = () => {
                             ) : rank === 3 ? (
                               <LegoStudIcon size={40} color="#C0C0C0" />
                             ) : (
-                              <span className="font-bold text-base text-[hsl(220,17%,92%)] w-10 h-10 flex items-center justify-center">
+                              <span className="font-bold text-base text-ctp-text w-10 h-10 flex items-center justify-center">
                                 #{rank}
                               </span>
                             )}
@@ -121,7 +121,7 @@ const PointsLeaderboard = () => {
                                 {displayName}
                               </span>
                             </div>
-                            <div className="flex items-center gap-1.5 text-xs text-[hsl(222,15%,70%)]">
+                            <div className="flex items-center gap-1.5 text-xs text-ctp-subtext1">
                               <span>{player.totalRuns || 0} verified run{player.totalRuns !== 1 ? 's' : ''}</span>
                             </div>
                           </div>
@@ -134,7 +134,7 @@ const PointsLeaderboard = () => {
                                 {formatPoints(points)}
                               </div>
                             </div>
-                            <div className="text-xs text-[hsl(222,15%,60%)] uppercase tracking-wider">points</div>
+                            <div className="text-xs text-ctp-overlay0 uppercase tracking-wider">points</div>
                           </div>
                         </div>
                       </div>

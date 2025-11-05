@@ -5,7 +5,7 @@ import { Home, AlertCircle } from "lucide-react";
 
 const NotFound = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#1e1e2e] text-[hsl(220,17%,92%)] py-8 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[#1e1e2e] text-ctp-text py-8 px-4">
       <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-2xl max-w-lg w-full">
         <CardHeader className="text-center pb-6">
           <div className="flex items-center justify-center mb-4">
@@ -17,8 +17,8 @@ const NotFound = () => {
           <CardTitle className="text-7xl font-bold mb-2 bg-gradient-to-r from-[#cba6f7] via-[#f5c2e7] to-[#cba6f7] bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]">
             404
           </CardTitle>
-          <h2 className="text-3xl font-bold text-[hsl(220,17%,92%)] mb-2">Page Not Found</h2>
-          <p className="text-lg text-[hsl(222,15%,60%)]">
+          <h2 className="text-3xl font-bold text-ctp-text mb-2">Page Not Found</h2>
+          <p className="text-lg text-ctp-overlay0">
             The page you're looking for has been lost in the void. Let's get you back on track!
           </p>
         </CardHeader>

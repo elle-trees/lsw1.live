@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Settings, User, Mail, Lock, Palette, Trophy, CheckCircle, Upload, X } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
@@ -30,6 +31,8 @@ const UserSettings = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [nameColor, setNameColor] = useState("#cba6f7"); // Default color
   const [profilePicture, setProfilePicture] = useState<string>("");
+  const [bio, setBio] = useState("");
+  const [pronouns, setPronouns] = useState("");
   const [pageLoading, setPageLoading] = useState(true);
   const [unclaimedRuns, setUnclaimedRuns] = useState<LeaderboardEntry[]>([]);
   const [loadingUnclaimed, setLoadingUnclaimed] = useState(false);
@@ -56,6 +59,8 @@ const UserSettings = () => {
             setEmail(player.email || currentUser.email || "");
             setNameColor(player.nameColor || "#cba6f7");
             setProfilePicture(player.profilePicture || "");
+            setBio(player.bio || "");
+            setPronouns(player.pronouns || "");
             // Check for unclaimed runs after loading player data
             if (player.displayName) {
               fetchUnclaimedRuns(player.displayName);
@@ -65,6 +70,8 @@ const UserSettings = () => {
             setDisplayName(currentUser.displayName || "");
             setEmail(currentUser.email || "");
             setProfilePicture("");
+            setBio("");
+            setPronouns("");
             // Still check for unclaimed runs using displayName
             if (currentUser.displayName) {
               fetchUnclaimedRuns(currentUser.displayName);
@@ -134,7 +141,9 @@ const UserSettings = () => {
         displayName: newDisplayName, 
         nameColor,
         email: currentUser.email || email || "",
-        profilePicture: profilePicture || undefined
+        profilePicture: profilePicture || undefined,
+        bio: bio || undefined,
+        pronouns: pronouns || undefined
       });
 
       if (!success) {
@@ -149,6 +158,8 @@ const UserSettings = () => {
         setDisplayName(player.displayName || newDisplayName);
         setNameColor(player.nameColor || nameColor);
         setProfilePicture(player.profilePicture || "");
+        setBio(player.bio || "");
+        setPronouns(player.pronouns || "");
       } else {
         // Fallback to the new display name if player fetch fails
         setDisplayName(newDisplayName);
@@ -314,14 +325,14 @@ const UserSettings = () => {
 
   if (authLoading || pageLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[hsl(240,21%,15%)] to-[hsl(235,19%,13%)] text-[hsl(220,17%,92%)] flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-[hsl(240,21%,15%)] to-[hsl(235,19%,13%)] text-ctp-text flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#cba6f7]"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#1e1e2e] text-[hsl(220,17%,92%)] py-8">
+    <div className="min-h-screen bg-[#1e1e2e] text-ctp-text py-8">
       <div className="max-w-3xl mx-auto px-4">
         <div className="text-center mb-10">
           <h1 className="text-4xl font-bold mb-4 flex items-center justify-center gap-2">
@@ -430,7 +441,7 @@ const UserSettings = () => {
                     )}
                   </div>
                 </div>
-                <p className="text-sm text-[hsl(222,15%,60%)] mt-1">
+                <p className="text-sm text-ctp-overlay0 mt-1">
                   Upload a profile picture (max 4MB). Click "Save Profile" to apply changes.
                 </p>
               </div>
@@ -445,7 +456,7 @@ const UserSettings = () => {
                   className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
                   required
                 />
-                <p className="text-sm text-[hsl(222,15%,60%)] mt-1">
+                <p className="text-sm text-ctp-overlay0 mt-1">
                   Choose a display name that will be displayed on leaderboards and your profile.
                 </p>
               </div>
@@ -468,8 +479,37 @@ const UserSettings = () => {
                     className="flex-grow bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
                   />
                 </div>
-                <p className="text-sm text-[hsl(222,15%,60%)] mt-1">
+                <p className="text-sm text-ctp-overlay0 mt-1">
                   This color will be used for your name on leaderboards.
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="pronouns">Pronouns</Label>
+                <Input
+                  id="pronouns"
+                  type="text"
+                  value={pronouns}
+                  onChange={(e) => setPronouns(e.target.value)}
+                  placeholder="e.g., they/them, he/him, she/her"
+                  className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
+                  maxLength={50}
+                />
+                <p className="text-sm text-ctp-overlay0 mt-1">
+                  Your pronouns will be displayed next to your name on your profile.
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="bio">Bio</Label>
+                <Textarea
+                  id="bio"
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="Tell us about yourself..."
+                  className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] min-h-[100px]"
+                  maxLength={500}
+                />
+                <p className="text-sm text-ctp-overlay0 mt-1">
+                  {bio.length}/500 characters. Your bio will be displayed on your profile.
                 </p>
               </div>
               <Button type="submit" className="bg-[#cba6f7] hover:bg-[#b4a0e2] text-[hsl(240,21%,15%)] font-bold">

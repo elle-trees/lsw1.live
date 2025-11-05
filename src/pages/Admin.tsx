@@ -1139,7 +1139,7 @@ const Admin = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#1e1e2e] text-[hsl(220,17%,92%)] py-6">
+    <div className="min-h-screen bg-[#1e1e2e] text-ctp-text py-6">
       <div className="max-w-7xl mx-auto px-4">
         <div className="text-center mb-8 animate-fade-in">
           <div className="flex items-center justify-center gap-2 mb-4">
@@ -1208,11 +1208,11 @@ const Admin = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-6">
-                <p className="text-sm text-[hsl(222,15%,70%)] leading-relaxed mb-4">
+                <p className="text-sm text-ctp-subtext1 leading-relaxed mb-4">
                   Recalculate and update points for all verified runs using the current points formula. This will also recalculate all players' total points based on their verified runs. Obsolete runs will be excluded.
                 </p>
                 {backfillingPoints && (
-                  <p className="text-xs text-[hsl(222,15%,60%)] mb-4 italic flex items-center gap-2">
+                  <p className="text-xs text-ctp-overlay0 mb-4 italic flex items-center gap-2">
                     <span className="animate-pulse">●</span>
                     This may take a while depending on the number of runs...
                   </p>

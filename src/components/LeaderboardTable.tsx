@@ -16,8 +16,8 @@ export function LeaderboardTable({ data, platforms = [], categories = [] }: Lead
   if (data.length === 0) {
     return (
       <div className="text-center py-12">
-        <Trophy className="h-12 w-12 mx-auto mb-3 text-[hsl(222,15%,60%)] opacity-50" />
-        <p className="text-base text-[hsl(222,15%,60%)]">No runs found for these filters</p>
+        <Trophy className="h-12 w-12 mx-auto mb-3 text-ctp-overlay0 opacity-50" />
+        <p className="text-base text-ctp-overlay0">No runs found for these filters</p>
       </div>
     );
   }
@@ -27,13 +27,13 @@ export function LeaderboardTable({ data, platforms = [], categories = [] }: Lead
       <Table>
         <TableHeader>
           <TableRow className="border-b-2 border-[hsl(235,13%,30%)] hover:bg-transparent">
-            <TableHead className="py-3 px-4 text-left text-base font-semibold text-[hsl(220,17%,92%)]">Rank</TableHead>
-            <TableHead className="py-3 px-4 text-left text-base font-semibold text-[hsl(220,17%,92%)] min-w-[280px] w-[20%]">Player</TableHead>
-            <TableHead className="py-3 px-4 text-left text-base font-semibold text-[hsl(220,17%,92%)]">Time</TableHead>
-            <TableHead className="py-3 px-4 text-left text-base font-semibold text-[hsl(220,17%,92%)]">Date</TableHead>
-            <TableHead className="py-3 px-4 text-left text-base font-semibold text-[hsl(220,17%,92%)]">Platform</TableHead>
-            <TableHead className="py-3 px-4 text-left text-base font-semibold text-[hsl(220,17%,92%)]">Type</TableHead>
-            <TableHead className="py-3 px-4 text-left text-base font-semibold text-[hsl(220,17%,92%)]">Video</TableHead>
+            <TableHead className="py-3 px-4 text-left text-base font-semibold text-ctp-text">Rank</TableHead>
+            <TableHead className="py-3 px-4 text-left text-base font-semibold text-ctp-text min-w-[280px] w-[20%]">Player</TableHead>
+            <TableHead className="py-3 px-4 text-left text-base font-semibold text-ctp-text">Time</TableHead>
+            <TableHead className="py-3 px-4 text-left text-base font-semibold text-ctp-text">Date</TableHead>
+            <TableHead className="py-3 px-4 text-left text-base font-semibold text-ctp-text">Platform</TableHead>
+            <TableHead className="py-3 px-4 text-left text-base font-semibold text-ctp-text">Type</TableHead>
+            <TableHead className="py-3 px-4 text-left text-base font-semibold text-ctp-text">Video</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -56,7 +56,7 @@ export function LeaderboardTable({ data, platforms = [], categories = [] }: Lead
                     ) : entry.rank === 3 ? (
                       <LegoStudIcon size={36} color="#C0C0C0" />
                     ) : (
-                      <span className="font-bold text-base text-[hsl(220,17%,92%)] w-9 h-9 flex items-center justify-center">
+                      <span className="font-bold text-base text-ctp-text w-9 h-9 flex items-center justify-center">
                         #{entry.rank}
                       </span>
                     )}
@@ -80,7 +80,7 @@ export function LeaderboardTable({ data, platforms = [], categories = [] }: Lead
                 </Link>
                 {entry.player2Name && (
                   <>
-                      <span className="text-[hsl(222,15%,60%)] text-sm"> & </span>
+                      <span className="text-ctp-overlay0 text-sm"> & </span>
                     <span 
                         className="font-semibold text-base whitespace-nowrap"
                       style={{ color: entry.player2Color || '#cba6f7' }}
@@ -100,20 +100,20 @@ export function LeaderboardTable({ data, platforms = [], categories = [] }: Lead
               </TableCell>
               <TableCell className="py-3 px-4">
                 <Link to={`/run/${entry.id}`} className="hover:text-[#cba6f7] transition-colors flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5 text-[hsl(222,15%,60%)]" />
-                  <span className="text-sm text-[hsl(222,15%,70%)]">{entry.date}</span>
+                  <Clock className="h-3.5 w-3.5 text-ctp-overlay0" />
+                  <span className="text-sm text-ctp-subtext1">{entry.date}</span>
                 </Link>
               </TableCell>
               <TableCell className="py-3 px-4">
                 <Link to={`/run/${entry.id}`} className="block">
-                  <Badge variant="outline" className="border-[hsl(235,13%,30%)] bg-[hsl(240,21%,18%)] text-[hsl(220,17%,92%)] text-sm px-2 py-1">
+                  <Badge variant="outline" className="border-ctp-surface1 bg-ctp-surface0 text-ctp-text text-sm px-2 py-1">
                     {platformName}
                   </Badge>
                 </Link>
               </TableCell>
               <TableCell className="py-3 px-4">
                 <Link to={`/run/${entry.id}`} className="block">
-                  <Badge variant="outline" className="border-[hsl(235,13%,30%)] bg-[hsl(240,21%,18%)] text-[hsl(220,17%,92%)] flex items-center gap-1.5 w-fit text-sm px-2 py-1">
+                  <Badge variant="outline" className="border-ctp-surface1 bg-ctp-surface0 text-ctp-text flex items-center gap-1.5 w-fit text-sm px-2 py-1">
                     {entry.runType === 'solo' ? <User className="h-3.5 w-3.5" /> : <Users className="h-3.5 w-3.5" />}
                     {entry.runType.charAt(0).toUpperCase() + entry.runType.slice(1)}
                   </Badge>

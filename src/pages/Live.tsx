@@ -62,7 +62,7 @@ const Live = () => {
   }, [channel]);
 
   return (
-    <div className="min-h-screen bg-[#1e1e2e] text-[hsl(220,17%,92%)] py-8">
+    <div className="min-h-screen bg-[#1e1e2e] text-ctp-text py-8">
       <div className="max-w-7xl mx-auto px-4">
         {/* Page Title */}
         <div className="text-center mb-8 animate-fade-in">
@@ -130,7 +130,7 @@ const Live = () => {
           <div className="lg:hidden w-full">
             <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
               <CardContent className="p-6 text-center">
-                <p className="text-[hsl(222,15%,70%)]">
+                <p className="text-ctp-subtext1">
                   Chat is available on larger screens. View the stream on desktop to see the chat!
                 </p>
               </CardContent>

@@ -35,6 +35,8 @@ export interface Player {
   isAdmin?: boolean; // New field to identify admin users
   totalPoints?: number; // Total points accumulated from all verified runs
   profilePicture?: string; // URL to the player's profile picture
+  bio?: string; // Bio/description for the player
+  pronouns?: string; // Pronouns for the player
 }
 
 export interface Category {

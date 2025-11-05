@@ -334,7 +334,7 @@ const RunDetails = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#1e1e2e] text-[hsl(220,17%,92%)] py-8">
+      <div className="min-h-screen bg-[#1e1e2e] text-ctp-text py-8">
         <div className="max-w-6xl mx-auto px-4">
           <LoadingSpinner />
         </div>
@@ -356,12 +356,12 @@ const RunDetails = () => {
     : 0);
 
   return (
-    <div className="min-h-screen bg-[#1e1e2e] text-[hsl(220,17%,92%)] py-8">
+    <div className="min-h-screen bg-[#1e1e2e] text-ctp-text py-8">
       <div className="max-w-[120rem] mx-auto px-4" id="page-container">
         <Button
           variant="ghost"
           onClick={() => navigate("/leaderboards")}
-          className="mb-6 text-[hsl(222,15%,60%)] hover:text-[hsl(220,17%,92%)]"
+          className="mb-6 text-ctp-overlay0 hover:text-ctp-text"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Leaderboards

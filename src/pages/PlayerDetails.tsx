@@ -98,7 +98,7 @@ const PlayerDetails = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#1e1e2e] text-[hsl(220,17%,92%)] py-8">
+    <div className="min-h-screen bg-[#1e1e2e] text-ctp-text py-8">
       <div className="max-w-6xl mx-auto px-4">
         <div className="mb-6">
           <Button variant="outline" className="text-[hsl(220,17%,92%)] border-[hsl(235,13%,30%)] hover:bg-[hsl(234,14%,29%)]" asChild>
@@ -113,7 +113,7 @@ const PlayerDetails = () => {
           <h1 className="text-4xl font-bold mb-2">
             <span style={{ color: player.nameColor || 'inherit' }}>{player.displayName}</span>'s Profile
           </h1>
-          <p className="text-[hsl(222,15%,60%)]">View all runs and achievements</p>
+          <p className="text-ctp-overlay0">View all runs and achievements</p>
         </div>
 
         <PlayerProfile 
@@ -127,6 +127,8 @@ const PlayerDetails = () => {
           }} 
           nameColor={player.nameColor}
           profilePicture={player.profilePicture}
+          bio={player.bio}
+          pronouns={player.pronouns}
         />
 
         {/* Pending Submissions Panel - Only show for own profile */}
@@ -140,7 +142,7 @@ const PlayerDetails = () => {
             </CardHeader>
             <CardContent>
               {pendingRuns.length === 0 ? (
-                <p className="text-[hsl(222,15%,60%)] text-center py-4">No pending submissions</p>
+                <p className="text-ctp-overlay0 text-center py-4">No pending submissions</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full">
@@ -166,7 +168,7 @@ const PlayerDetails = () => {
                           >
                             <td className="py-3 px-4 font-medium">{categoryName}</td>
                             <td className="py-3 px-4 font-mono">{formatTime(run.time)}</td>
-                            <td className="py-3 px-4 text-[hsl(222,15%,60%)]">{formatDate(run.date)}</td>
+                            <td className="py-3 px-4 text-ctp-overlay0">{formatDate(run.date)}</td>
                             <td className="py-3 px-4">
                               <Badge variant="outline" className="border-[hsl(235,13%,30%)]">
                                 {platformName}
@@ -198,7 +200,7 @@ const PlayerDetails = () => {
           </CardHeader>
           <CardContent>
             {playerRuns.length === 0 ? (
-              <p className="text-[hsl(222,15%,60%)] text-center py-4">No runs submitted yet</p>
+              <p className="text-ctp-overlay0 text-center py-4">No runs submitted yet</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -232,12 +234,12 @@ const PlayerDetails = () => {
                                 #{run.rank}
                               </Badge>
                             ) : (
-                              <span className="text-[hsl(222,15%,60%)]">—</span>
+                              <span className="text-ctp-overlay0">—</span>
                             )}
                           </td>
                           <td className="py-3 px-4 font-medium">{categoryName}</td>
                           <td className="py-3 px-4 text-base font-semibold">{formatTime(run.time)}</td>
-                          <td className="py-3 px-4 text-[hsl(222,15%,60%)]">{formatDate(run.date)}</td>
+                          <td className="py-3 px-4 text-ctp-overlay0">{formatDate(run.date)}</td>
                           <td className="py-3 px-4">
                             <Badge variant="outline" className="border-[hsl(235,13%,30%)]">
                               {platformName}
