@@ -128,8 +128,13 @@ export function calculatePoints(
   const enabled = config.enabled !== false; // Default to true if not specified
   if (!enabled) return 0;
 
-  // Base points for all runs
-  const basePoints = config.basePointsPerRun ?? 10;
+  // Rank #1 runs get 100 base points, all other runs use configured basePointsPerRun
+  let basePoints: number;
+  if (rank === 1) {
+    basePoints = 100;
+  } else {
+    basePoints = config.basePointsPerRun ?? 10;
+  }
   
   // Start with base points
   let points = basePoints;

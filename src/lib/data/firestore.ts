@@ -1112,20 +1112,26 @@ export const recalculatePlayerPointsFirestore = async (playerId: string): Promis
     
     // Calculate points with ranks
     for (const { run: runData, rank } of allRunsWithRanks) {
-      const categoryName = categoryMap.get(runData.category) || "Unknown";
-      const platformName = platformMap.get(runData.platform) || "Unknown";
+      // Use stored points if available, otherwise recalculate
+      let points = runData.points;
       
-      // Calculate points using the new system with rank
-      const points = calculatePoints(
-        runData.time, 
-        categoryName, 
-        platformName,
-        runData.category,
-        runData.platform,
-        pointsConfig,
-        rank
-      );
-      runsToUpdate.push({ id: runData.id, points });
+      if (points === undefined || points === null) {
+        // Recalculate if points not stored
+        const categoryName = categoryMap.get(runData.category) || "Unknown";
+        const platformName = platformMap.get(runData.platform) || "Unknown";
+        
+        points = calculatePoints(
+          runData.time, 
+          categoryName, 
+          platformName,
+          runData.category,
+          runData.platform,
+          pointsConfig,
+          rank
+        );
+        runsToUpdate.push({ id: runData.id, points });
+      }
+      
       totalPoints += points;
     }
     
@@ -1977,32 +1983,45 @@ export const getPlayersByPointsFirestore = async (limit: number = 100): Promise<
       const allGroupRuns = groupSnapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as LeaderboardEntry));
       
+      // Create a map of original runs by ID for quick lookup
+      const originalRunsMap = new Map(runs.map(r => [r.id, r]));
+      
       for (const runData of allGroupRuns) {
-        const rank = runData.isObsolete ? undefined : rankMap.get(runData.id);
-        const categoryName = categoryMap.get(runData.category) || "Unknown";
-        const platformName = platformMap.get(runData.platform) || "Unknown";
+        // Use stored points if available, otherwise recalculate
+        let points = runData.points;
         
-        const points = calculatePoints(
-          runData.time, 
-          categoryName, 
-          platformName,
-          runData.category,
-          runData.platform,
-          pointsConfig,
-          rank
-        );
-        
-        // Only add to runsWithPoints if this run is one of the runs we're processing
-        const isInOriginalRuns = runs.some(r => r.id === runData.id);
-        if (isInOriginalRuns) {
-          runsWithPoints.push({ run: runData, points });
+        if (points === undefined || points === null) {
+          // Recalculate if points not stored
+          const rank = runData.isObsolete ? undefined : rankMap.get(runData.id);
+          const categoryName = categoryMap.get(runData.category) || "Unknown";
+          const platformName = platformMap.get(runData.platform) || "Unknown";
+          
+          points = calculatePoints(
+            runData.time, 
+            categoryName, 
+            platformName,
+            runData.category,
+            runData.platform,
+            pointsConfig,
+            rank
+          );
+          
+          // Update the run with calculated points (async, don't wait)
+          try {
+            const runDocRef = doc(db, "leaderboardEntries", runData.id);
+            updateDoc(runDocRef, { points }).catch(() => {}); // Fire and forget
+          } catch {}
         }
         
-        // Update the run with recalculated points (async, don't wait)
-        try {
-          const runDocRef = doc(db, "leaderboardEntries", runData.id);
-          updateDoc(runDocRef, { points }).catch(() => {}); // Fire and forget
-        } catch {}
+        // Only add to runsWithPoints if this run is one of the runs we're processing
+        const originalRun = originalRunsMap.get(runData.id);
+        if (originalRun) {
+          // Use the run data from allGroupRuns (which has the latest points) but keep original run metadata
+          runsWithPoints.push({ 
+            run: { ...originalRun, points }, // Use original run but with updated points
+            points 
+          });
+        }
       }
     }
 
@@ -2324,6 +2343,10 @@ export const backfillPointsForAllRunsFirestore = async (): Promise<{
       );
     }
 
+    // Wait a moment for Firestore to propagate the run updates
+    // This helps ensure consistency when recalculating player totals
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
     // Recalculate total points for each player from all their verified runs
     // This ensures accuracy even if we missed some runs due to pagination
     const playerIdsArray = Array.from(playerIdsSet);
