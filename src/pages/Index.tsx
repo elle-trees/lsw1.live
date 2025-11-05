@@ -55,7 +55,7 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-ctp-base to-ctp-mantle text-ctp-text">
+    <div className="min-h-screen bg-[#1e1e2e] text-ctp-text">
       <div className="py-20 px-4 animate-fade-in">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8 lg:gap-6">

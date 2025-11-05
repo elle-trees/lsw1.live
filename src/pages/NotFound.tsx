@@ -5,7 +5,7 @@ import { Home, AlertCircle } from "lucide-react";
 
 const NotFound = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[hsl(240,21%,15%)] to-[hsl(235,19%,13%)] text-[hsl(220,17%,92%)] py-8 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[#1e1e2e] text-[hsl(220,17%,92%)] py-8 px-4">
       <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-2xl max-w-lg w-full">
         <CardHeader className="text-center pb-6">
           <div className="flex items-center justify-center mb-4">

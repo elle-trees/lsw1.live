@@ -133,7 +133,7 @@ const Leaderboards = () => {
   }, [selectedCategory, selectedPlatform, selectedRunType, selectedLevel, showObsoleteRuns, leaderboardType]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-ctp-base to-ctp-mantle text-ctp-text py-6">
+    <div className="min-h-screen bg-[#1e1e2e] text-ctp-text py-6">
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-8 animate-fade-in">
           <h1 className="text-3xl md:text-4xl font-bold text-[#a6e3a1] mb-4">
@@ -149,21 +149,21 @@ const Leaderboards = () => {
           <TabsList className="grid w-full grid-cols-3 mb-6 rounded-lg p-0.5 gap-1">
             <TabsTrigger 
               value="regular" 
-              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-ctp-crust bg-ctp-surface0 text-ctp-text transition-all duration-300 rounded-md font-medium hover:bg-ctp-surface1 text-sm py-2 px-3"
+              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 rounded-md font-medium hover:bg-ctp-surface1 text-sm py-2 px-3"
             >
               <Trophy className="h-3.5 w-3.5 mr-1.5" />
               Full Game
             </TabsTrigger>
             <TabsTrigger 
               value="individual-level" 
-              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-ctp-crust bg-ctp-surface0 text-ctp-text transition-all duration-300 rounded-md font-medium hover:bg-ctp-surface1 text-sm py-2 px-3"
+              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 rounded-md font-medium hover:bg-ctp-surface1 text-sm py-2 px-3"
             >
               <Star className="h-3.5 w-3.5 mr-1.5" />
               Individual Levels
             </TabsTrigger>
             <TabsTrigger 
               value="community-golds" 
-              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-ctp-crust bg-ctp-surface0 text-ctp-text transition-all duration-300 rounded-md font-medium hover:bg-ctp-surface1 text-sm py-2 px-3"
+              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 rounded-md font-medium hover:bg-ctp-surface1 text-sm py-2 px-3"
             >
               <Gem className="h-3.5 w-3.5 mr-1.5" />
               Community Golds

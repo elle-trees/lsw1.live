@@ -42,7 +42,7 @@ const Downloads = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[hsl(240,21%,15%)] to-[hsl(235,19%,13%)] text-[hsl(220,17%,92%)] py-8">
+    <div className="min-h-screen bg-[#1e1e2e] text-[hsl(220,17%,92%)] py-8">
       <div className="max-w-5xl mx-auto px-4">
         {/* Animated Header */}
         <div className="text-center mb-12 animate-fade-in">

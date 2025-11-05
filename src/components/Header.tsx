@@ -94,7 +94,7 @@ export function Header() {
 
   return (
     <>
-      <header className="bg-gradient-to-r from-ctp-base via-ctp-mantle to-ctp-base border-b border-ctp-surface1 shadow-lg">
+      <header className="bg-[#1e1e2e] border-b border-ctp-surface1 shadow-lg">
         <div className="flex items-center justify-between h-16 px-4">
           <div className="flex items-center gap-4 md:gap-10">
             <Link to="/" className="flex items-center space-x-2 group transition-transform duration-300 hover:scale-105">
@@ -123,7 +123,7 @@ export function Header() {
                   <span className="sr-only">Open menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-[280px] bg-gradient-to-b from-ctp-base to-ctp-mantle border-ctp-surface1">
+              <SheetContent side="left" className="w-[280px] bg-[#1e1e2e] border-ctp-surface1">
                 <div className="flex flex-col gap-6 mt-8">
                   <div className="flex items-center space-x-2 mb-4">
                     <LegoStudIcon size={28} color="#60a5fa" />

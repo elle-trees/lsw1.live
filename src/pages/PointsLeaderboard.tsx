@@ -32,7 +32,7 @@ const PointsLeaderboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[hsl(240,21%,15%)] to-[hsl(235,19%,13%)] text-[hsl(220,17%,92%)] py-6">
+    <div className="min-h-screen bg-[#1e1e2e] text-[hsl(220,17%,92%)] py-6">
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-8 animate-fade-in">
           <div className="flex items-center justify-center gap-3 mb-4">

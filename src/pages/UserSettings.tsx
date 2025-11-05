@@ -321,7 +321,7 @@ const UserSettings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[hsl(240,21%,15%)] to-[hsl(235,19%,13%)] text-[hsl(220,17%,92%)] py-8">
+    <div className="min-h-screen bg-[#1e1e2e] text-[hsl(220,17%,92%)] py-8">
       <div className="max-w-3xl mx-auto px-4">
         <div className="text-center mb-10">
           <h1 className="text-4xl font-bold mb-4 flex items-center justify-center gap-2">

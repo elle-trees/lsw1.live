@@ -98,7 +98,7 @@ const PlayerDetails = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[hsl(240,21%,15%)] to-[hsl(235,19%,13%)] text-[hsl(220,17%,92%)] py-8">
+    <div className="min-h-screen bg-[#1e1e2e] text-[hsl(220,17%,92%)] py-8">
       <div className="max-w-6xl mx-auto px-4">
         <div className="mb-6">
           <Button variant="outline" className="text-[hsl(220,17%,92%)] border-[hsl(235,13%,30%)] hover:bg-[hsl(234,14%,29%)]" asChild>
