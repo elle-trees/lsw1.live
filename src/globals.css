@@ -1,3 +1,7 @@
+@import "@catppuccin/tailwindcss/mocha.css";
+@import "@catppuccin/tailwindcss/frappe.css";
+@import "@catppuccin/tailwindcss/macchiato.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -85,7 +89,7 @@
 
   .link-hover::after {
     content: '';
-    @apply absolute bottom-0 left-0 w-0 h-0.5 bg-[hsl(var(--mocha-mauve))] transition-all duration-300;
+    @apply absolute bottom-0 left-0 w-0 h-0.5 bg-ctp-mauve transition-all duration-300;
   }
 
   .link-hover:hover::after {

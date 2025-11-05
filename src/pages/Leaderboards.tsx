@@ -101,45 +101,37 @@ const Leaderboards = () => {
   }, [selectedCategory, selectedPlatform, selectedRunType, selectedLevel, showObsoleteRuns, leaderboardType]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[hsl(240,21%,15%)] to-[hsl(235,19%,13%)] text-[hsl(220,17%,92%)] py-6">
+    <div className="min-h-screen bg-gradient-to-b from-ctp-base to-ctp-mantle text-ctp-text py-6">
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-8 animate-fade-in">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="relative">
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#FFD700] to-[#FFA500] opacity-30 blur-xl animate-pulse"></div>
-              <div className="relative p-2 rounded-xl bg-gradient-to-br from-[#FFD700] to-[#FFA500] shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-[#FFD700]/50">
-                <Trophy className="h-7 w-7 text-[hsl(240,21%,15%)]" />
-              </div>
-            </div>
-            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#FFD700] via-[#FFA500] to-[#FFD700] bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]">
-              Leaderboards
-            </h1>
-          </div>
-          <p className="text-base text-[hsl(222,15%,70%)] max-w-3xl mx-auto animate-fade-in-delay">
+          <h1 className="text-3xl md:text-4xl font-bold text-ctp-yellow mb-4">
+            Leaderboards
+          </h1>
+          <p className="text-base text-ctp-subtext1 max-w-3xl mx-auto animate-fade-in-delay">
             Browse the fastest times across all categories and platforms
           </p>
         </div>
 
         {/* Tabs */}
         <Tabs value={leaderboardType} onValueChange={(value) => setLeaderboardType(value as 'regular' | 'individual-level' | 'community-golds')} className="mb-6">
-          <TabsList className="grid w-full grid-cols-3 bg-[hsl(240,21%,16%)] border border-[hsl(235,13%,30%)] mb-6 shadow-lg rounded-lg p-1 transition-all duration-300 hover:shadow-xl hover:border-[hsl(235,13%,40%)]">
+          <TabsList className="grid w-full grid-cols-3 bg-ctp-base border border-ctp-surface1 mb-6 shadow-lg rounded-lg p-1 transition-all duration-300 hover:shadow-xl hover:border-ctp-surface2">
             <TabsTrigger 
               value="regular" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#FFD700] data-[state=active]:to-[#FFA500] data-[state=active]:text-[hsl(240,21%,15%)] data-[state=active]:shadow-lg transition-all duration-300 rounded-md font-medium hover:bg-[hsl(240,21%,20%)]"
+              className="data-[state=active]:bg-ctp-yellow data-[state=active]:text-ctp-crust data-[state=active]:shadow-lg transition-all duration-300 rounded-md font-medium hover:bg-ctp-surface0"
             >
               <Trophy className="h-4 w-4 mr-2 transition-transform duration-300 group-hover:rotate-12" />
               Full Game
             </TabsTrigger>
             <TabsTrigger 
               value="individual-level" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#cba6f7] data-[state=active]:to-[#b4a0e2] data-[state=active]:text-[hsl(240,21%,15%)] data-[state=active]:shadow-lg transition-all duration-300 rounded-md font-medium hover:bg-[hsl(240,21%,20%)]"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-ctp-mauve data-[state=active]:to-ctp-lavender data-[state=active]:text-ctp-crust data-[state=active]:shadow-lg transition-all duration-300 rounded-md font-medium hover:bg-ctp-surface0"
             >
               <Star className="h-4 w-4 mr-2 transition-transform duration-300 group-hover:rotate-12" />
               Individual Levels
             </TabsTrigger>
             <TabsTrigger 
               value="community-golds" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#FFD700] data-[state=active]:to-[#FFA500] data-[state=active]:text-[hsl(240,21%,15%)] data-[state=active]:shadow-lg transition-all duration-300 rounded-md font-medium hover:bg-[hsl(240,21%,20%)]"
+              className="data-[state=active]:bg-ctp-yellow data-[state=active]:text-ctp-crust data-[state=active]:shadow-lg transition-all duration-300 rounded-md font-medium hover:bg-ctp-surface0"
             >
               <Gem className="h-4 w-4 mr-2 transition-transform duration-300 group-hover:rotate-12" />
               Community Golds
@@ -151,12 +143,12 @@ const Leaderboards = () => {
             {availableCategories.length > 0 && (
               <div className="mb-6 animate-slide-up">
                 <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <TabsList className="grid w-full rounded-lg p-2 gap-2 bg-[hsl(240,21%,14%)] border border-[hsl(235,13%,25%)] transition-all duration-300 hover:border-[hsl(235,13%,35%)]" style={{ gridTemplateColumns: `repeat(${availableCategories.length}, 1fr)` }}>
+                  <TabsList className="grid w-full rounded-lg p-2 gap-2 bg-ctp-base border border-ctp-surface1 transition-all duration-300 hover:border-ctp-surface2" style={{ gridTemplateColumns: `repeat(${availableCategories.length}, 1fr)` }}>
                     {availableCategories.map((category, index) => (
                       <TabsTrigger 
                         key={category.id} 
                         value={category.id} 
-                        className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#cba6f7] data-[state=active]:to-[#b4a0e2] data-[state=active]:text-[hsl(240,21%,15%)] data-[state=active]:shadow-lg transition-all duration-300 rounded-md font-medium hover:bg-[hsl(240,21%,18%)] py-3 px-4 text-base"
+                        className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-ctp-mauve data-[state=active]:to-ctp-lavender data-[state=active]:text-ctp-crust data-[state=active]:shadow-lg transition-all duration-300 rounded-md font-medium hover:bg-ctp-surface0 py-3 px-4 text-base"
                         style={{ animationDelay: `${index * 50}ms` }}
                       >
                         {category.name}
@@ -168,16 +160,16 @@ const Leaderboards = () => {
             )}
 
             {/* Filters */}
-            <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl mb-6 transition-all duration-300 hover:scale-[1.01] hover:shadow-2xl hover:shadow-[#cba6f7]/20 hover:border-[#cba6f7]/50 animate-slide-up-delay">
-          <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
+            <Card className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl mb-6 transition-all duration-300 hover:scale-[1.01] hover:shadow-2xl hover:shadow-ctp-mauve/20 hover:border-ctp-mauve/50 animate-slide-up-delay">
+          <CardHeader className="bg-gradient-to-r from-ctp-base to-ctp-mantle border-b border-ctp-surface1">
             <CardTitle className="flex items-center gap-2 text-xl">
               <div className="relative">
-                <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-[#cba6f7] to-[#b4a0e2] opacity-30 blur-sm animate-pulse"></div>
-                <div className="relative p-1.5 rounded-lg bg-gradient-to-br from-[#cba6f7] to-[#b4a0e2] transition-transform duration-300 hover:scale-110">
-                  <Filter className="h-5 w-5 text-[hsl(240,21%,15%)]" />
+                <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-ctp-mauve to-ctp-lavender opacity-30 blur-sm animate-pulse"></div>
+                <div className="relative p-1.5 rounded-lg bg-gradient-to-br from-ctp-mauve to-ctp-lavender transition-transform duration-300 hover:scale-110">
+                  <Filter className="h-5 w-5 text-ctp-crust" />
                 </div>
               </div>
-              <span className="bg-gradient-to-r from-[#cba6f7] to-[#f5c2e7] bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-ctp-mauve to-ctp-pink bg-clip-text text-transparent">
                 Filter Results
               </span>
             </CardTitle>
@@ -186,12 +178,12 @@ const Leaderboards = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {(leaderboardType === 'individual-level' || leaderboardType === 'community-golds') && (
                 <div className="animate-fade-in" style={{ animationDelay: '100ms' }}>
-                  <label className="block text-sm font-semibold mb-2 text-[hsl(220,17%,92%)] flex items-center gap-2">
-                    <Sparkles className="h-3.5 w-3.5 text-[#cba6f7]" />
+                  <label className="block text-sm font-semibold mb-2 text-ctp-text flex items-center gap-2">
+                    <Sparkles className="h-3.5 w-3.5 text-ctp-mauve" />
                     Levels
                   </label>
                   <Select value={selectedLevel} onValueChange={setSelectedLevel}>
-                    <SelectTrigger className="bg-gradient-to-br from-[hsl(240,21%,18%)] to-[hsl(240,21%,16%)] border-[hsl(235,13%,30%)] h-10 text-sm hover:border-[#cba6f7] hover:bg-gradient-to-br hover:from-[hsl(240,21%,20%)] hover:to-[hsl(240,21%,18%)] transition-all duration-300 hover:shadow-lg hover:shadow-[#cba6f7]/20">
+                    <SelectTrigger className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 h-10 text-sm hover:border-ctp-mauve hover:bg-gradient-to-br hover:from-ctp-surface0 hover:to-ctp-base transition-all duration-300 hover:shadow-lg hover:shadow-ctp-mauve/20">
                       <SelectValue placeholder="Select level" />
                     </SelectTrigger>
                     <SelectContent>
@@ -205,12 +197,12 @@ const Leaderboards = () => {
                 </div>
               )}
               <div className="animate-fade-in" style={{ animationDelay: '200ms' }}>
-                <label className="block text-sm font-semibold mb-2 text-[hsl(220,17%,92%)] flex items-center gap-2">
-                  <Gamepad2 className="h-3.5 w-3.5 text-[#cba6f7]" />
+                <label className="block text-sm font-semibold mb-2 text-ctp-text flex items-center gap-2">
+                  <Gamepad2 className="h-3.5 w-3.5 text-ctp-mauve" />
                   Platform
                 </label>
                 <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
-                  <SelectTrigger className="bg-gradient-to-br from-[hsl(240,21%,18%)] to-[hsl(240,21%,16%)] border-[hsl(235,13%,30%)] h-10 text-sm hover:border-[#cba6f7] hover:bg-gradient-to-br hover:from-[hsl(240,21%,20%)] hover:to-[hsl(240,21%,18%)] transition-all duration-300 hover:shadow-lg hover:shadow-[#cba6f7]/20">
+                  <SelectTrigger className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 h-10 text-sm hover:border-ctp-mauve hover:bg-gradient-to-br hover:from-ctp-surface0 hover:to-ctp-base transition-all duration-300 hover:shadow-lg hover:shadow-ctp-mauve/20">
                     <SelectValue placeholder="Select platform" />
                   </SelectTrigger>
                   <SelectContent>
@@ -223,16 +215,16 @@ const Leaderboards = () => {
                 </Select>
               </div>
               <div className="animate-fade-in" style={{ animationDelay: '300ms' }}>
-                <label className="block text-sm font-semibold mb-2 text-[hsl(220,17%,92%)] flex items-center gap-2">
+                <label className="block text-sm font-semibold mb-2 text-ctp-text flex items-center gap-2">
                   {selectedRunType === 'solo' ? (
-                    <User className="h-3.5 w-3.5 text-[#cba6f7]" />
+                    <User className="h-3.5 w-3.5 text-ctp-mauve" />
                   ) : (
-                    <Users className="h-3.5 w-3.5 text-[#cba6f7]" />
+                    <Users className="h-3.5 w-3.5 text-ctp-mauve" />
                   )}
                   Run Type
                 </label>
                 <Select value={selectedRunType} onValueChange={setSelectedRunType}>
-                  <SelectTrigger className="bg-gradient-to-br from-[hsl(240,21%,18%)] to-[hsl(240,21%,16%)] border-[hsl(235,13%,30%)] h-10 text-sm hover:border-[#cba6f7] hover:bg-gradient-to-br hover:from-[hsl(240,21%,20%)] hover:to-[hsl(240,21%,18%)] transition-all duration-300 hover:shadow-lg hover:shadow-[#cba6f7]/20">
+                  <SelectTrigger className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 h-10 text-sm hover:border-ctp-mauve hover:bg-gradient-to-br hover:from-ctp-surface0 hover:to-ctp-base transition-all duration-300 hover:shadow-lg hover:shadow-ctp-mauve/20">
                     <SelectValue placeholder="Select run type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -248,12 +240,12 @@ const Leaderboards = () => {
                 </Select>
               </div>
               <div className="animate-fade-in" style={{ animationDelay: '400ms' }}>
-                <label className="block text-sm font-semibold mb-2 text-[hsl(220,17%,92%)] flex items-center gap-2">
-                  <TrendingUp className="h-3.5 w-3.5 text-[#cba6f7]" />
+                <label className="block text-sm font-semibold mb-2 text-ctp-text flex items-center gap-2">
+                  <TrendingUp className="h-3.5 w-3.5 text-ctp-mauve" />
                   Run Status
                 </label>
                 <Select value={showObsoleteRuns} onValueChange={setShowObsoleteRuns}>
-                  <SelectTrigger className="bg-gradient-to-br from-[hsl(240,21%,18%)] to-[hsl(240,21%,16%)] border-[hsl(235,13%,30%)] h-10 text-sm hover:border-[#cba6f7] hover:bg-gradient-to-br hover:from-[hsl(240,21%,20%)] hover:to-[hsl(240,21%,18%)] transition-all duration-300 hover:shadow-lg hover:shadow-[#cba6f7]/20">
+                  <SelectTrigger className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 h-10 text-sm hover:border-ctp-mauve hover:bg-gradient-to-br hover:from-ctp-surface0 hover:to-ctp-base transition-all duration-300 hover:shadow-lg hover:shadow-ctp-mauve/20">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -267,20 +259,20 @@ const Leaderboards = () => {
         </Card>
 
         {/* Leaderboard Table */}
-        <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl transition-all duration-300 hover:scale-[1.01] hover:shadow-2xl hover:shadow-[#cba6f7]/20 hover:border-[#cba6f7]/50 animate-slide-up-delay-2">
-          <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
+        <Card className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl transition-all duration-300 hover:scale-[1.01] hover:shadow-2xl hover:shadow-ctp-mauve/20 hover:border-ctp-mauve/50 animate-slide-up-delay-2">
+          <CardHeader className="bg-gradient-to-r from-ctp-base to-ctp-mantle border-b border-ctp-surface1">
             <CardTitle className="flex items-center gap-2 text-xl">
               <div className="relative">
-                <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-[#cba6f7] to-[#b4a0e2] opacity-30 blur-sm animate-pulse"></div>
-                <div className="relative p-1.5 rounded-lg bg-gradient-to-br from-[#cba6f7] to-[#b4a0e2] transition-transform duration-300 hover:scale-110">
-                  <TrendingUp className="h-5 w-5 text-[hsl(240,21%,15%)]" />
+                <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-ctp-mauve to-ctp-lavender opacity-30 blur-sm animate-pulse"></div>
+                <div className="relative p-1.5 rounded-lg bg-gradient-to-br from-ctp-mauve to-ctp-lavender transition-transform duration-300 hover:scale-110">
+                  <TrendingUp className="h-5 w-5 text-ctp-crust" />
                 </div>
               </div>
-              <span className="bg-gradient-to-r from-[#cba6f7] to-[#f5c2e7] bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-ctp-mauve to-ctp-pink bg-clip-text text-transparent">
                 {availableCategories.find(c => c.id === selectedCategory)?.name || "Leaderboards"}
               </span>
               {leaderboardData.length > 0 && (
-                <span className="ml-auto text-sm font-normal text-[hsl(222,15%,60%)]">
+                <span className="ml-auto text-sm font-normal text-ctp-subtext1">
                   {leaderboardData.length} {leaderboardData.length === 1 ? 'entry' : 'entries'}
                 </span>
               )}
@@ -297,12 +289,12 @@ const Leaderboards = () => {
             ) : leaderboardData.length === 0 ? (
               <div className="text-center py-12 animate-fade-in">
                 <div className="flex flex-col items-center gap-4">
-                  <div className="p-4 rounded-full bg-gradient-to-br from-[hsl(240,21%,18%)] to-[hsl(240,21%,16%)] border border-[hsl(235,13%,30%)]">
-                    <Trophy className="h-8 w-8 text-[hsl(222,15%,60%)] animate-pulse" />
+                  <div className="p-4 rounded-full bg-gradient-to-br from-ctp-base to-ctp-mantle border border-ctp-surface1">
+                    <Trophy className="h-8 w-8 text-ctp-subtext1 animate-pulse" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold mb-2 text-[hsl(220,17%,92%)]">No entries found</h3>
-                    <p className="text-sm text-[hsl(222,15%,60%)]">
+                    <h3 className="text-lg font-semibold mb-2 text-ctp-text">No entries found</h3>
+                    <p className="text-sm text-ctp-subtext1">
                       Try adjusting your filters to see more results
                     </p>
                   </div>
