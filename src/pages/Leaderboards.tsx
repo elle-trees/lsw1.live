@@ -180,7 +180,7 @@ const Leaderboards = () => {
                       <TabsTrigger 
                         key={category.id} 
                         value={category.id} 
-                        className="data-[state=active]:bg-[#94e2d5] data-[state=active]:text-ctp-crust bg-ctp-surface0 text-ctp-text transition-all duration-300 rounded-md font-medium hover:bg-ctp-surface1 py-2 px-3 text-sm"
+                        className="data-[state=active]:bg-[#94e2d5] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 rounded-md font-medium hover:bg-ctp-surface1 py-2 px-3 text-sm"
                         style={{ animationDelay: `${index * 50}ms` }}
                       >
                         {category.name}
