@@ -81,6 +81,10 @@ const Admin = () => {
   const [savingImportedRun, setSavingImportedRun] = useState(false);
   const [srcRunData, setSrcRunData] = useState<SRCRun | null>(null);
   const [loadingSRCData, setLoadingSRCData] = useState(false);
+  const [verifyingRun, setVerifyingRun] = useState<LeaderboardEntry | null>(null);
+  const [verifyingRunCategory, setVerifyingRunCategory] = useState<string>("");
+  const [verifyingRunPlatform, setVerifyingRunPlatform] = useState<string>("");
+  const [verifyingRunLevel, setVerifyingRunLevel] = useState<string>("");
   const [unverifiedPage, setUnverifiedPage] = useState(1);
   const [importedPage, setImportedPage] = useState(1);
   const [clearingImportedRuns, setClearingImportedRuns] = useState(false);
@@ -90,6 +94,7 @@ const Admin = () => {
   const [importedRunsCategory, setImportedRunsCategory] = useState("__all__"); // "__all__" = All Categories
   const [importedRunsPlatform, setImportedRunsPlatform] = useState("__all__"); // "__all__" = All Platforms
   const [importedRunsLevel, setImportedRunsLevel] = useState("__all__"); // "__all__" = All Levels
+  const [importedRunsRunType, setImportedRunsRunType] = useState<"__all__" | "solo" | "co-op">("__all__"); // "__all__" = All Run Types
   const [importedRunsCategories, setImportedRunsCategories] = useState<{ id: string; name: string }[]>([]);
   const [unmatchedPlayers, setUnmatchedPlayers] = useState<Map<string, { player1?: string; player2?: string }>>(new Map()); // Map of runId to unmatched player names
   const [downloadEntries, setDownloadEntries] = useState<DownloadEntry[]>([]);
@@ -296,8 +301,62 @@ const Admin = () => {
         videoUrl: editingImportedRun.videoUrl,
         comment: editingImportedRun.comment,
       });
+      
+      // Fetch categories for the run's leaderboard type
+      const categoryType = editingImportedRun.leaderboardType || 'regular';
+      fetchCategories(categoryType);
     }
   }, [editingImportedRun]);
+
+  useEffect(() => {
+    if (verifyingRun) {
+      // Start with run's current values
+      let initialCategory = verifyingRun.category || "";
+      let initialPlatform = verifyingRun.platform || "";
+      let initialLevel = verifyingRun.level || "";
+      
+      // Try to match category by SRC name if we don't have a category ID
+      if (!initialCategory && verifyingRun.srcCategoryName) {
+        const matchingCategory = firestoreCategories.find(cat => {
+          const runLeaderboardType = verifyingRun.leaderboardType || 'regular';
+          const catType = cat.leaderboardType || 'regular';
+          return catType === runLeaderboardType && 
+                 cat.name.toLowerCase().trim() === verifyingRun.srcCategoryName!.toLowerCase().trim();
+        });
+        if (matchingCategory) {
+          initialCategory = matchingCategory.id;
+        }
+      }
+      
+      // Try to match platform by SRC name if we don't have a platform ID
+      if (!initialPlatform && verifyingRun.srcPlatformName) {
+        const matchingPlatform = firestorePlatforms.find(platform => 
+          platform.name.toLowerCase().trim() === verifyingRun.srcPlatformName!.toLowerCase().trim()
+        );
+        if (matchingPlatform) {
+          initialPlatform = matchingPlatform.id;
+        }
+      }
+      
+      // Try to match level by SRC name if we don't have a level ID
+      if (!initialLevel && verifyingRun.srcLevelName) {
+        const matchingLevel = availableLevels.find(level => 
+          level.name.toLowerCase().trim() === verifyingRun.srcLevelName!.toLowerCase().trim()
+        );
+        if (matchingLevel) {
+          initialLevel = matchingLevel.id;
+        }
+      }
+      
+      setVerifyingRunCategory(initialCategory);
+      setVerifyingRunPlatform(initialPlatform);
+      setVerifyingRunLevel(initialLevel);
+      
+      // Fetch categories for the run's leaderboard type
+      const categoryType = verifyingRun.leaderboardType || 'regular';
+      fetchCategories(categoryType);
+    }
+  }, [verifyingRun, firestoreCategories, firestorePlatforms, availableLevels]);
 
   useEffect(() => {
     // Fetch categories when leaderboard type changes for manual run
@@ -472,16 +531,73 @@ const Admin = () => {
   
 
   const handleVerify = async (runId: string) => {
+    // Find the run to verify
+    const runToVerify = [...unverifiedRuns, ...importedSRCRuns].find(r => r.id === runId);
+    if (!runToVerify) {
+      toast({
+        title: "Error",
+        description: "Run not found.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // For imported runs, show dialog to select category/platform/level
+    if (runToVerify.importedFromSRC) {
+      setVerifyingRun(runToVerify);
+      setVerifyingRunCategory(runToVerify.category || "");
+      setVerifyingRunPlatform(runToVerify.platform || "");
+      setVerifyingRunLevel(runToVerify.level || "");
+      
+      // Fetch categories for the run's leaderboard type
+      const categoryType = runToVerify.leaderboardType || 'regular';
+      fetchCategories(categoryType);
+    } else {
+      // For regular unverified runs, verify directly
+      await verifyRunDirectly(runId, runToVerify);
+    }
+  };
+
+  const verifyRunDirectly = async (runId: string, run?: LeaderboardEntry) => {
     if (!currentUser) return;
+    
+    const runToVerify = run || [...unverifiedRuns, ...importedSRCRuns].find(r => r.id === runId);
+    if (!runToVerify) return;
+
     try {
       const verifiedBy = currentUser.displayName || currentUser.email || currentUser.uid;
+      
+      // If category/platform/level were changed in the verify dialog, update them first
+      const updateData: Partial<LeaderboardEntry> = {};
+      if (verifyingRunCategory && verifyingRunCategory !== runToVerify.category) {
+        updateData.category = verifyingRunCategory;
+      }
+      if (verifyingRunPlatform && verifyingRunPlatform !== runToVerify.platform) {
+        updateData.platform = verifyingRunPlatform;
+      }
+      if (runToVerify.leaderboardType === 'individual-level' || runToVerify.leaderboardType === 'community-golds') {
+        if (verifyingRunLevel && verifyingRunLevel !== runToVerify.level) {
+          updateData.level = verifyingRunLevel;
+        }
+      }
+
+      // Update run data if needed
+      if (Object.keys(updateData).length > 0) {
+        await updateLeaderboardEntry(runId, updateData);
+      }
+
+      // Then verify
       const success = await updateRunVerificationStatus(runId, true, verifiedBy);
       if (success) {
         toast({
           title: "Run Verified",
           description: "The run has been successfully verified.",
         });
-        fetchUnverifiedRuns();
+        setVerifyingRun(null);
+        setVerifyingRunCategory("");
+        setVerifyingRunPlatform("");
+        setVerifyingRunLevel("");
+        await refreshAllRunData();
       } else {
         throw new Error("Failed to update verification status.");
       }
@@ -2303,6 +2419,14 @@ const Admin = () => {
                     });
                   }
                   
+                  // Apply run type filter (solo/co-op)
+                  if (importedRunsRunType && importedRunsRunType !== '__all__') {
+                    unverifiedImported = unverifiedImported.filter(run => {
+                      const runRunType = run.runType || 'solo';
+                      return runRunType === importedRunsRunType;
+                    });
+                  }
+                  
                   // Calculate counts for tabs (before category/platform/level filters)
                   const baseUnverified = importedSRCRuns.filter(r => r.verified !== true);
                   const fullGameCount = baseUnverified.filter(r => (r.leaderboardType || 'regular') === 'regular').length;
@@ -2329,7 +2453,7 @@ const Admin = () => {
                       </Tabs>
                       
                       {/* Filters - Always show so users can adjust when results are empty */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                         <div>
                           <Label htmlFor="imported-category-filter" className="text-[hsl(222,15%,60%)] mb-2 block">Category</Label>
                           <Select
@@ -2371,6 +2495,25 @@ const Admin = () => {
                                   {platform.name}
                                 </SelectItem>
                               ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="imported-runtype-filter" className="text-[hsl(222,15%,60%)] mb-2 block">Run Type</Label>
+                          <Select
+                            value={importedRunsRunType}
+                            onValueChange={(value) => {
+                              setImportedRunsRunType(value as "__all__" | "solo" | "co-op");
+                              setImportedPage(1);
+                            }}
+                          >
+                            <SelectTrigger id="imported-runtype-filter" className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]">
+                              <SelectValue placeholder="All Run Types" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__all__">All Run Types</SelectItem>
+                              <SelectItem value="solo">Solo</SelectItem>
+                              <SelectItem value="co-op">Co-op</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -3338,6 +3481,162 @@ const Admin = () => {
                 className="bg-gradient-to-r from-[#cba6f7] to-[#b4a0e2] hover:from-[#b4a0e2] hover:to-[#cba6f7] text-[hsl(240,21%,15%)] font-bold"
               >
                 {savingImportedRun ? "Saving..." : "Save Changes"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Verify Imported Run Dialog */}
+        <Dialog open={!!verifyingRun} onOpenChange={(open) => {
+          if (!open) {
+            setVerifyingRun(null);
+            setVerifyingRunCategory("");
+            setVerifyingRunPlatform("");
+            setVerifyingRunLevel("");
+          }
+        }}>
+          <DialogContent className="bg-[hsl(240,21%,16%)] border-[hsl(235,13%,30%)] max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-[#f2cdcd]">
+                Verify Imported Run
+              </DialogTitle>
+            </DialogHeader>
+            {verifyingRun && (
+              <div className="space-y-4 py-4">
+                <p className="text-sm text-[hsl(222,15%,60%)]">
+                  Select the category, platform, and level (if applicable) for this run before verifying.
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="verify-category">Category <span className="text-red-500">*</span></Label>
+                    <Select
+                      value={verifyingRunCategory}
+                      onValueChange={setVerifyingRunCategory}
+                    >
+                      <SelectTrigger className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]">
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {firestoreCategories
+                          .filter(cat => {
+                            const runLeaderboardType = verifyingRun.leaderboardType || 'regular';
+                            const catType = cat.leaderboardType || 'regular';
+                            return catType === runLeaderboardType;
+                          })
+                          .map((cat) => (
+                            <SelectItem key={cat.id} value={cat.id}>
+                              {cat.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                    {!verifyingRunCategory && (
+                      <p className="text-xs text-red-400 mt-1">Category is required</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="verify-platform">Platform <span className="text-red-500">*</span></Label>
+                    <Select
+                      value={verifyingRunPlatform}
+                      onValueChange={setVerifyingRunPlatform}
+                    >
+                      <SelectTrigger className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]">
+                        <SelectValue placeholder="Select a platform" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {firestorePlatforms.map((platform) => (
+                          <SelectItem key={platform.id} value={platform.id}>
+                            {platform.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {!verifyingRunPlatform && (
+                      <p className="text-xs text-red-400 mt-1">Platform is required</p>
+                    )}
+                  </div>
+                </div>
+                {(verifyingRun.leaderboardType === 'individual-level' || verifyingRun.leaderboardType === 'community-golds') && (
+                  <div>
+                    <Label htmlFor="verify-level">Level <span className="text-red-500">*</span></Label>
+                    <Select
+                      value={verifyingRunLevel}
+                      onValueChange={setVerifyingRunLevel}
+                    >
+                      <SelectTrigger className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]">
+                        <SelectValue placeholder="Select a level" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableLevels.map((level) => (
+                          <SelectItem key={level.id} value={level.id}>
+                            {level.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {!verifyingRunLevel && (
+                      <p className="text-xs text-red-400 mt-1">Level is required</p>
+                    )}
+                  </div>
+                )}
+                <div className="bg-[hsl(240,21%,15%)] rounded-lg p-3 border border-[hsl(235,13%,30%)]">
+                  <div className="text-sm space-y-1">
+                    <div><strong>Player:</strong> {verifyingRun.playerName}</div>
+                    {verifyingRun.player2Name && <div><strong>Player 2:</strong> {verifyingRun.player2Name}</div>}
+                    <div><strong>Time:</strong> {formatTime(verifyingRun.time || '00:00:00')}</div>
+                    <div><strong>Date:</strong> {verifyingRun.date}</div>
+                    {verifyingRun.srcCategoryName && (
+                      <div className="text-xs text-[hsl(222,15%,60%)]">
+                        SRC Category: {verifyingRun.srcCategoryName}
+                      </div>
+                    )}
+                    {verifyingRun.srcPlatformName && (
+                      <div className="text-xs text-[hsl(222,15%,60%)]">
+                        SRC Platform: {verifyingRun.srcPlatformName}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setVerifyingRun(null);
+                  setVerifyingRunCategory("");
+                  setVerifyingRunPlatform("");
+                  setVerifyingRunLevel("");
+                }}
+                className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (!verifyingRunCategory || !verifyingRunPlatform) {
+                    toast({
+                      title: "Missing Information",
+                      description: "Please select a category and platform.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  if ((verifyingRun?.leaderboardType === 'individual-level' || verifyingRun?.leaderboardType === 'community-golds') && !verifyingRunLevel) {
+                    toast({
+                      title: "Missing Information",
+                      description: "Please select a level.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  if (verifyingRun) {
+                    verifyRunDirectly(verifyingRun.id, verifyingRun);
+                  }
+                }}
+                className="bg-gradient-to-r from-[#cba6f7] to-[#b4a0e2] hover:from-[#b4a0e2] hover:to-[#cba6f7] text-[hsl(240,21%,15%)] font-bold"
+              >
+                Verify Run
               </Button>
             </DialogFooter>
           </DialogContent>

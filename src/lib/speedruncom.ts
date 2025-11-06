@@ -288,14 +288,35 @@ export function getPlayerName(player: SRCRun['players'][0]): string {
   
   // Check embedded data (registered users)
   // The embedded player data structure is: player.data.names.international
-  if (player.data?.names?.international && typeof player.data.names.international === 'string') {
-    const name = String(player.data.names.international).trim();
-    if (name) return name;
-  }
-  
-  // Also check if player.data has a direct name field (unlikely but possible)
-  if (player.data?.name && typeof player.data.name === 'string' && player.data.name.trim()) {
-    return String(player.data.name).trim();
+  if (player.data) {
+    // Try names.international first (most common for registered users)
+    if (player.data.names?.international && typeof player.data.names.international === 'string') {
+      const name = String(player.data.names.international).trim();
+      if (name) return name;
+    }
+    
+    // Also check if player.data has a direct name field (unlikely but possible)
+    if (player.data.name && typeof player.data.name === 'string' && player.data.name.trim()) {
+      return String(player.data.name).trim();
+    }
+    
+    // Check other name properties in names object
+    if (player.data.names && typeof player.data.names === 'object') {
+      const nameKeys = Object.keys(player.data.names).filter(k => 
+        typeof (player.data.names as any)[k] === 'string' && 
+        (player.data.names as any)[k] && 
+        (player.data.names as any)[k].trim()
+      );
+      if (nameKeys.length > 0) {
+        // Prefer international if available, otherwise use first available
+        const nameToUse = nameKeys.includes('international') 
+          ? player.data.names.international 
+          : (player.data.names as any)[nameKeys[0]];
+        if (nameToUse) {
+          return String(nameToUse).trim();
+        }
+      }
+    }
   }
   
   // Check if player has an ID but no name (registered user without embedded data)
@@ -432,6 +453,17 @@ export function mapSRCRunToLeaderboardEntry(
   let player1Name = players[0] ? getPlayerName(players[0]) : "Unknown";
   let player2Name = players.length > 1 ? getPlayerName(players[1]) : undefined;
   
+  // Debug logging for first few runs
+  if (run.id && run.id.length < 20) { // Simple check to log only first few
+    console.log(`[SRC Import] Run ${run.id} player extraction:`, {
+      playersCount: players.length,
+      player1Raw: players[0],
+      player1Name: player1Name,
+      player2Raw: players[1],
+      player2Name: player2Name,
+    });
+  }
+  
   // Ensure player names are strings and not empty
   if (typeof player1Name !== 'string' || !player1Name || player1Name.trim() === '') {
     player1Name = 'Unknown';
@@ -446,8 +478,18 @@ export function mapSRCRunToLeaderboardEntry(
     }
   }
   
-  // Determine run type
+  // Determine run type based on player count from SRC API
+  // If SRC API returns 2+ players, it's a co-op run
+  // If SRC API returns 1 player (or 0), it's a solo run
   const runType: 'solo' | 'co-op' = players.length > 1 ? 'co-op' : 'solo';
+  
+  // Ensure data consistency: if solo, clear player2Name
+  if (runType === 'solo') {
+    player2Name = undefined;
+  } else if (runType === 'co-op' && !player2Name) {
+    // If co-op but we couldn't extract player2Name, set it to Unknown
+    player2Name = 'Unknown';
+  }
   
   // Extract and map category - use unified extraction
   const categoryData = extractIdAndName(run.category);
@@ -478,16 +520,27 @@ export function mapSRCRunToLeaderboardEntry(
   const platformData = extractIdAndName(run.system?.platform);
   let ourPlatformId = platformMapping.get(platformData.id);
   
-  // Get platform name - try embedded data first, then fallback to ID mapping
+  // Get platform name - try multiple extraction methods
   let finalPlatformName = platformData.name;
+  
+  // Method 1: Try extractIdAndName result first (handles embedded { data: { ... } } structure)
   if (!finalPlatformName && platformData.id) {
-    // Try to extract from embedded platform data if it exists
-    if (typeof run.system?.platform === 'object' && run.system.platform?.data) {
-      const platformObj = run.system.platform.data as SRCPlatform;
-      finalPlatformName = platformObj.name || platformObj.names?.international;
+    // Method 2: Try to extract directly from embedded platform data if it exists
+    if (typeof run.system?.platform === 'object' && run.system.platform) {
+      // Check if it's { data: SRCPlatform }
+      if ('data' in run.system.platform && run.system.platform.data) {
+        const platformObj = run.system.platform.data as SRCPlatform;
+        finalPlatformName = platformObj.names?.international || platformObj.name;
+      }
+      // Check if platform itself has the structure (sometimes it's just the object, not wrapped)
+      else if ('id' in run.system.platform && 'names' in run.system.platform) {
+        const platformObj = run.system.platform as any as SRCPlatform;
+        finalPlatformName = platformObj.names?.international || platformObj.name;
+      }
     }
-    // Fallback to ID->name mapping if embedded data not available (platform is just a string ID)
-    if (!finalPlatformName && srcPlatformIdToName) {
+    
+    // Method 3: Fallback to ID->name mapping if embedded data not available (platform is just a string ID)
+    if (!finalPlatformName && srcPlatformIdToName && platformData.id) {
       finalPlatformName = srcPlatformIdToName.get(platformData.id);
     }
   }

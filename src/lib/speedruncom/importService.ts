@@ -86,9 +86,12 @@ export async function createSRCMappings() {
   for (const srcPlatform of srcPlatforms) {
     // Platforms use names.international, not name
     const platformName = srcPlatform.names?.international || srcPlatform.name || '';
-    if (!platformName) continue;
+    if (!platformName) {
+      console.warn(`[SRC Mapping] Platform ${srcPlatform.id} has no name`);
+      continue;
+    }
     
-    // Store SRC platform ID -> name mapping
+    // Store SRC platform ID -> name mapping (CRITICAL for fallback when platform isn't embedded)
     srcPlatformIdToName.set(srcPlatform.id, platformName);
     
     const ourPlatform = ourPlatforms.find(p => 
@@ -97,8 +100,13 @@ export async function createSRCMappings() {
     if (ourPlatform) {
       platformMapping.set(srcPlatform.id, ourPlatform.id);
       platformNameMapping.set(platformName.toLowerCase().trim(), ourPlatform.id);
+    } else {
+      // Log unmapped platforms for debugging
+      console.log(`[SRC Mapping] Platform "${platformName}" (ID: ${srcPlatform.id}) not found in local platforms`);
     }
   }
+  
+  console.log(`[SRC Mapping] Created platform ID->name mapping with ${srcPlatformIdToName.size} entries`);
 
   // Map levels
   for (const srcLevel of srcLevels) {
@@ -260,18 +268,14 @@ export async function importSRCRuns(
           continue;
         }
 
-        // Use placeholder values if mapping failed (for imported runs, empty strings are OK if we have SRC names)
-        // But validation might still require non-empty, so use a placeholder
+        // Skip runs that don't have a matching category on our leaderboards
+        // Category is required - we only import runs that can be properly categorized
         if (!mappedRun.category || mappedRun.category.trim() === '') {
-          // Use placeholder if no SRC name either
-          if (!mappedRun.srcCategoryName) {
-            result.skipped++;
-            result.errors.push(`Run ${srcRun.id}: missing category`);
-            onProgress?.({ total: srcRuns.length, imported: result.imported, skipped: result.skipped });
-            continue;
-          }
-          // For imported runs with SRC names, empty category ID is OK - validation allows it
-          mappedRun.category = '';
+          // No category mapping found - skip this run
+          result.skipped++;
+          result.errors.push(`Run ${srcRun.id}: category "${mappedRun.srcCategoryName || 'Unknown'}" not found on leaderboards`);
+          onProgress?.({ total: srcRuns.length, imported: result.imported, skipped: result.skipped });
+          continue;
         }
         // Handle platform - be more lenient
         if (!mappedRun.platform || mappedRun.platform.trim() === '') {
