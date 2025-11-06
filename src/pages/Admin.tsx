@@ -85,6 +85,8 @@ const Admin = () => {
   const [unverifiedPage, setUnverifiedPage] = useState(1);
   const [importedPage, setImportedPage] = useState(1);
   const [clearingImportedRuns, setClearingImportedRuns] = useState(false);
+  const [clearingUnverifiedRuns, setClearingUnverifiedRuns] = useState(false);
+  const [showConfirmClearUnverifiedDialog, setShowConfirmClearUnverifiedDialog] = useState(false);
   const itemsPerPage = 25;
   // Filters for imported runs
   const [importedRunsLeaderboardType, setImportedRunsLeaderboardType] = useState<'regular' | 'individual-level'>('regular');
@@ -769,6 +771,86 @@ const Admin = () => {
       });
     } finally {
       setClearingImportedRuns(false);
+    }
+  };
+
+  const handleClearUnverifiedRuns = async () => {
+    if (!currentUser?.isAdmin) {
+      toast({
+        title: "Permission Denied",
+        description: "You must be an admin to clear unverified runs.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setShowConfirmClearUnverifiedDialog(false);
+    setClearingUnverifiedRuns(true);
+    
+    try {
+      // Delete all unverified runs (non-imported)
+      const runsToDelete = unverifiedRuns.filter(run => !run.importedFromSRC);
+      
+      if (runsToDelete.length === 0) {
+        toast({
+          title: "No Runs to Delete",
+          description: "No unverified runs found to delete.",
+        });
+        setClearingUnverifiedRuns(false);
+        return;
+      }
+
+      let deletedCount = 0;
+      let errorCount = 0;
+      const errors: string[] = [];
+
+      for (const run of runsToDelete) {
+        try {
+          const success = await deleteLeaderboardEntry(run.id);
+          if (success) {
+            deletedCount++;
+          } else {
+            errorCount++;
+            errors.push(`Failed to delete run ${run.id}`);
+          }
+        } catch (error: any) {
+          errorCount++;
+          errors.push(`Error deleting run ${run.id}: ${error.message || String(error)}`);
+        }
+      }
+
+      if (deletedCount > 0) {
+        toast({
+          title: "Runs Cleared",
+          description: `Successfully deleted ${deletedCount} unverified run(s).${errorCount > 0 ? ` ${errorCount} error(s) occurred.` : ''}`,
+          variant: errorCount > 0 ? "destructive" : "default",
+        });
+        
+        // Refresh the runs list
+        await fetchUnverifiedRuns();
+      } else if (errorCount > 0) {
+        toast({
+          title: "Clear Failed",
+          description: `Failed to delete any runs. ${errors.slice(0, 3).join('; ')}${errors.length > 3 ? ` and ${errors.length - 3} more.` : ''}`,
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error("Error clearing unverified runs:", error);
+      const errorMsg = error.message || String(error);
+      const isPermissionError = errorMsg.toLowerCase().includes('permission') || 
+                                errorMsg.toLowerCase().includes('insufficient') ||
+                                errorMsg.toLowerCase().includes('missing');
+      
+      toast({
+        title: isPermissionError ? "Permission Error" : "Error",
+        description: isPermissionError 
+          ? "You don't have permission to delete unverified runs. Please ensure you are logged in as an admin."
+          : (errorMsg || "Failed to clear unverified runs."),
+        variant: "destructive",
+      });
+    } finally {
+      setClearingUnverifiedRuns(false);
     }
   };
 
@@ -2255,11 +2337,30 @@ const Admin = () => {
             {/* Regular Unverified Runs */}
             <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
               <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
-                <CardTitle className="flex items-center gap-2 text-xl text-[#f2cdcd]">
-                  <span>
-                    Unverified Runs
-                  </span>
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-xl text-[#f2cdcd]">
+                    <span>
+                      Unverified Runs
+                    </span>
+                    {unverifiedRuns.length > 0 && (
+                      <Badge variant="secondary" className="ml-2">
+                        {unverifiedRuns.length}
+                      </Badge>
+                    )}
+                  </CardTitle>
+                  {unverifiedRuns.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowConfirmClearUnverifiedDialog(true)}
+                      disabled={clearingUnverifiedRuns}
+                      className="border-red-500/50 text-red-500 hover:bg-red-500/10 hover:border-red-500"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      {clearingUnverifiedRuns ? "Clearing..." : "Clear All"}
+                    </Button>
+                  )}
+                </div>
           </CardHeader>
           <CardContent>
             {unverifiedRuns.length === 0 ? (
@@ -3221,6 +3322,42 @@ const Admin = () => {
                 className="bg-gradient-to-r from-[#a6e3a1] to-[#94e2d5] hover:from-[#94e2d5] hover:to-[#a6e3a1] text-[hsl(240,21%,15%)] font-bold"
               >
                 {savingImportedRun ? "Verifying..." : "Save & Verify"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Confirm Clear Unverified Runs Dialog */}
+        <Dialog open={showConfirmClearUnverifiedDialog} onOpenChange={setShowConfirmClearUnverifiedDialog}>
+          <DialogContent className="bg-[hsl(240,21%,16%)] border-[hsl(235,13%,30%)]">
+            <DialogHeader>
+              <DialogTitle className="text-[#f2cdcd]">Clear All Unverified Runs</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-[hsl(222,15%,60%)] mb-4">
+                Are you sure you want to delete all {unverifiedRuns.filter(run => !run.importedFromSRC).length} unverified runs?
+                This action cannot be undone and will permanently delete all manually submitted runs that are awaiting verification.
+              </p>
+              <p className="text-sm text-red-400 mb-4">
+                Note: This will only delete manually submitted runs. Imported runs will remain in the Imported Runs tab.
+              </p>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowConfirmClearUnverifiedDialog(false)}
+                disabled={clearingUnverifiedRuns}
+                className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleClearUnverifiedRuns}
+                disabled={clearingUnverifiedRuns}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {clearingUnverifiedRuns ? "Deleting..." : "Delete All"}
               </Button>
             </DialogFooter>
           </DialogContent>
