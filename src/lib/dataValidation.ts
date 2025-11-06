@@ -97,6 +97,11 @@ export function normalizeRunType(type: 'solo' | 'co-op' | string | undefined | n
  * Validate and normalize a leaderboard entry
  */
 export function normalizeLeaderboardEntry(entry: Partial<LeaderboardEntry>): Partial<LeaderboardEntry> {
+  // Preserve importedFromSRC explicitly - it's critical for validation bypass
+  const importedFromSRC = entry.importedFromSRC !== undefined 
+    ? (entry.importedFromSRC === true || entry.importedFromSRC === 1 || entry.importedFromSRC === "true" || entry.importedFromSRC === Boolean(true))
+    : undefined;
+  
   return {
     ...entry,
     playerName: normalizePlayerName(entry.playerName),
@@ -109,7 +114,8 @@ export function normalizeLeaderboardEntry(entry: Partial<LeaderboardEntry>): Par
     runType: normalizeRunType(entry.runType),
     leaderboardType: normalizeLeaderboardType(entry.leaderboardType),
     verified: Boolean(entry.verified),
-    importedFromSRC: entry.importedFromSRC !== undefined ? Boolean(entry.importedFromSRC) : undefined,
+    // Explicitly preserve importedFromSRC as boolean true if it was truthy
+    importedFromSRC: importedFromSRC !== undefined ? (importedFromSRC ? true : false) : undefined,
     // Preserve SRC fallback names and srcRunId (don't normalize them, just trim)
     srcCategoryName: entry.srcCategoryName ? String(entry.srcCategoryName).trim() : undefined,
     srcPlatformName: entry.srcPlatformName ? String(entry.srcPlatformName).trim() : undefined,

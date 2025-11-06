@@ -331,37 +331,20 @@ export const addLeaderboardEntryFirestore = async (entry: Omit<LeaderboardEntry,
       });
     }
     
-    // For imported runs, use more lenient validation
-    // If it's an imported run with SRC names but no IDs, that's acceptable
+    // For imported runs, ALWAYS use lenient validation
+    // Imported runs can have empty category/platform IDs if SRC names exist
     const isImportedRun = normalized.importedFromSRC === true || normalized.importedFromSRC === Boolean(true) || !!normalized.importedFromSRC;
-    const hasSRCFallback = (normalized.srcCategoryName || normalized.srcPlatformName);
     
-    // Skip strict validation for imported runs that have SRC fallback names
-    // They can be fixed by admins later
-    if (!isImportedRun || !hasSRCFallback) {
-      const validation = validateLeaderboardEntry(normalized);
+    if (isImportedRun) {
+      // For imported runs, only validate essential fields
+      // Category and platform can be empty if SRC names exist, or even if they don't (admin can fix later)
+      console.log(`[addLeaderboardEntry] Imported run detected - using lenient validation`, {
+        hasCategory: !!normalized.category && normalized.category.trim() !== "",
+        hasPlatform: !!normalized.platform && normalized.platform.trim() !== "",
+        hasSRCCategory: !!normalized.srcCategoryName,
+        hasSRCPlatform: !!normalized.srcPlatformName,
+      });
       
-      if (!validation.valid) {
-        console.error("Validation failed for leaderboard entry:", validation.errors, {
-          entry: normalized,
-          importedFromSRC: normalized.importedFromSRC,
-          importedFromSRCType: typeof normalized.importedFromSRC,
-          importedFromSRCValue: normalized.importedFromSRC,
-          isImported: isImportedRun,
-          hasSRCFallback,
-          hasCategory: normalized.category && normalized.category.trim() !== "",
-          hasPlatform: normalized.platform && normalized.platform.trim() !== "",
-          hasSRCCategory: normalized.srcCategoryName && normalized.srcCategoryName.trim() !== "",
-          hasSRCPlatform: normalized.srcPlatformName && normalized.srcPlatformName.trim() !== "",
-          category: normalized.category,
-          platform: normalized.platform,
-          srcCategoryName: normalized.srcCategoryName,
-          srcPlatformName: normalized.srcPlatformName,
-        });
-        throw new Error(`Invalid entry data: ${validation.errors.join(', ')}`);
-      }
-    } else {
-      // For imported runs with SRC fallback, only validate essential fields
       if (!normalized.playerName || normalized.playerName.trim() === "") {
         throw new Error("Player name is required");
       }
@@ -371,8 +354,20 @@ export const addLeaderboardEntryFirestore = async (entry: Omit<LeaderboardEntry,
       if (!normalized.date || normalized.date.trim() === "") {
         throw new Error("Date is required");
       }
-      // Category and platform can be empty if we have SRC names
-      console.log(`[addLeaderboardEntry] Imported run with SRC fallback - skipping strict validation for category/platform`);
+      // Category and platform validation is skipped for imported runs
+      // They can be empty - admins will fix them later
+    } else {
+      // For non-imported runs, use full validation
+      const validation = validateLeaderboardEntry(normalized);
+      
+      if (!validation.valid) {
+        console.error("Validation failed for leaderboard entry:", validation.errors, {
+          entry: normalized,
+          importedFromSRC: normalized.importedFromSRC,
+          importedFromSRCType: typeof normalized.importedFromSRC,
+        });
+        throw new Error(`Invalid entry data: ${validation.errors.join(', ')}`);
+      }
     }
     
     const newDocRef = doc(collection(db, "leaderboardEntries"));
@@ -380,8 +375,9 @@ export const addLeaderboardEntryFirestore = async (entry: Omit<LeaderboardEntry,
       id: newDocRef.id, 
       playerId: normalized.playerId || entry.playerId,
       playerName: normalized.playerName,
-      category: normalized.category,
-      platform: normalized.platform,
+      // For imported runs, category/platform can be empty strings - save them anyway
+      category: normalized.category !== undefined ? normalized.category : "",
+      platform: normalized.platform !== undefined ? normalized.platform : "",
       runType: normalized.runType || 'solo',
       leaderboardType: normalized.leaderboardType || 'regular',
       time: normalized.time,
@@ -403,8 +399,9 @@ export const addLeaderboardEntryFirestore = async (entry: Omit<LeaderboardEntry,
     if (normalized.comment) {
       newEntry.comment = normalized.comment;
     }
+    // Always save importedFromSRC if it's set (even if false, but we expect true for imports)
     if (normalized.importedFromSRC !== undefined) {
-      newEntry.importedFromSRC = normalized.importedFromSRC;
+      newEntry.importedFromSRC = normalized.importedFromSRC === true || normalized.importedFromSRC === Boolean(true);
     }
     if (normalized.srcRunId) {
       newEntry.srcRunId = normalized.srcRunId;
@@ -1019,20 +1016,33 @@ export const updateLeaderboardEntryFirestore = async (runId: string, data: Parti
         const newLeaderboardType = data.leaderboardType || runData.leaderboardType || 'regular';
         const newLevel = data.level !== undefined ? data.level : runData.level;
         
-        let categoryName = "Unknown";
-        let platformName = "Unknown";
+        // For imported runs, use SRC fallback names if IDs are empty
+        let categoryName = runData.srcCategoryName || "Unknown";
+        let platformName = runData.srcPlatformName || "Unknown";
         
-        // Fetch category and platform in parallel for better performance
-        const [categoryDocSnap, platformDocSnap] = await Promise.all([
-          getDoc(doc(db, "categories", newCategoryId)).catch(() => null),
-          getDoc(doc(db, "platforms", newPlatformId)).catch(() => null)
-        ]);
-        
-        if (categoryDocSnap?.exists()) {
-          categoryName = categoryDocSnap.data().name || "Unknown";
+        // Try to fetch category/platform by ID if they exist
+        if (newCategoryId && newCategoryId.trim() !== "") {
+          try {
+            const categoryDocSnap = await getDoc(doc(db, "categories", newCategoryId));
+            if (categoryDocSnap?.exists()) {
+              categoryName = categoryDocSnap.data().name || categoryName;
+            }
+          } catch (error) {
+            // Use SRC fallback if fetch fails
+            console.warn(`Could not fetch category ${newCategoryId}, using SRC fallback: ${categoryName}`);
+          }
         }
-        if (platformDocSnap?.exists()) {
-          platformName = platformDocSnap.data().name || "Unknown";
+        
+        if (newPlatformId && newPlatformId.trim() !== "") {
+          try {
+            const platformDocSnap = await getDoc(doc(db, "platforms", newPlatformId));
+            if (platformDocSnap?.exists()) {
+              platformName = platformDocSnap.data().name || platformName;
+            }
+          } catch (error) {
+            // Use SRC fallback if fetch fails
+            console.warn(`Could not fetch platform ${newPlatformId}, using SRC fallback: ${platformName}`);
+          }
         }
       
       // Calculate rank using helper function
@@ -1142,19 +1152,33 @@ export const updateRunVerificationStatusFirestore = async (runId: string, verifi
       
       // Calculate and store points when verifying (always recalculate to ensure accuracy)
       // Fetch category and platform names in parallel for better performance
-      let categoryName = "Unknown";
-      let platformName = "Unknown";
+      // For imported runs, use SRC fallback names if IDs are empty
+      let categoryName = runData.srcCategoryName || "Unknown";
+      let platformName = runData.srcPlatformName || "Unknown";
       
-      const [categoryDocSnap, platformDocSnap] = await Promise.all([
-        getDoc(doc(db, "categories", runData.category)).catch(() => null),
-        getDoc(doc(db, "platforms", runData.platform)).catch(() => null)
-      ]);
-      
-      if (categoryDocSnap?.exists()) {
-        categoryName = categoryDocSnap.data().name || "Unknown";
+      // Try to fetch category/platform by ID if they exist
+      if (runData.category && runData.category.trim() !== "") {
+        try {
+          const categoryDocSnap = await getDoc(doc(db, "categories", runData.category));
+          if (categoryDocSnap?.exists()) {
+            categoryName = categoryDocSnap.data().name || categoryName;
+          }
+        } catch (error) {
+          // Use SRC fallback if fetch fails
+          console.warn(`Could not fetch category ${runData.category}, using SRC fallback: ${categoryName}`);
+        }
       }
-      if (platformDocSnap?.exists()) {
-        platformName = platformDocSnap.data().name || "Unknown";
+      
+      if (runData.platform && runData.platform.trim() !== "") {
+        try {
+          const platformDocSnap = await getDoc(doc(db, "platforms", runData.platform));
+          if (platformDocSnap?.exists()) {
+            platformName = platformDocSnap.data().name || platformName;
+          }
+        } catch (error) {
+          // Use SRC fallback if fetch fails
+          console.warn(`Could not fetch platform ${runData.platform}, using SRC fallback: ${platformName}`);
+        }
       }
         
       // Update the document first to mark it as verified
@@ -3204,21 +3228,33 @@ export const getVerifiedRunsWithInvalidDataFirestore = async (): Promise<Leaderb
     const levelIds = new Set(levelsSnapshot.docs.map(doc => doc.id));
     
     // Filter runs with invalid data
+    // For imported runs with SRC fallback names, empty IDs are acceptable
     const invalidRuns = runs.filter(run => {
+      const isImportedWithSRCFallback = run.importedFromSRC && (run.srcCategoryName || run.srcPlatformName);
+      
       // Check if category is missing or invalid
-      if (!run.category || !categoryIds.has(run.category)) {
-        return true;
+      // For imported runs, allow empty category if SRC name exists
+      if (!run.category || (!categoryIds.has(run.category) && run.category.trim() !== "")) {
+        if (!isImportedWithSRCFallback || !run.srcCategoryName) {
+          return true;
+        }
       }
       
       // Check if platform is missing or invalid
-      if (!run.platform || !platformIds.has(run.platform)) {
-        return true;
+      // For imported runs, allow empty platform if SRC name exists
+      if (!run.platform || (!platformIds.has(run.platform) && run.platform.trim() !== "")) {
+        if (!isImportedWithSRCFallback || !run.srcPlatformName) {
+          return true;
+        }
       }
       
       // Check if level is required but missing or invalid (for ILs and Community Golds)
+      // For imported runs, allow empty level if SRC name exists
       if (run.leaderboardType === 'individual-level' || run.leaderboardType === 'community-golds') {
-        if (!run.level || !levelIds.has(run.level)) {
-          return true;
+        if (!run.level || (!levelIds.has(run.level) && run.level.trim() !== "")) {
+          if (!isImportedWithSRCFallback || !run.srcLevelName) {
+            return true;
+          }
         }
       }
       
