@@ -936,158 +936,11 @@ export const autoClaimRunsBySRCUsernameFirestore = async (userId: string, srcUse
   }
 };
 
-/**
- * Automatically link runs to a player based on display name matching (case-insensitive)
- * This finds all runs (verified and unverified) where playerName or player2Name matches the display name
- * and updates their playerId to the given userId
- */
-export const autoLinkRunsByDisplayNameFirestore = async (userId: string, displayName: string): Promise<{ linked: number; errors: string[] }> => {
-  if (!db || !displayName || !displayName.trim()) {
-    return { linked: 0, errors: [] };
-  }
-  
-  const result = { linked: 0, errors: [] as string[] };
-  const normalizedDisplayName = displayName.trim().toLowerCase();
-  
-  try {
-    // Get all runs (verified and unverified) to check for matches
-    // Note: Non-admin users can only read verified entries, so we'll handle permission errors gracefully
-    let verifiedSnapshot;
-    let unverifiedSnapshot;
-    
-    try {
-      const verifiedQuery = query(
-        collection(db, "leaderboardEntries"), 
-        where("verified", "==", true), 
-        firestoreLimit(1000)
-      );
-      verifiedSnapshot = await getDocs(verifiedQuery);
-    } catch (error) {
-      console.error("Error fetching verified runs for auto-linking:", error);
-      verifiedSnapshot = { docs: [] } as any;
-    }
-    
-    try {
-      const unverifiedQuery = query(
-        collection(db, "leaderboardEntries"), 
-        where("verified", "==", false), 
-        firestoreLimit(1000)
-      );
-      unverifiedSnapshot = await getDocs(unverifiedQuery);
-    } catch (error: any) {
-      // Non-admin users can't read unverified entries - that's okay, we'll just use verified entries
-      const errorCode = error?.code || error?.message || '';
-      const isPermissionError = errorCode === 'permission-denied' || 
-                                errorCode === 'missing-or-insufficient-permissions' ||
-                                (typeof errorCode === 'string' && errorCode.toLowerCase().includes('permission'));
-      
-      if (!isPermissionError) {
-        console.error("Error fetching unverified runs for auto-linking:", error);
-      }
-      unverifiedSnapshot = { docs: [] } as any;
-    }
-    
-    const allRuns = [
-      ...verifiedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LeaderboardEntry)),
-      ...unverifiedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LeaderboardEntry))
-    ];
-    
-    // Find runs where playerName or player2Name matches (case-insensitive)
-    const runsToLink = allRuns.filter(run => {
-      const runPlayerName = (run.playerName || "").trim().toLowerCase();
-      const runPlayer2Name = (run.player2Name || "").trim().toLowerCase();
-      
-      // Match if either player name matches (case-insensitive)
-      const matches = runPlayerName === normalizedDisplayName || 
-                     (runPlayer2Name && runPlayer2Name === normalizedDisplayName);
-      
-      // Only link if the run isn't already linked to this user or another user
-      if (!matches) return false;
-      
-      const currentPlayerId = run.playerId || "";
-      // Skip if already linked to this user
-      if (currentPlayerId === userId) return false;
-      
-      // Allow linking if unclaimed (empty/null playerId)
-      if (!currentPlayerId || currentPlayerId.trim() === "") {
-        return true;
-      }
-      
-      // Don't link if already linked to another real user
-      return false;
-    });
-    
-    if (runsToLink.length === 0) {
-      return result;
-    }
-    
-    // Batch update runs
-    let batch = writeBatch(db);
-    let batchCount = 0;
-    const MAX_BATCH_SIZE = 500;
-    
-    for (const run of runsToLink) {
-      const runDocRef = doc(db, "leaderboardEntries", run.id);
-      batch.update(runDocRef, { playerId: userId });
-      batchCount++;
-      
-      if (batchCount >= MAX_BATCH_SIZE) {
-        await batch.commit();
-        batchCount = 0;
-        batch = writeBatch(db);
-      }
-    }
-    
-    if (batchCount > 0) {
-      await batch.commit();
-    }
-    
-    result.linked = runsToLink.length;
-    
-    // Recalculate points for the user if any verified runs were linked
-    const verifiedRunsLinked = runsToLink.filter(run => run.verified).length;
-    if (verifiedRunsLinked > 0) {
-      try {
-        await recalculatePlayerPointsFirestore(userId);
-      } catch (error) {
-        console.error(`Error recalculating points after auto-linking:`, error);
-        result.errors.push(`Failed to recalculate points: ${error instanceof Error ? error.message : String(error)}`);
-      }
-    }
-    
-    // For co-op runs, also recalculate player2's points if they have a different userId
-    const coOpRuns = runsToLink.filter(run => run.runType === 'co-op' && run.verified);
-    for (const run of coOpRuns) {
-      if (run.player2Name) {
-        try {
-          const player2 = await getPlayerByDisplayNameFirestore(run.player2Name);
-          if (player2 && player2.uid !== userId) {
-            await recalculatePlayerPointsFirestore(player2.uid);
-          }
-        } catch (error) {
-          console.error(`Error recalculating player2 points for ${run.player2Name}:`, error);
-        }
-      }
-    }
-    
-    return result;
-  } catch (error) {
-    console.error("Error auto-linking runs by display name:", error);
-    result.errors.push(error instanceof Error ? error.message : String(error));
-    return result;
-  }
-};
-
 export const updatePlayerProfileFirestore = async (uid: string, data: Partial<Player>): Promise<boolean> => {
   if (!db) return false;
   try {
     const playerDocRef = doc(db, "players", uid);
     const docSnap = await getDoc(playerDocRef);
-    
-    // Check if displayName is being updated
-    const oldDisplayName = docSnap.exists() ? (docSnap.data() as Player).displayName : null;
-    const newDisplayName = data.displayName?.trim();
-    const displayNameChanged = newDisplayName && newDisplayName !== oldDisplayName;
     
     // Filter out undefined values and convert empty strings for bio/pronouns/twitchUsername/srcUsername to deleteField
     // profilePicture: empty string should delete the field, undefined should skip (no change)
@@ -1148,19 +1001,6 @@ export const updatePlayerProfileFirestore = async (uid: string, data: Partial<Pl
     const oldSRCUsername = docSnap.exists() ? (docSnap.data() as Player).srcUsername : null;
     const newSRCUsername = data.srcUsername?.trim();
     const srcUsernameChanged = newSRCUsername && newSRCUsername !== oldSRCUsername;
-    
-    // Automatically link runs when display name is set or changed
-    if (displayNameChanged && newDisplayName) {
-      // Run auto-linking asynchronously (don't block the profile update)
-      autoLinkRunsByDisplayNameFirestore(uid, newDisplayName).catch(error => {
-        console.error("Error auto-linking runs after display name update:", error);
-      });
-    } else if (!docSnap.exists() && newDisplayName) {
-      // If creating a new profile, also auto-link runs
-      autoLinkRunsByDisplayNameFirestore(uid, newDisplayName).catch(error => {
-        console.error("Error auto-linking runs after profile creation:", error);
-      });
-    }
     
     // Automatically claim runs when SRC username is set or changed
     if (srcUsernameChanged && newSRCUsername) {
@@ -1314,46 +1154,6 @@ export const getPlayerRunsFirestore = async (playerId: string): Promise<Leaderbo
     const entryIds = new Set(entries.map(e => e.id));
     const additionalCoOpRuns = coOpEntries.filter(r => !entryIds.has(r.id));
     entries = [...entries, ...additionalCoOpRuns];
-    
-    // Also find runs by display name matching (case-insensitive)
-    // This handles cases where runs haven't been auto-linked yet
-    if (playerDisplayName) {
-      const normalizedDisplayName = playerDisplayName.toLowerCase();
-      
-      // Get all verified runs and filter by display name match
-      const allVerifiedQuery = query(
-        collection(db, "leaderboardEntries"),
-        where("verified", "==", true),
-        firestoreLimit(1000)
-      );
-      const allVerifiedSnapshot = await getDocs(allVerifiedQuery);
-      
-      const runsByDisplayName = allVerifiedSnapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() } as LeaderboardEntry))
-        .filter(run => {
-          if (run.isObsolete) return false;
-          
-          const runPlayerName = (run.playerName || "").trim().toLowerCase();
-          const runPlayer2Name = (run.player2Name || "").trim().toLowerCase();
-          
-          // Match if playerName or player2Name matches (case-insensitive)
-          const nameMatches = runPlayerName === normalizedDisplayName ||
-                             (runPlayer2Name && runPlayer2Name === normalizedDisplayName);
-          if (!nameMatches) return false;
-          
-          // Include if unclaimed (empty/null playerId) or already linked to this player
-          // For co-op runs, also check player2Id
-          const currentPlayerId = run.playerId || "";
-          const currentPlayer2Id = run.player2Id || "";
-          return (!currentPlayerId || currentPlayerId === playerId) && 
-                 (!currentPlayer2Id || currentPlayer2Id === playerId || currentPlayerId === playerId);
-        });
-      
-      // Add runs by display name (avoid duplicates)
-      const allEntryIds = new Set(entries.map(e => e.id));
-      const additionalRuns = runsByDisplayName.filter(r => !allEntryIds.has(r.id));
-      entries = [...entries, ...additionalRuns];
-    }
 
     if (entries.length === 0) {
       return [];
@@ -3134,53 +2934,6 @@ export const getUnclaimedRunsBySRCUsernameFirestore = async (srcUsername: string
     }
   } catch (error) {
     console.error("Error fetching unclaimed runs by SRC username:", error);
-    return [];
-  }
-};
-
-/**
- * Get unclaimed runs by username (for claiming runs)
- * Only returns verified runs - unverified runs must be verified first
- */
-export const getUnclaimedRunsByUsernameFirestore = async (username: string, currentUserId?: string): Promise<LeaderboardEntry[]> => {
-  if (!db || !username || !username.trim()) return [];
-  try {
-    // Only get verified runs - unverified runs must be verified first
-    const q = query(
-      collection(db, "leaderboardEntries"),
-      where("verified", "==", true),
-      firestoreLimit(500)
-    );
-    
-    const verifiedSnapshot = await getDocs(q);
-    const allRuns = verifiedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LeaderboardEntry));
-    
-    const normalizedUsername = username.trim().toLowerCase();
-    
-    // Filter runs that match the username (as player1 or player2) and are truly unclaimed
-    // IMPORTANT: For co-op runs, both players should see the run if it's unclaimed
-    const unclaimedRuns = allRuns
-      .filter(entry => {
-        const entryPlayerName = (entry.playerName || "").trim().toLowerCase();
-        const entryPlayer2Name = (entry.player2Name || "").trim().toLowerCase();
-        
-        // Check if username matches player1 or player2 (for co-op runs, both players can see it)
-        const nameMatches = entryPlayerName === normalizedUsername || 
-                           (entryPlayer2Name && entryPlayer2Name === normalizedUsername);
-        
-        if (!nameMatches) return false;
-        
-        // Check if run is truly unclaimed (not already assigned to any user)
-        const playerId = entry.playerId || "";
-        const isUnclaimed = !playerId || playerId.trim() === "";
-        
-        // Only return unclaimed runs (exclude runs already claimed by any user, including current user)
-        return isUnclaimed;
-      });
-    
-    return unclaimedRuns;
-  } catch (error) {
-    console.error("Error fetching unclaimed runs:", error);
     return [];
   }
 };
