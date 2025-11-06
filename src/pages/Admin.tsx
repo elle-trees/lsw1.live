@@ -4474,367 +4474,7 @@ const Admin = () => {
                 )}
               </CardContent>
             </Card>
-
-        {/* Edit Imported Run Dialog */}
-          <Dialog open={!!editingImportedRun} onOpenChange={(open) => {
-          if (!open) {
-            // Only close if not currently saving
-            if (!savingImportedRun) {
-              setEditingImportedRun(null);
-              setEditingImportedRunForm({});
-            }
-          }
-        }}>
-          <DialogContent className="bg-[hsl(240,21%,16%)] border-[hsl(235,13%,30%)] max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-[#f2cdcd]">
-                {editingImportedRun?.importedFromSRC ? "Edit Imported Run" : "Edit Run"}
-              </DialogTitle>
-            </DialogHeader>
-            {editingImportedRun && (
-              <div className="space-y-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="edit-playerName">Player Name <span className="text-red-500">*</span></Label>
-                    <Input
-                      id="edit-playerName"
-                      value={editingImportedRunForm.playerName ?? editingImportedRun.playerName ?? ""}
-                      onChange={(e) => setEditingImportedRunForm({ ...editingImportedRunForm, playerName: e.target.value })}
-                      className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
-                      placeholder="Enter player name"
-                    />
-                    {(!editingImportedRunForm.playerName && !editingImportedRun.playerName) && (
-                      <p className="text-xs text-red-400 mt-1">Player name is required</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="edit-player2Name">
-                      Player 2 Name (Co-op) 
-                      {(editingImportedRunForm.runType ?? editingImportedRun.runType) === 'co-op' && (
-                        <span className="text-red-500"> *</span>
-                      )}
-                    </Label>
-                    <Input
-                      id="edit-player2Name"
-                      value={editingImportedRunForm.player2Name ?? editingImportedRun.player2Name ?? ""}
-                      onChange={(e) => setEditingImportedRunForm({ ...editingImportedRunForm, player2Name: e.target.value || undefined })}
-                      className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
-                      placeholder="Enter second player name"
-                      disabled={(editingImportedRunForm.runType ?? editingImportedRun.runType) !== 'co-op'}
-                    />
-                    {(editingImportedRunForm.runType ?? editingImportedRun.runType) === 'co-op' && (!editingImportedRunForm.player2Name && !editingImportedRun.player2Name) && (
-                      <p className="text-xs text-red-400 mt-1">Player 2 name is required for co-op runs</p>
-                    )}
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="edit-category">Category <span className="text-red-500">*</span></Label>
-                    <Select
-                      value={editingImportedRunForm.category ?? editingImportedRun.category ?? ""}
-                      onValueChange={(value) => setEditingImportedRunForm({ ...editingImportedRunForm, category: value })}
-                    >
-                      <SelectTrigger className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]">
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {firestoreCategories
-                          .filter(cat => {
-                            // Filter categories by leaderboard type
-                            const runLeaderboardType = editingImportedRunForm.leaderboardType ?? editingImportedRun.leaderboardType ?? 'regular';
-                            const catType = (cat as Category).leaderboardType || 'regular';
-                            return catType === runLeaderboardType;
-                          })
-                          .map((cat) => (
-                            <SelectItem key={cat.id} value={cat.id}>
-                              {cat.name}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                    {(!editingImportedRunForm.category && !editingImportedRun.category) && (
-                      <p className="text-xs text-red-400 mt-1">Category is required</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="edit-platform">Platform <span className="text-red-500">*</span></Label>
-                    <Select
-                      value={editingImportedRunForm.platform ?? editingImportedRun.platform ?? ""}
-                      onValueChange={(value) => setEditingImportedRunForm({ ...editingImportedRunForm, platform: value })}
-                    >
-                      <SelectTrigger className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]">
-                        <SelectValue placeholder="Select a platform" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {firestorePlatforms.map((platform) => (
-                          <SelectItem key={platform.id} value={platform.id}>
-                            {platform.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {(!editingImportedRunForm.platform && !editingImportedRun.platform) && (
-                      <p className="text-xs text-red-400 mt-1">Platform is required</p>
-                    )}
-                  </div>
-                </div>
-                {/* Subcategory selector (only for regular leaderboard type) */}
-                {editingImportedRun.leaderboardType === 'regular' && (() => {
-                  const selectedCategoryId = editingImportedRunForm.category ?? editingImportedRun.category;
-                  const selectedCategory = firestoreCategories.find(c => c.id === selectedCategoryId);
-                  const subcategories = selectedCategory?.subcategories || [];
-                  const sortedSubcategories = [...subcategories].sort((a, b) => {
-                    const orderA = a.order ?? Infinity;
-                    const orderB = b.order ?? Infinity;
-                    return orderA - orderB;
-                  });
-                  
-                  return sortedSubcategories.length > 0 ? (
-                    <div>
-                      <Label htmlFor="edit-subcategory">Subcategory</Label>
-                      <Select
-                        value={editingImportedRunForm.subcategory ?? editingImportedRun.subcategory ?? ""}
-                        onValueChange={(value) => setEditingImportedRunForm({ ...editingImportedRunForm, subcategory: value || undefined })}
-                      >
-                        <SelectTrigger className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]">
-                          <SelectValue placeholder="Select a subcategory (optional)" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="">None</SelectItem>
-                          {sortedSubcategories.map((subcategory) => (
-                            <SelectItem key={subcategory.id} value={subcategory.id}>
-                              {subcategory.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  ) : null;
-                })()}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="edit-runType">Run Type <span className="text-red-500">*</span></Label>
-                    <Select
-                      value={editingImportedRunForm.runType ?? editingImportedRun.runType ?? ""}
-                      onValueChange={(value) => {
-                        const newRunType = value as 'solo' | 'co-op';
-                        setEditingImportedRunForm({ 
-                          ...editingImportedRunForm, 
-                          runType: newRunType,
-                          // Clear player2Name if switching to solo
-                          player2Name: newRunType === 'solo' ? undefined : editingImportedRunForm.player2Name
-                        });
-                      }}
-                    >
-                      <SelectTrigger className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]">
-                        <SelectValue placeholder="Select run type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="solo">Solo</SelectItem>
-                        <SelectItem value="co-op">Co-op</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {(!editingImportedRunForm.runType && !editingImportedRun.runType) && (
-                      <p className="text-xs text-red-400 mt-1">Run type is required</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="edit-time">Time (HH:MM:SS) <span className="text-red-500">*</span></Label>
-                    <Input
-                      id="edit-time"
-                      value={editingImportedRunForm.time ?? editingImportedRun.time ?? ""}
-                      onChange={(e) => setEditingImportedRunForm({ ...editingImportedRunForm, time: e.target.value })}
-                      className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
-                      placeholder="00:00:00"
-                    />
-                    {(!editingImportedRunForm.time && !editingImportedRun.time) && (
-                      <p className="text-xs text-red-400 mt-1">Time is required</p>
-                    )}
-                  </div>
-                </div>
-                {(editingImportedRun.leaderboardType === 'individual-level' || editingImportedRun.leaderboardType === 'community-golds') && (
-                  <div>
-                    <Label htmlFor="edit-level">Level <span className="text-red-500">*</span></Label>
-                    <Select
-                      value={editingImportedRunForm.level ?? editingImportedRun.level ?? ""}
-                      onValueChange={(value) => setEditingImportedRunForm({ ...editingImportedRunForm, level: value })}
-                    >
-                      <SelectTrigger className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]">
-                        <SelectValue placeholder="Select a level" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableLevels.map((level) => (
-                          <SelectItem key={level.id} value={level.id}>
-                            {level.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {(!editingImportedRunForm.level && !editingImportedRun.level) && (
-                      <p className="text-xs text-red-400 mt-1">Level is required for {editingImportedRun.leaderboardType === 'individual-level' ? 'Individual Level' : 'Community Gold'} runs</p>
-                    )}
-                  </div>
-                )}
-                <div>
-                  <Label htmlFor="edit-date">Date <span className="text-red-500">*</span></Label>
-                  <Input
-                    id="edit-date"
-                    type="date"
-                    value={editingImportedRunForm.date ?? editingImportedRun.date ?? ""}
-                    onChange={(e) => setEditingImportedRunForm({ ...editingImportedRunForm, date: e.target.value })}
-                    className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
-                  />
-                  {(!editingImportedRunForm.date && !editingImportedRun.date) && (
-                    <p className="text-xs text-red-400 mt-1">Date is required</p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="edit-videoUrl">Video URL</Label>
-                  <Input
-                    id="edit-videoUrl"
-                    value={editingImportedRunForm.videoUrl ?? editingImportedRun.videoUrl ?? ""}
-                    onChange={(e) => setEditingImportedRunForm({ ...editingImportedRunForm, videoUrl: e.target.value || undefined })}
-                    className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
-                    placeholder="https://..."
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit-comment">Comment</Label>
-                  <Textarea
-                    id="edit-comment"
-                    value={editingImportedRunForm.comment ?? editingImportedRun.comment ?? ""}
-                    onChange={(e) => setEditingImportedRunForm({ ...editingImportedRunForm, comment: e.target.value || undefined })}
-                    className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
-                    placeholder="Optional comment..."
-                  />
-                </div>
-              </div>
-            )}
-            <DialogFooter className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setEditingImportedRun(null);
-                  setEditingImportedRunForm({});
-                }}
-                className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSaveImportedRun}
-                disabled={savingImportedRun}
-                className="bg-gradient-to-r from-[#cba6f7] to-[#b4a0e2] hover:from-[#b4a0e2] hover:to-[#cba6f7] text-[hsl(240,21%,15%)] font-bold"
-              >
-                {savingImportedRun ? "Saving..." : "Save Changes"}
-              </Button>
-              <Button
-                onClick={async () => {
-                  // Verify the run immediately after saving
-                  if (!editingImportedRun) return;
-                  
-                  // Validate required fields first
-                  const finalForm = {
-                    playerName: editingImportedRunForm.playerName ?? editingImportedRun.playerName,
-                    player2Name: editingImportedRunForm.player2Name ?? editingImportedRun.player2Name,
-                    category: editingImportedRunForm.category ?? editingImportedRun.category,
-                    subcategory: editingImportedRunForm.subcategory ?? editingImportedRun.subcategory,
-                    platform: editingImportedRunForm.platform ?? editingImportedRun.platform,
-                    runType: editingImportedRunForm.runType ?? editingImportedRun.runType,
-                    leaderboardType: editingImportedRunForm.leaderboardType ?? editingImportedRun.leaderboardType,
-                    level: editingImportedRunForm.level ?? editingImportedRun.level,
-                    time: editingImportedRunForm.time ?? editingImportedRun.time,
-                    date: editingImportedRunForm.date ?? editingImportedRun.date,
-                    videoUrl: editingImportedRunForm.videoUrl ?? editingImportedRun.videoUrl,
-                    comment: editingImportedRunForm.comment ?? editingImportedRun.comment,
-                  };
-                  
-                  // Quick validation
-                  if (!finalForm.playerName?.trim() || !finalForm.category?.trim() || !finalForm.platform?.trim() || !finalForm.time?.trim() || !finalForm.date?.trim()) {
-                    toast({
-                      title: "Missing Information",
-                      description: "Please fill in all required fields before verifying.",
-                      variant: "destructive",
-                    });
-                    return;
-                  }
-                  
-                  setSavingImportedRun(true);
-                  try {
-                    const updateData: Partial<LeaderboardEntry> = {
-                      playerName: finalForm.playerName.trim(),
-                      category: finalForm.category.trim(),
-                      platform: finalForm.platform.trim(),
-                      runType: finalForm.runType,
-                      leaderboardType: finalForm.leaderboardType,
-                      time: finalForm.time.trim(),
-                      date: finalForm.date.trim(),
-                      verified: true, // Verify immediately
-                      verifiedBy: currentUser?.uid || currentUser?.displayName || "Admin",
-                    };
-
-                    // Add optional fields
-                    if (finalForm.player2Name && finalForm.player2Name.trim()) {
-                      updateData.player2Name = finalForm.player2Name.trim();
-                    } else if (finalForm.runType === 'co-op') {
-                      updateData.player2Name = finalForm.player2Name?.trim() || '';
-                    }
-                    
-                    if (finalForm.level && finalForm.level.trim()) {
-                      updateData.level = finalForm.level.trim();
-                    }
-                    
-                    if (finalForm.videoUrl && finalForm.videoUrl.trim()) {
-                      updateData.videoUrl = finalForm.videoUrl.trim();
-                    }
-                    
-                    if (finalForm.comment && finalForm.comment.trim()) {
-                      updateData.comment = finalForm.comment.trim();
-                    }
-                    
-                    // Add subcategory for regular runs
-                    if (finalForm.leaderboardType === 'regular') {
-                      if (finalForm.subcategory && finalForm.subcategory.trim()) {
-                        updateData.subcategory = finalForm.subcategory.trim();
-                      } else {
-                        // Clear subcategory if none selected
-                        updateData.subcategory = undefined;
-                      }
-                    }
-
-                    const success = await updateLeaderboardEntry(editingImportedRun.id, updateData);
-                    if (success) {
-                      toast({
-                        title: "Run Verified",
-                        description: "The run has been saved and verified successfully.",
-                      });
-                      // Update local state - remove from imported runs since it's now verified
-                      setImportedSRCRuns(prev => prev.filter(run => run.id !== editingImportedRun.id));
-                      setUnverifiedRuns(prev => prev.filter(run => run.id !== editingImportedRun.id));
-                      // Close dialog and reset form
-                      setEditingImportedRun(null);
-                      setEditingImportedRunForm({});
-                    } else {
-                      throw new Error("Failed to verify run");
-                    }
-                  } catch (error: any) {
-                    toast({
-                      title: "Error",
-                      description: error.message || "Failed to verify imported run.",
-                      variant: "destructive",
-                    });
-                  } finally {
-                    setSavingImportedRun(false);
-                  }
-                }}
-                disabled={savingImportedRun}
-                className="bg-gradient-to-r from-[#a6e3a1] to-[#94e2d5] hover:from-[#94e2d5] hover:to-[#a6e3a1] text-[hsl(240,21%,15%)] font-bold"
-              >
-                {savingImportedRun ? "Verifying..." : "Save & Verify"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          </TabsContent>
 
         {/* Confirm Clear Unverified Runs Dialog */}
         <Dialog open={showConfirmClearUnverifiedDialog} onOpenChange={setShowConfirmClearUnverifiedDialog}>
@@ -6634,6 +6274,367 @@ const Admin = () => {
         </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Edit Imported Run Dialog */}
+        <Dialog open={!!editingImportedRun} onOpenChange={(open) => {
+          if (!open) {
+            // Only close if not currently saving
+            if (!savingImportedRun) {
+              setEditingImportedRun(null);
+              setEditingImportedRunForm({});
+            }
+          }
+        }}>
+          <DialogContent className="bg-[hsl(240,21%,16%)] border-[hsl(235,13%,30%)] max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-[#f2cdcd]">
+                {editingImportedRun?.importedFromSRC ? "Edit Imported Run" : "Edit Run"}
+              </DialogTitle>
+            </DialogHeader>
+            {editingImportedRun && (
+              <div className="space-y-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="edit-playerName">Player Name <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="edit-playerName"
+                      value={editingImportedRunForm.playerName ?? editingImportedRun.playerName ?? ""}
+                      onChange={(e) => setEditingImportedRunForm({ ...editingImportedRunForm, playerName: e.target.value })}
+                      className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
+                      placeholder="Enter player name"
+                    />
+                    {(!editingImportedRunForm.playerName && !editingImportedRun.playerName) && (
+                      <p className="text-xs text-red-400 mt-1">Player name is required</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-player2Name">
+                      Player 2 Name (Co-op) 
+                      {(editingImportedRunForm.runType ?? editingImportedRun.runType) === 'co-op' && (
+                        <span className="text-red-500"> *</span>
+                      )}
+                    </Label>
+                    <Input
+                      id="edit-player2Name"
+                      value={editingImportedRunForm.player2Name ?? editingImportedRun.player2Name ?? ""}
+                      onChange={(e) => setEditingImportedRunForm({ ...editingImportedRunForm, player2Name: e.target.value || undefined })}
+                      className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
+                      placeholder="Enter second player name"
+                      disabled={(editingImportedRunForm.runType ?? editingImportedRun.runType) !== 'co-op'}
+                    />
+                    {(editingImportedRunForm.runType ?? editingImportedRun.runType) === 'co-op' && (!editingImportedRunForm.player2Name && !editingImportedRun.player2Name) && (
+                      <p className="text-xs text-red-400 mt-1">Player 2 name is required for co-op runs</p>
+                    )}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="edit-category">Category <span className="text-red-500">*</span></Label>
+                    <Select
+                      value={editingImportedRunForm.category ?? editingImportedRun.category ?? ""}
+                      onValueChange={(value) => setEditingImportedRunForm({ ...editingImportedRunForm, category: value })}
+                    >
+                      <SelectTrigger className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]">
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {firestoreCategories
+                          .filter(cat => {
+                            // Filter categories by leaderboard type
+                            const runLeaderboardType = editingImportedRunForm.leaderboardType ?? editingImportedRun.leaderboardType ?? 'regular';
+                            const catType = (cat as Category).leaderboardType || 'regular';
+                            return catType === runLeaderboardType;
+                          })
+                          .map((cat) => (
+                            <SelectItem key={cat.id} value={cat.id}>
+                              {cat.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                    {(!editingImportedRunForm.category && !editingImportedRun.category) && (
+                      <p className="text-xs text-red-400 mt-1">Category is required</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-platform">Platform <span className="text-red-500">*</span></Label>
+                    <Select
+                      value={editingImportedRunForm.platform ?? editingImportedRun.platform ?? ""}
+                      onValueChange={(value) => setEditingImportedRunForm({ ...editingImportedRunForm, platform: value })}
+                    >
+                      <SelectTrigger className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]">
+                        <SelectValue placeholder="Select a platform" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {firestorePlatforms.map((platform) => (
+                          <SelectItem key={platform.id} value={platform.id}>
+                            {platform.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {(!editingImportedRunForm.platform && !editingImportedRun.platform) && (
+                      <p className="text-xs text-red-400 mt-1">Platform is required</p>
+                    )}
+                  </div>
+                </div>
+                {/* Subcategory selector (only for regular leaderboard type) */}
+                {editingImportedRun.leaderboardType === 'regular' && (() => {
+                  const selectedCategoryId = editingImportedRunForm.category ?? editingImportedRun.category;
+                  const selectedCategory = firestoreCategories.find(c => c.id === selectedCategoryId);
+                  const subcategories = selectedCategory?.subcategories || [];
+                  const sortedSubcategories = [...subcategories].sort((a, b) => {
+                    const orderA = a.order ?? Infinity;
+                    const orderB = b.order ?? Infinity;
+                    return orderA - orderB;
+                  });
+                  
+                  return sortedSubcategories.length > 0 ? (
+                    <div>
+                      <Label htmlFor="edit-subcategory">Subcategory</Label>
+                      <Select
+                        value={editingImportedRunForm.subcategory ?? editingImportedRun.subcategory ?? ""}
+                        onValueChange={(value) => setEditingImportedRunForm({ ...editingImportedRunForm, subcategory: value || undefined })}
+                      >
+                        <SelectTrigger className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]">
+                          <SelectValue placeholder="Select a subcategory (optional)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">None</SelectItem>
+                          {sortedSubcategories.map((subcategory) => (
+                            <SelectItem key={subcategory.id} value={subcategory.id}>
+                              {subcategory.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : null;
+                })()}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="edit-runType">Run Type <span className="text-red-500">*</span></Label>
+                    <Select
+                      value={editingImportedRunForm.runType ?? editingImportedRun.runType ?? ""}
+                      onValueChange={(value) => {
+                        const newRunType = value as 'solo' | 'co-op';
+                        setEditingImportedRunForm({ 
+                          ...editingImportedRunForm, 
+                          runType: newRunType,
+                          // Clear player2Name if switching to solo
+                          player2Name: newRunType === 'solo' ? undefined : editingImportedRunForm.player2Name
+                        });
+                      }}
+                    >
+                      <SelectTrigger className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]">
+                        <SelectValue placeholder="Select run type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="solo">Solo</SelectItem>
+                        <SelectItem value="co-op">Co-op</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {(!editingImportedRunForm.runType && !editingImportedRun.runType) && (
+                      <p className="text-xs text-red-400 mt-1">Run type is required</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-time">Time (HH:MM:SS) <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="edit-time"
+                      value={editingImportedRunForm.time ?? editingImportedRun.time ?? ""}
+                      onChange={(e) => setEditingImportedRunForm({ ...editingImportedRunForm, time: e.target.value })}
+                      className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
+                      placeholder="00:00:00"
+                    />
+                    {(!editingImportedRunForm.time && !editingImportedRun.time) && (
+                      <p className="text-xs text-red-400 mt-1">Time is required</p>
+                    )}
+                  </div>
+                </div>
+                {(editingImportedRun.leaderboardType === 'individual-level' || editingImportedRun.leaderboardType === 'community-golds') && (
+                  <div>
+                    <Label htmlFor="edit-level">Level <span className="text-red-500">*</span></Label>
+                    <Select
+                      value={editingImportedRunForm.level ?? editingImportedRun.level ?? ""}
+                      onValueChange={(value) => setEditingImportedRunForm({ ...editingImportedRunForm, level: value })}
+                    >
+                      <SelectTrigger className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]">
+                        <SelectValue placeholder="Select a level" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableLevels.map((level) => (
+                          <SelectItem key={level.id} value={level.id}>
+                            {level.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {(!editingImportedRunForm.level && !editingImportedRun.level) && (
+                      <p className="text-xs text-red-400 mt-1">Level is required for {editingImportedRun.leaderboardType === 'individual-level' ? 'Individual Level' : 'Community Gold'} runs</p>
+                    )}
+                  </div>
+                )}
+                <div>
+                  <Label htmlFor="edit-date">Date <span className="text-red-500">*</span></Label>
+                  <Input
+                    id="edit-date"
+                    type="date"
+                    value={editingImportedRunForm.date ?? editingImportedRun.date ?? ""}
+                    onChange={(e) => setEditingImportedRunForm({ ...editingImportedRunForm, date: e.target.value })}
+                    className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
+                  />
+                  {(!editingImportedRunForm.date && !editingImportedRun.date) && (
+                    <p className="text-xs text-red-400 mt-1">Date is required</p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="edit-videoUrl">Video URL</Label>
+                  <Input
+                    id="edit-videoUrl"
+                    value={editingImportedRunForm.videoUrl ?? editingImportedRun.videoUrl ?? ""}
+                    onChange={(e) => setEditingImportedRunForm({ ...editingImportedRunForm, videoUrl: e.target.value || undefined })}
+                    className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
+                    placeholder="https://..."
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-comment">Comment</Label>
+                  <Textarea
+                    id="edit-comment"
+                    value={editingImportedRunForm.comment ?? editingImportedRun.comment ?? ""}
+                    onChange={(e) => setEditingImportedRunForm({ ...editingImportedRunForm, comment: e.target.value || undefined })}
+                    className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
+                    placeholder="Optional comment..."
+                  />
+                </div>
+              </div>
+            )}
+            <DialogFooter className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setEditingImportedRun(null);
+                  setEditingImportedRunForm({});
+                }}
+                className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSaveImportedRun}
+                disabled={savingImportedRun}
+                className="bg-gradient-to-r from-[#cba6f7] to-[#b4a0e2] hover:from-[#b4a0e2] hover:to-[#cba6f7] text-[hsl(240,21%,15%)] font-bold"
+              >
+                {savingImportedRun ? "Saving..." : "Save Changes"}
+              </Button>
+              <Button
+                onClick={async () => {
+                  // Verify the run immediately after saving
+                  if (!editingImportedRun) return;
+                  
+                  // Validate required fields first
+                  const finalForm = {
+                    playerName: editingImportedRunForm.playerName ?? editingImportedRun.playerName,
+                    player2Name: editingImportedRunForm.player2Name ?? editingImportedRun.player2Name,
+                    category: editingImportedRunForm.category ?? editingImportedRun.category,
+                    subcategory: editingImportedRunForm.subcategory ?? editingImportedRun.subcategory,
+                    platform: editingImportedRunForm.platform ?? editingImportedRun.platform,
+                    runType: editingImportedRunForm.runType ?? editingImportedRun.runType,
+                    leaderboardType: editingImportedRunForm.leaderboardType ?? editingImportedRun.leaderboardType,
+                    level: editingImportedRunForm.level ?? editingImportedRun.level,
+                    time: editingImportedRunForm.time ?? editingImportedRun.time,
+                    date: editingImportedRunForm.date ?? editingImportedRun.date,
+                    videoUrl: editingImportedRunForm.videoUrl ?? editingImportedRun.videoUrl,
+                    comment: editingImportedRunForm.comment ?? editingImportedRun.comment,
+                  };
+                  
+                  // Quick validation
+                  if (!finalForm.playerName?.trim() || !finalForm.category?.trim() || !finalForm.platform?.trim() || !finalForm.time?.trim() || !finalForm.date?.trim()) {
+                    toast({
+                      title: "Missing Information",
+                      description: "Please fill in all required fields before verifying.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  
+                  setSavingImportedRun(true);
+                  try {
+                    const updateData: Partial<LeaderboardEntry> = {
+                      playerName: finalForm.playerName.trim(),
+                      category: finalForm.category.trim(),
+                      platform: finalForm.platform.trim(),
+                      runType: finalForm.runType,
+                      leaderboardType: finalForm.leaderboardType,
+                      time: finalForm.time.trim(),
+                      date: finalForm.date.trim(),
+                      verified: true, // Verify immediately
+                      verifiedBy: currentUser?.uid || currentUser?.displayName || "Admin",
+                    };
+
+                    // Add optional fields
+                    if (finalForm.player2Name && finalForm.player2Name.trim()) {
+                      updateData.player2Name = finalForm.player2Name.trim();
+                    } else if (finalForm.runType === 'co-op') {
+                      updateData.player2Name = finalForm.player2Name?.trim() || '';
+                    }
+                    
+                    if (finalForm.level && finalForm.level.trim()) {
+                      updateData.level = finalForm.level.trim();
+                    }
+                    
+                    if (finalForm.videoUrl && finalForm.videoUrl.trim()) {
+                      updateData.videoUrl = finalForm.videoUrl.trim();
+                    }
+                    
+                    if (finalForm.comment && finalForm.comment.trim()) {
+                      updateData.comment = finalForm.comment.trim();
+                    }
+                    
+                    // Add subcategory for regular runs
+                    if (finalForm.leaderboardType === 'regular') {
+                      if (finalForm.subcategory && finalForm.subcategory.trim()) {
+                        updateData.subcategory = finalForm.subcategory.trim();
+                      } else {
+                        // Clear subcategory if none selected
+                        updateData.subcategory = undefined;
+                      }
+                    }
+
+                    const success = await updateLeaderboardEntry(editingImportedRun.id, updateData);
+                    if (success) {
+                      toast({
+                        title: "Run Verified",
+                        description: "The run has been saved and verified successfully.",
+                      });
+                      // Update local state - remove from imported runs since it's now verified
+                      setImportedSRCRuns(prev => prev.filter(run => run.id !== editingImportedRun.id));
+                      setUnverifiedRuns(prev => prev.filter(run => run.id !== editingImportedRun.id));
+                      // Close dialog and reset form
+                      setEditingImportedRun(null);
+                      setEditingImportedRunForm({});
+                    } else {
+                      throw new Error("Failed to verify run");
+                    }
+                  } catch (error: any) {
+                    toast({
+                      title: "Error",
+                      description: error.message || "Failed to verify imported run.",
+                      variant: "destructive",
+                    });
+                  } finally {
+                    setSavingImportedRun(false);
+                  }
+                }}
+                disabled={savingImportedRun}
+                className="bg-gradient-to-r from-[#a6e3a1] to-[#94e2d5] hover:from-[#94e2d5] hover:to-[#a6e3a1] text-[hsl(240,21%,15%)] font-bold"
+              >
+                {savingImportedRun ? "Verifying..." : "Save & Verify"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
 
