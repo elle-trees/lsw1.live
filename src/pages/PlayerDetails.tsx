@@ -29,6 +29,16 @@ const PlayerDetails = () => {
     const fetchPlayerData = async () => {
       if (!playerId) return;
       
+      // Prevent accessing unclaimed player profiles
+      if (playerId === "imported" || 
+          playerId.startsWith("unlinked_") || 
+          playerId.startsWith("unclaimed_")) {
+        setPlayer(null);
+        setPlayerRuns([]);
+        setLoading(false);
+        return;
+      }
+      
       setLoading(true);
       try {
         const [fetchedPlayer, fetchedRuns, fetchedCategories, fetchedPlatforms] = await Promise.all([
@@ -37,6 +47,17 @@ const PlayerDetails = () => {
           getCategories(),
           getPlatforms()
         ]);
+        
+        // Double-check: if player is still unclaimed, don't show profile
+        if (!fetchedPlayer || 
+            fetchedPlayer.uid === "imported" || 
+            fetchedPlayer.uid.startsWith("unlinked_") || 
+            fetchedPlayer.uid.startsWith("unclaimed_")) {
+          setPlayer(null);
+          setPlayerRuns([]);
+          setLoading(false);
+          return;
+        }
         
         setPlayer(fetchedPlayer);
         setPlayerRuns(fetchedRuns);

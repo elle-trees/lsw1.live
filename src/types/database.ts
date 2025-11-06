@@ -3,6 +3,7 @@ export interface LeaderboardEntry {
   playerId: string;
   playerName: string;
   player2Name?: string; // New optional field for the second player's name
+  player2Id?: string; // Player ID for player2 (for co-op runs)
   category: string;
   platform: string;
   runType: 'solo' | 'co-op'; // New field for run type

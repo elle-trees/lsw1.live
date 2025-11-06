@@ -318,9 +318,13 @@ export const getLeaderboardEntriesFirestore = async (
     // Get the level data if we're filtering by level (for checking disabled categories)
     const selectedLevelData = normalizedLevelId ? levels.find(l => l.id === normalizedLevelId) : undefined;
 
-    // Enrich entries with player data and SRC fallback names
+    // Enrich entries with player data and mark unclaimed runs
     const enrichedEntries = entries.map(entry => {
-      const isUnclaimed = entry.playerId === "imported" || entry.importedFromSRC === true;
+      // Check if run is unclaimed (consistent check throughout codebase)
+      const isUnclaimed = !entry.playerId || 
+                         entry.playerId === "imported" || 
+                         entry.playerId.startsWith("unlinked_") ||
+                         entry.playerId.startsWith("unclaimed_");
       
       // Only enrich player data for claimed runs
       if (!isUnclaimed) {
@@ -335,18 +339,28 @@ export const getLeaderboardEntriesFirestore = async (
           }
         }
         
-        // For co-op runs, look up player2
-        if (entry.player2Name && entry.runType === 'co-op') {
-          const player2 = playerMap.get(entry.player2Name.trim().toLowerCase());
+        // For co-op runs, look up player2 by player2Id if available, otherwise by name
+        if (entry.runType === 'co-op' && entry.player2Name) {
+          // Try to find player2 by ID first (if stored)
+          let player2: Player | undefined;
+          if (entry.player2Id) {
+            player2 = playerMap.get(entry.player2Id);
+          }
+          // If not found by ID, try by name
+          if (!player2) {
+            player2 = playerMap.get(entry.player2Name.trim().toLowerCase());
+          }
           if (player2) {
             entry.player2Name = player2.displayName || entry.player2Name;
             if (player2.nameColor) {
               entry.player2Color = player2.nameColor;
             }
+            // Store player2Id for linking
+            entry.player2Id = player2.uid;
           }
         }
       } else {
-        // For unclaimed imported runs, use SRC player names if available
+        // For unclaimed runs, use SRC player names if available
         if (entry.srcPlayerName) {
           entry.playerName = entry.srcPlayerName;
         }
@@ -2952,6 +2966,11 @@ export const getUnclaimedRunsByUsernameFirestore = async (username: string, curr
   }
 };
 
+/**
+ * Claim a run for a user
+ * Overhauled system: Only allows claiming unclaimed runs that match user's display name or SRC username
+ * For co-op runs, both players can claim their portion
+ */
 export const claimRunFirestore = async (runId: string, userId: string): Promise<boolean> => {
   if (!db) return false;
   try {
@@ -2978,47 +2997,80 @@ export const claimRunFirestore = async (runId: string, userId: string): Promise<
     const normalizedRunSRCPlayerName = (runData.srcPlayerName || "").trim().toLowerCase();
     const normalizedRunSRCPlayer2Name = (runData.srcPlayer2Name || "").trim().toLowerCase();
     
-    // Check if run is unclaimed
+    // Check if run is unclaimed (consistent check)
     const isUnclaimed = !runData.playerId || 
                        runData.playerId === "imported" || 
                        runData.playerId.startsWith("unlinked_") ||
                        runData.playerId.startsWith("unclaimed_");
     
-    // For imported runs, check SRC username matching
-    if (runData.importedFromSRC && normalizedUserSRCUsername) {
-      const srcNameMatches = normalizedRunSRCPlayerName === normalizedUserSRCUsername ||
-                            (normalizedRunSRCPlayer2Name && normalizedRunSRCPlayer2Name === normalizedUserSRCUsername);
-      
-      if (srcNameMatches && isUnclaimed) {
-        // Allow claiming by SRC username match
-      } else if (!srcNameMatches && isUnclaimed) {
-        // SRC username doesn't match
-        console.error(`Cannot claim run: SRC username "${player.srcUsername}" does not match run SRC player name "${runData.srcPlayerName}" or "${runData.srcPlayer2Name}"`);
-        return false;
-      }
-    }
-    
-    // For non-imported runs or if display name is set, check display name matching
-    if (!runData.importedFromSRC && normalizedUserDisplayName) {
-      const nameMatches = normalizedRunPlayerName === normalizedUserDisplayName ||
-                         (normalizedRunPlayer2Name && normalizedRunPlayer2Name === normalizedUserDisplayName);
-      
-      if (!nameMatches && !isUnclaimed) {
-        console.error(`Cannot claim run: Display name "${player.displayName}" does not match run player name "${runData.playerName}" or player2 name "${runData.player2Name}", and run is already claimed`);
-        return false;
-      }
-    }
-    
-    // If run is already claimed by another user, don't allow claiming
-    if (!isUnclaimed && runData.playerId !== userId) {
-      console.error(`Cannot claim run: Run is already claimed by another user`);
+    // Must be unclaimed to claim
+    if (!isUnclaimed) {
+      console.error(`Cannot claim run: Run is already claimed by user ${runData.playerId}`);
       return false;
     }
     
-    const oldPlayerId = runData.playerId;
+    // For imported runs, prioritize SRC username matching
+    if (runData.importedFromSRC) {
+      if (!normalizedUserSRCUsername) {
+        console.error("Cannot claim imported run: User does not have SRC username set");
+        return false;
+      }
+      
+      const srcNameMatches = normalizedRunSRCPlayerName === normalizedUserSRCUsername ||
+                            (normalizedRunSRCPlayer2Name && normalizedRunSRCPlayer2Name === normalizedUserSRCUsername);
+      
+      if (!srcNameMatches) {
+        console.error(`Cannot claim run: SRC username "${player.srcUsername}" does not match run SRC player name "${runData.srcPlayerName}" or "${runData.srcPlayer2Name}"`);
+        return false;
+      }
+    } else {
+      // For non-imported runs, check display name matching
+      if (!normalizedUserDisplayName) {
+        console.error("Cannot claim run: User does not have display name set");
+        return false;
+      }
+      
+      const nameMatches = normalizedRunPlayerName === normalizedUserDisplayName ||
+                         (normalizedRunPlayer2Name && normalizedRunPlayer2Name === normalizedUserDisplayName);
+      
+      if (!nameMatches) {
+        console.error(`Cannot claim run: Display name "${player.displayName}" does not match run player name "${runData.playerName}" or player2 name "${runData.player2Name}"`);
+        return false;
+      }
+    }
     
-    // Update the run with the new playerId
-    await updateDoc(runDocRef, { playerId: userId });
+    const oldPlayerId = runData.playerId;
+    const oldPlayer2Id = runData.player2Id;
+    
+    // Determine if this is a co-op run and which player is claiming
+    const isCoOp = runData.runType === 'co-op';
+    const isPlayer1 = normalizedRunPlayerName === normalizedUserDisplayName || 
+                     (runData.importedFromSRC && normalizedRunSRCPlayerName === normalizedUserSRCUsername);
+    const isPlayer2 = normalizedRunPlayer2Name === normalizedUserDisplayName || 
+                     (runData.importedFromSRC && normalizedRunSRCPlayer2Name === normalizedUserSRCUsername);
+    
+    // Update the run with the new playerId(s)
+    const updateData: Partial<LeaderboardEntry> = {};
+    
+    if (isCoOp) {
+      // For co-op runs, update the appropriate player slot
+      if (isPlayer1) {
+        updateData.playerId = userId;
+      }
+      if (isPlayer2) {
+        updateData.player2Id = userId;
+      }
+      // If both players are claiming, update both
+      if (isPlayer1 && isPlayer2) {
+        updateData.playerId = userId;
+        updateData.player2Id = userId;
+      }
+    } else {
+      // For solo runs, just update playerId
+      updateData.playerId = userId;
+    }
+    
+    await updateDoc(runDocRef, updateData);
     
     // Recalculate points for affected players
     const playerIds: string[] = [];
@@ -3028,9 +3080,12 @@ export const claimRunFirestore = async (runId: string, userId: string): Promise<
       playerIds.push(userId);
     }
     
-    // Add old player if they had an account
+    // Add old player(s) if they had accounts
     if (oldPlayerId && oldPlayerId !== userId && oldPlayerId !== "imported" && !oldPlayerId.startsWith("unlinked_") && !oldPlayerId.startsWith("unclaimed_")) {
       playerIds.push(oldPlayerId);
+    }
+    if (oldPlayer2Id && oldPlayer2Id !== userId && oldPlayer2Id !== "imported" && !oldPlayer2Id.startsWith("unlinked_") && !oldPlayer2Id.startsWith("unclaimed_")) {
+      playerIds.push(oldPlayer2Id);
     }
     
     // Recalculate points for all affected players

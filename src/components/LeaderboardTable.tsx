@@ -77,21 +77,30 @@ export function LeaderboardTable({ data, platforms = [], categories = [] }: Lead
               <TableCell className="py-2 sm:py-3 px-2 sm:px-4 min-w-[200px] sm:min-w-[280px]">
                 <div className="flex flex-wrap items-center gap-x-1 sm:gap-x-2 gap-y-1">
                 {(() => {
-                  const isUnclaimed = entry.playerId === "imported" || entry.importedFromSRC === true;
+                  // Check if run is unclaimed
+                  const isUnclaimed = !entry.playerId || 
+                                     entry.playerId === "imported" || 
+                                     entry.playerId.startsWith("unlinked_") ||
+                                     entry.playerId.startsWith("unclaimed_");
                   
                   if (isUnclaimed) {
-                    // For unclaimed runs, show name without link
+                    // For unclaimed runs, show name without link and add "Unclaimed" badge
                     return (
                       <>
-                        <span className="font-semibold text-sm sm:text-base whitespace-nowrap text-ctp-text">{entry.playerName}</span>
-                        {entry.player2Name && (
-                          <>
-                            <span className="text-ctp-overlay0 text-xs sm:text-sm"> & </span>
-                            <span className="font-semibold text-sm sm:text-base whitespace-nowrap text-ctp-text">
-                              {entry.player2Name}
-                            </span>
-                          </>
-                        )}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-sm sm:text-base whitespace-nowrap text-ctp-text">{entry.playerName}</span>
+                          {entry.player2Name && (
+                            <>
+                              <span className="text-ctp-overlay0 text-xs sm:text-sm"> & </span>
+                              <span className="font-semibold text-sm sm:text-base whitespace-nowrap text-ctp-text">
+                                {entry.player2Name}
+                              </span>
+                            </>
+                          )}
+                          <Badge variant="outline" className="border-yellow-600/50 bg-yellow-600/10 text-yellow-400 text-xs px-1.5 py-0.5">
+                            Unclaimed
+                          </Badge>
+                        </div>
                       </>
                     );
                   } else {
@@ -109,12 +118,14 @@ export function LeaderboardTable({ data, platforms = [], categories = [] }: Lead
                         {entry.player2Name && (
                           <>
                             <span className="text-ctp-overlay0 text-xs sm:text-sm"> & </span>
-                            <span 
-                              className="font-semibold text-sm sm:text-base whitespace-nowrap"
+                            <Link 
+                              to={`/player/${entry.player2Id || entry.playerId}`} 
+                              className="hover:opacity-80 transition-all inline-block"
                               style={{ color: entry.player2Color || '#cba6f7' }}
+                              onClick={(e) => e.stopPropagation()}
                             >
-                              {entry.player2Name}
-                            </span>
+                              <span className="font-semibold text-sm sm:text-base whitespace-nowrap">{entry.player2Name}</span>
+                            </Link>
                           </>
                         )}
                       </>

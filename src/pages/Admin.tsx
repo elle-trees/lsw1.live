@@ -59,6 +59,7 @@ import {
   getUnassignedRuns,
   findDuplicateRuns,
   removeDuplicateRuns,
+  claimRun,
 } from "@/lib/db";
 import { importSRCRuns, type ImportResult } from "@/lib/speedruncom/importService";
 import { useUploadThing } from "@/lib/uploadthing";
@@ -3290,6 +3291,9 @@ const Admin = () => {
                                   <Badge variant={run.verified ? "default" : "secondary"} className="w-fit">
                                     {run.verified ? "Verified" : "Unverified"}
                                   </Badge>
+                                  <Badge variant="outline" className="w-fit border-yellow-600/50 bg-yellow-600/10 text-yellow-400 text-xs">
+                                    Unclaimed
+                                  </Badge>
                                   {run.importedFromSRC && (
                                     <Badge variant="outline" className="w-fit text-xs">
                                       From SRC
@@ -3298,31 +3302,81 @@ const Admin = () => {
                                 </div>
                               </TableCell>
                               <TableCell className="py-3 px-4 text-center">
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  onClick={async () => {
-                                    if (!window.confirm(`Delete this unassigned run permanently? This action cannot be undone.`)) return;
-                                    try {
-                                      await deleteLeaderboardEntry(run.id);
-                                      toast({
-                                        title: "Run Deleted",
-                                        description: "The unassigned run has been deleted.",
-                                      });
-                                      await fetchUnassignedRuns();
-                                    } catch (error: any) {
-                                      toast({
-                                        title: "Error",
-                                        description: error.message || "Failed to delete run.",
-                                        variant: "destructive",
-                                      });
-                                    }
-                                  }}
-                                  className="text-red-400 border-red-400 hover:bg-red-400/10"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-1" />
-                                  Delete
-                                </Button>
+                                <div className="flex items-center justify-center gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={async () => {
+                                      const playerName = prompt(`Enter the display name or UID of the player to assign this run to:\n\nRun: ${run.playerName}${run.player2Name ? ` & ${run.player2Name}` : ''}\nTime: ${formatTime(run.time)}\nCategory: ${getCategoryName(run.category, firestoreCategories, run.srcCategoryName)}`);
+                                      if (!playerName || !playerName.trim()) return;
+                                      
+                                      try {
+                                        // Try to find player by display name or UID
+                                        let player = await getPlayerByDisplayName(playerName.trim());
+                                        if (!player) {
+                                          // Try by UID
+                                          player = await getPlayerByUid(playerName.trim());
+                                        }
+                                        
+                                        if (!player) {
+                                          toast({
+                                            title: "Player Not Found",
+                                            description: `Could not find a player with name or UID "${playerName.trim()}".`,
+                                            variant: "destructive",
+                                          });
+                                          return;
+                                        }
+                                        
+                                        // Use claimRun to assign the run (it will handle validation and points recalculation)
+                                        const success = await claimRun(run.id, player.uid);
+                                        if (success) {
+                                          toast({
+                                            title: "Run Assigned",
+                                            description: `Run has been assigned to ${player.displayName}.`,
+                                          });
+                                          await fetchUnassignedRuns();
+                                        } else {
+                                          throw new Error("Failed to assign run");
+                                        }
+                                      } catch (error: any) {
+                                        toast({
+                                          title: "Error",
+                                          description: error.message || "Failed to assign run to player.",
+                                          variant: "destructive",
+                                        });
+                                      }
+                                    }}
+                                    className="text-blue-400 border-blue-400 hover:bg-blue-400/10"
+                                  >
+                                    <UserPlus className="h-4 w-4 mr-1" />
+                                    Assign
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={async () => {
+                                      if (!window.confirm(`Delete this unassigned run permanently? This action cannot be undone.`)) return;
+                                      try {
+                                        await deleteLeaderboardEntry(run.id);
+                                        toast({
+                                          title: "Run Deleted",
+                                          description: "The unassigned run has been deleted.",
+                                        });
+                                        await fetchUnassignedRuns();
+                                      } catch (error: any) {
+                                        toast({
+                                          title: "Error",
+                                          description: error.message || "Failed to delete run.",
+                                          variant: "destructive",
+                                        });
+                                      }
+                                    }}
+                                    className="text-red-400 border-red-400 hover:bg-red-400/10"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-1" />
+                                    Delete
+                                  </Button>
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))}
