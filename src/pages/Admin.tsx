@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, ShieldAlert, ExternalLink, Download, PlusCircle, Trash2, Wrench, Edit2, FolderTree, Play, ArrowUp, ArrowDown, Gamepad2, UserPlus, UserMinus, Trophy, Upload, Star, Gem, RefreshCw, X } from "lucide-react";
+import { CheckCircle, XCircle, ShieldAlert, ExternalLink, Download, PlusCircle, Trash2, Wrench, Edit2, FolderTree, Play, ArrowUp, ArrowDown, Gamepad2, UserPlus, UserMinus, Trophy, Upload, Star, Gem, RefreshCw, X, AlertTriangle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Pagination } from "@/components/Pagination";
@@ -92,6 +92,7 @@ const Admin = () => {
   const [importedRunsPlatform, setImportedRunsPlatform] = useState(""); // Empty = All Platforms
   const [importedRunsLevel, setImportedRunsLevel] = useState(""); // Empty = All Levels
   const [importedRunsCategories, setImportedRunsCategories] = useState<{ id: string; name: string }[]>([]);
+  const [unmatchedPlayers, setUnmatchedPlayers] = useState<Map<string, { player1?: string; player2?: string }>>(new Map()); // Map of runId to unmatched player names
   const [downloadEntries, setDownloadEntries] = useState<DownloadEntry[]>([]);
   const [pageLoading, setLoading] = useState(true);
   const [newDownload, setNewDownload] = useState({
@@ -325,10 +326,51 @@ const Admin = () => {
       const data = await getUnverifiedLeaderboardEntries();
       setUnverifiedRuns(data.filter(run => !run.importedFromSRC));
       setUnverifiedPage(1); // Reset to first page when data changes
-      const importedData = await getImportedSRCRuns();
-      setImportedSRCRuns(importedData);
-      setImportedPage(1); // Reset to first page when data changes
+      
+      try {
+        const importedData = await getImportedSRCRuns();
+        console.log(`Fetched ${importedData.length} imported runs`);
+        setImportedSRCRuns(importedData);
+        setImportedPage(1); // Reset to first page when data changes
+        
+        // Check for unmatched players in imported runs
+        const unmatchedMap = new Map<string, { player1?: string; player2?: string }>();
+        for (const run of importedData) {
+          if (!run.verified) {
+            const unmatched: { player1?: string; player2?: string } = {};
+            
+            // Check player1
+            if (run.playerName) {
+              const player1 = await getPlayerByDisplayName(run.playerName);
+              if (!player1) {
+                unmatched.player1 = run.playerName;
+              }
+            }
+            
+            // Check player2
+            if (run.player2Name) {
+              const player2 = await getPlayerByDisplayName(run.player2Name);
+              if (!player2) {
+                unmatched.player2 = run.player2Name;
+              }
+            }
+            
+            if (unmatched.player1 || unmatched.player2) {
+              unmatchedMap.set(run.id, unmatched);
+            }
+          }
+        }
+        setUnmatchedPlayers(unmatchedMap);
+      } catch (importError) {
+        console.error("Error fetching imported runs:", importError);
+        toast({
+          title: "Warning",
+          description: "Failed to load imported runs. They may still be processing.",
+          variant: "default",
+        });
+      }
     } catch (error) {
+      console.error("Error fetching unverified runs:", error);
       toast({
         title: "Error",
         description: "Failed to load unverified runs.",
@@ -544,6 +586,7 @@ const Admin = () => {
 
       let imported = 0;
       let skipped = 0;
+      const unmatchedPlayersMap = new Map<string, { player1?: string; player2?: string }>();
 
       // Import runs
       for (const srcRun of srcRuns) {
@@ -644,8 +687,45 @@ const Admin = () => {
             }
           }
 
+          // Check if player names match any players on the site
+          const player1Matched = await getPlayerByDisplayName(mappedRun.playerName || '');
+          const player2Matched = mappedRun.player2Name ? await getPlayerByDisplayName(mappedRun.player2Name) : null;
+          
+          // Track unmatched players
+          const unmatched: { player1?: string; player2?: string } = {};
+          if (!player1Matched) {
+            unmatched.player1 = mappedRun.playerName;
+          }
+          if (mappedRun.player2Name && !player2Matched) {
+            unmatched.player2 = mappedRun.player2Name;
+          }
+          
+          // Verify the run has importedFromSRC set
+          if (!mappedRun.importedFromSRC) {
+            console.warn(`Run ${srcRun.id} missing importedFromSRC flag, setting it now`);
+            mappedRun.importedFromSRC = true;
+          }
+          if (!mappedRun.srcRunId) {
+            mappedRun.srcRunId = srcRun.id;
+          }
+          
           // Add the run
-          await addLeaderboardEntry(mappedRun as any);
+          const addedRunId = await addLeaderboardEntry(mappedRun as any);
+          
+          if (!addedRunId) {
+            console.error(`Failed to add run ${srcRun.id} - no ID returned`);
+            skipped++;
+            setImportProgress(prev => ({ ...prev, skipped: prev.skipped + 1 }));
+            continue;
+          }
+          
+          console.log(`Successfully imported run ${srcRun.id} with ID ${addedRunId}`);
+          
+          // Store unmatched player info if any (use the run ID from the response)
+          if ((unmatched.player1 || unmatched.player2) && addedRunId) {
+            unmatchedPlayersMap.set(addedRunId, unmatched);
+          }
+          
           imported++;
           setImportProgress(prev => ({ ...prev, imported: prev.imported + 1 }));
           
@@ -658,13 +738,60 @@ const Admin = () => {
         }
       }
 
-      toast({
-        title: "Import Complete",
-        description: `Imported ${imported} runs, skipped ${skipped} duplicates or invalid runs.`,
-      });
+      // Update unmatched players state
+      setUnmatchedPlayers(unmatchedPlayersMap);
+      
+      // Show summary with unmatched player warnings
+      const unmatchedCount = unmatchedPlayersMap.size;
+      if (unmatchedCount > 0) {
+        toast({
+          title: "Import Complete",
+          description: `Imported ${imported} runs, skipped ${skipped} duplicates or invalid runs. ${unmatchedCount} run(s) have player names that don't match any players on the site.`,
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Import Complete",
+          description: `Imported ${imported} runs, skipped ${skipped} duplicates or invalid runs.`,
+        });
+      }
 
-      // Refresh the runs list
-      await fetchUnverifiedRuns();
+      // Refresh the runs list - wait a moment for Firestore to update and index
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Try fetching with retries in case Firestore needs more time
+      let retries = 3;
+      let fetched = false;
+      while (retries > 0 && !fetched) {
+        try {
+          await fetchUnverifiedRuns();
+          const checkData = await getImportedSRCRuns();
+          if (checkData.length >= imported) {
+            fetched = true;
+            console.log(`Successfully fetched ${checkData.length} imported runs after refresh`);
+          } else {
+            console.log(`Only fetched ${checkData.length} of ${imported} imported runs, retrying...`);
+            retries--;
+            if (retries > 0) {
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+          }
+        } catch (error) {
+          console.error("Error refreshing runs:", error);
+          retries--;
+          if (retries > 0) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
+      }
+      
+      if (!fetched) {
+        toast({
+          title: "Warning",
+          description: "Some imported runs may not appear immediately. Please refresh the page.",
+          variant: "default",
+        });
+      }
     } catch (error: any) {
       toast({
         title: "Import Error",
@@ -685,6 +812,29 @@ const Admin = () => {
     try {
       const result = await deleteAllImportedSRCRuns();
       
+      if (result.errors.length > 0) {
+        // Check if there are permission errors
+        const hasPermissionError = result.errors.some(err => 
+          err.toLowerCase().includes('permission') || 
+          err.toLowerCase().includes('insufficient') ||
+          err.toLowerCase().includes('missing')
+        );
+        
+        if (hasPermissionError && result.deleted === 0) {
+          toast({
+            title: "Permission Error",
+            description: "You don't have permission to delete imported runs. Please check your admin status.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Some Errors Occurred",
+            description: `${result.deleted} runs deleted, but some errors occurred: ${result.errors.slice(0, 3).join('; ')}${result.errors.length > 3 ? '...' : ''}`,
+            variant: "destructive",
+          });
+        }
+      }
+      
       if (result.deleted > 0) {
         toast({
           title: "Imported Runs Cleared",
@@ -693,24 +843,24 @@ const Admin = () => {
         
         // Refresh the runs list
         await fetchUnverifiedRuns();
-      } else {
+      } else if (result.errors.length === 0) {
         toast({
           title: "No Runs to Delete",
           description: "No imported runs were found to delete.",
         });
       }
-      
-      if (result.errors.length > 0) {
-        toast({
-          title: "Some Errors Occurred",
-          description: `Some runs could not be deleted: ${result.errors.join(', ')}`,
-          variant: "destructive",
-        });
-      }
     } catch (error: any) {
+      console.error("Error clearing imported runs:", error);
+      const errorMsg = error.message || String(error);
+      const isPermissionError = errorMsg.toLowerCase().includes('permission') || 
+                                errorMsg.toLowerCase().includes('insufficient') ||
+                                errorMsg.toLowerCase().includes('missing');
+      
       toast({
-        title: "Error",
-        description: error.message || "Failed to clear imported runs.",
+        title: isPermissionError ? "Permission Error" : "Error",
+        description: isPermissionError 
+          ? "You don't have permission to delete imported runs. Please ensure you are logged in as an admin."
+          : (errorMsg || "Failed to clear imported runs."),
         variant: "destructive",
       });
     } finally {
@@ -2395,16 +2545,30 @@ const Admin = () => {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {unverifiedImported.slice((importedPage - 1) * itemsPerPage, importedPage * itemsPerPage).map((run) => (
+                            {unverifiedImported.slice((importedPage - 1) * itemsPerPage, importedPage * itemsPerPage).map((run) => {
+                              const unmatched = unmatchedPlayers.get(run.id);
+                              return (
                           <TableRow key={run.id} className="border-b border-[hsl(235,13%,30%)] hover:bg-[hsl(235,19%,13%)] transition-all duration-200 hover:shadow-md">
                             <TableCell className="py-3 px-4 font-medium">
-                              <span style={{ color: run.nameColor || 'inherit' }}>{run.playerName}</span>
-                              {run.player2Name && (
-                                <>
-                                  <span className="text-muted-foreground"> & </span>
-                                  <span style={{ color: run.player2Color || 'inherit' }}>{run.player2Name}</span>
-                                </>
-                              )}
+                              <div className="flex items-center gap-2">
+                                <div className="flex flex-col gap-1">
+                                  <div className="flex items-center gap-1">
+                                    <span style={{ color: run.nameColor || 'inherit' }}>{run.playerName}</span>
+                                    {unmatched?.player1 && (
+                                      <AlertTriangle className="h-4 w-4 text-yellow-500" title={`Player "${run.playerName}" not found on site`} />
+                                    )}
+                                  </div>
+                                  {run.player2Name && (
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-muted-foreground"> & </span>
+                                      <span style={{ color: run.player2Color || 'inherit' }}>{run.player2Name}</span>
+                                      {unmatched?.player2 && (
+                                        <AlertTriangle className="h-4 w-4 text-yellow-500" title={`Player "${run.player2Name}" not found on site`} />
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
                             </TableCell>
                             <TableCell className="py-3 px-4">{
                               importedRunsCategories.find(c => c.id === String(run.category || ''))?.name || 
@@ -2465,8 +2629,9 @@ const Admin = () => {
                                 <XCircle className="h-4 w-4" />
                               </Button>
                             </TableCell>
-                            </TableRow>
-                            ))}
+                          </TableRow>
+                          );
+                          })}
                           </TableBody>
                         </Table>
                       </div>

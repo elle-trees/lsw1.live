@@ -3004,9 +3004,11 @@ export const deleteAllImportedSRCRunsFirestore = async (): Promise<{ deleted: nu
   const result = { deleted: 0, errors: [] as string[] };
   
   try {
-    // Query for all imported runs
+    // Query for unverified imported runs (matching the security rules)
+    // Admins can read unverified entries, so we query for verified == false
     const q = query(
       collection(db, "leaderboardEntries"),
+      where("verified", "==", false),
       where("importedFromSRC", "==", true),
       firestoreLimit(500)
     );
@@ -3015,7 +3017,24 @@ export const deleteAllImportedSRCRunsFirestore = async (): Promise<{ deleted: nu
     let batchCount = 0;
     
     while (hasMore) {
-      const querySnapshot = await getDocs(q);
+      let querySnapshot;
+      try {
+        querySnapshot = await getDocs(q);
+      } catch (queryError: any) {
+        // If query fails, try without the verified filter as fallback
+        console.warn("Query with verified filter failed, trying without filter:", queryError);
+        const fallbackQuery = query(
+          collection(db, "leaderboardEntries"),
+          where("importedFromSRC", "==", true),
+          firestoreLimit(500)
+        );
+        try {
+          querySnapshot = await getDocs(fallbackQuery);
+        } catch (fallbackError) {
+          result.errors.push(`Query error: ${fallbackError instanceof Error ? fallbackError.message : String(fallbackError)}`);
+          break;
+        }
+      }
       
       if (querySnapshot.empty) {
         hasMore = false;
@@ -3034,8 +3053,24 @@ export const deleteAllImportedSRCRunsFirestore = async (): Promise<{ deleted: nu
       try {
         await batch.commit();
         result.deleted += batchSize;
-      } catch (error) {
-        result.errors.push(`Failed to delete batch: ${error instanceof Error ? error.message : String(error)}`);
+        console.log(`Deleted batch of ${batchSize} imported runs`);
+      } catch (batchError: any) {
+        const errorMsg = batchError instanceof Error ? batchError.message : String(batchError);
+        result.errors.push(`Failed to delete batch: ${errorMsg}`);
+        console.error(`Batch delete error:`, batchError);
+        
+        // If batch delete fails, try deleting individually
+        if (batchError.code === 'permission-denied' || errorMsg.includes('permission')) {
+          console.log("Batch delete failed due to permissions, trying individual deletes...");
+          for (const docSnapshot of querySnapshot.docs) {
+            try {
+              await deleteDoc(docSnapshot.ref);
+              result.deleted++;
+            } catch (individualError: any) {
+              result.errors.push(`Failed to delete ${docSnapshot.id}: ${individualError instanceof Error ? individualError.message : String(individualError)}`);
+            }
+          }
+        }
       }
       
       if (querySnapshot.docs.length < 500) {
@@ -3051,7 +3086,9 @@ export const deleteAllImportedSRCRunsFirestore = async (): Promise<{ deleted: nu
     
     return result;
   } catch (error) {
-    result.errors.push(`Delete all imported runs error: ${error instanceof Error ? error.message : String(error)}`);
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    result.errors.push(`Delete all imported runs error: ${errorMsg}`);
+    console.error("Delete all imported runs error:", error);
     return result;
   }
 };
