@@ -261,9 +261,10 @@ const Admin = () => {
     }
   };
 
-  const fetchCategories = async (leaderboardType: 'regular' | 'individual-level' | 'community-golds' = 'regular') => {
+  const fetchCategories = async (leaderboardType?: 'regular' | 'individual-level' | 'community-golds') => {
     try {
-      const categoriesData = await getCategoriesFromFirestore(leaderboardType);
+      const type = leaderboardType || categoryLeaderboardType;
+      const categoriesData = await getCategoriesFromFirestore(type);
       setFirestoreCategories(categoriesData);
     } catch (error) {
       toast({
@@ -357,20 +358,6 @@ const Admin = () => {
       fetchAllData();
     }
   }, [authLoading, currentUser]);
-  
-  const fetchCategories = async (leaderboardType?: 'regular' | 'individual-level' | 'community-golds') => {
-    try {
-      const type = leaderboardType || categoryLeaderboardType;
-      const categoriesData = await getCategoriesFromFirestore(type);
-      setFirestoreCategories(categoriesData);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load categories.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const fetchPlatforms = async () => {
     try {
