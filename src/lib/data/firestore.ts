@@ -102,43 +102,65 @@ export const getLeaderboardEntriesFirestore = async (
     const normalizedLevelId = levelId && levelId !== "all" ? normalizeLevelId(levelId) : undefined;
     
     // Build query constraints dynamically based on filters
+    // Include both verified runs AND imported unverified runs
     // Order matters: verified first, then leaderboardType, then other filters
     const constraints: any[] = [
       where("verified", "==", true),
     ];
+    
+    // Also fetch imported runs (unverified but imported from SRC)
+    const importedConstraints: any[] = [
+      where("verified", "==", false),
+      where("importedFromSRC", "==", true),
+    ];
 
-    // Add leaderboardType filter for non-regular types (required for composite indexes)
-    if (leaderboardType && leaderboardType !== 'regular') {
-      constraints.push(where("leaderboardType", "==", leaderboardType));
-    }
+    // Helper function to add shared filters to a constraint list
+    const addSharedFilters = (constraintList: any[]) => {
+      // Add leaderboardType filter for non-regular types (required for composite indexes)
+      if (leaderboardType && leaderboardType !== 'regular') {
+        constraintList.push(where("leaderboardType", "==", leaderboardType));
+      }
 
-    // Add level filter for ILs and Community Golds (must come after leaderboardType for index)
-    if (normalizedLevelId && (leaderboardType === 'individual-level' || leaderboardType === 'community-golds')) {
-      constraints.push(where("level", "==", normalizedLevelId));
-    }
+      // Add level filter for ILs and Community Golds (must come after leaderboardType for index)
+      if (normalizedLevelId && (leaderboardType === 'individual-level' || leaderboardType === 'community-golds')) {
+        constraintList.push(where("level", "==", normalizedLevelId));
+      }
 
-    // Add category filter (must come after leaderboardType/level for composite indexes)
-    if (normalizedCategoryId) {
-      constraints.push(where("category", "==", normalizedCategoryId));
-    }
+      // Add category filter (must come after leaderboardType/level for composite indexes)
+      if (normalizedCategoryId) {
+        constraintList.push(where("category", "==", normalizedCategoryId));
+      }
 
-    // Add platform filter
-    if (normalizedPlatformId) {
-      constraints.push(where("platform", "==", normalizedPlatformId));
-    }
+      // Add platform filter
+      if (normalizedPlatformId) {
+        constraintList.push(where("platform", "==", normalizedPlatformId));
+      }
 
-    // Add runType filter
-    if (runType && (runType === "solo" || runType === "co-op")) {
-      constraints.push(where("runType", "==", runType));
-    }
+      // Add runType filter
+      if (runType && (runType === "solo" || runType === "co-op")) {
+        constraintList.push(where("runType", "==", runType));
+      }
+    };
+
+    // Add shared filters to both query sets
+    addSharedFilters(constraints);
+    addSharedFilters(importedConstraints);
 
     // Fetch more entries to account for filtering obsolete runs client-side
-    // Also fetch more if we need to sort properly
     const fetchLimit = 500;
     constraints.push(firestoreLimit(fetchLimit));
+    importedConstraints.push(firestoreLimit(fetchLimit));
     
-    const q = query(collection(db, "leaderboardEntries"), ...constraints);
-    const querySnapshot = await getDocs(q);
+    // Execute both queries in parallel (verified runs and imported runs)
+    const [verifiedSnapshot, importedSnapshot] = await Promise.all([
+      getDocs(query(collection(db, "leaderboardEntries"), ...constraints)),
+      getDocs(query(collection(db, "leaderboardEntries"), ...importedConstraints))
+    ]);
+    
+    // Combine results into a single snapshot-like object
+    const querySnapshot = {
+      docs: [...verifiedSnapshot.docs, ...importedSnapshot.docs]
+    };
     
     // Normalize and validate entries
     let entries: LeaderboardEntry[] = querySnapshot.docs
@@ -176,8 +198,20 @@ export const getLeaderboardEntriesFirestore = async (
         }
         
         // Additional validation: ensure required fields exist
-        if (!entry.category || !entry.platform || !entry.time || !entry.runType) {
+        // For imported runs, category/platform can be empty if SRC names exist
+        const isImported = entry.importedFromSRC === true;
+        if (!entry.time || !entry.runType) {
           return false;
+        }
+        // For imported runs, allow empty category/platform if SRC names exist
+        if (!isImported && (!entry.category || !entry.platform)) {
+          return false;
+        }
+        if (isImported && !entry.category && !entry.srcCategoryName) {
+          return false; // Must have either category ID or SRC category name
+        }
+        if (isImported && !entry.platform && !entry.srcPlatformName) {
+          return false; // Must have either platform ID or SRC platform name
         }
         
         // Check if category is disabled for this level (for ILs and Community Golds)
@@ -224,13 +258,17 @@ export const getLeaderboardEntriesFirestore = async (
     entries = [...sortedNonObsolete, ...sortedObsolete].slice(0, 200);
 
     // Batch fetch all unique player IDs to avoid N+1 queries
+    // Only fetch players for claimed runs (not imported/unclaimed)
     const playerIds = new Set<string>();
     const player2Names = new Set<string>();
     entries.forEach(entry => {
-      if (entry.playerId && entry.playerId !== "imported") {
+      // Only fetch player data for runs that are claimed (not imported/unclaimed)
+      const isUnclaimed = entry.playerId === "imported" || entry.importedFromSRC === true;
+      if (!isUnclaimed && entry.playerId) {
         playerIds.add(entry.playerId);
       }
-      if (entry.player2Name && entry.runType === 'co-op') {
+      // For co-op runs, only fetch player2 if the run is claimed
+      if (!isUnclaimed && entry.player2Name && entry.runType === 'co-op') {
         player2Names.add(entry.player2Name.trim().toLowerCase());
       }
     });
@@ -267,36 +305,40 @@ export const getLeaderboardEntriesFirestore = async (
 
     // Enrich entries with player data and SRC fallback names
     const enrichedEntries = entries.map(entry => {
-      // Enrich player data
-      const player = playerMap.get(entry.playerId);
-      if (player) {
-        if (player.displayName) {
-          entry.playerName = player.displayName;
-        }
-        if (player.nameColor) {
-          entry.nameColor = player.nameColor;
-        }
-      }
+      const isUnclaimed = entry.playerId === "imported" || entry.importedFromSRC === true;
       
-      // For imported runs without a matched player, keep the original playerName
-      if (entry.playerId === "imported" && entry.playerName) {
-        // Keep the SRC player name as-is
-      }
-      
-      // For co-op runs, look up player2
-      if (entry.player2Name && entry.runType === 'co-op') {
-        const player2 = playerMap.get(entry.player2Name.trim().toLowerCase());
-        if (player2) {
-          entry.player2Name = player2.displayName || entry.player2Name;
-          if (player2.nameColor) {
-            entry.player2Color = player2.nameColor;
+      // Only enrich player data for claimed runs
+      if (!isUnclaimed) {
+        // Enrich player data
+        const player = playerMap.get(entry.playerId);
+        if (player) {
+          if (player.displayName) {
+            entry.playerName = player.displayName;
+          }
+          if (player.nameColor) {
+            entry.nameColor = player.nameColor;
           }
         }
+        
+        // For co-op runs, look up player2
+        if (entry.player2Name && entry.runType === 'co-op') {
+          const player2 = playerMap.get(entry.player2Name.trim().toLowerCase());
+          if (player2) {
+            entry.player2Name = player2.displayName || entry.player2Name;
+            if (player2.nameColor) {
+              entry.player2Color = player2.nameColor;
+            }
+          }
+        }
+      } else {
+        // For unclaimed imported runs, use SRC player names if available
+        if (entry.srcPlayerName) {
+          entry.playerName = entry.srcPlayerName;
+        }
+        if (entry.srcPlayer2Name && entry.runType === 'co-op') {
+          entry.player2Name = entry.srcPlayer2Name;
+        }
       }
-      
-      // Ensure category, platform, and level names are available (for display)
-      // The data validation utilities will handle SRC fallback names
-      // These are already stored in the entry, so we just need to ensure they're preserved
       
       return entry;
     });
@@ -2704,16 +2746,20 @@ export const getUnclaimedRunsBySRCUsernameFirestore = async (srcUsername: string
       // Users should enter their exact SRC username
       const normalizedSrcUsername = srcUsername.trim().toLowerCase();
       
-      // Filter runs where playerName matches SRC username OR srcPlayerId matches
+      // Filter runs where playerName matches SRC username OR srcPlayerName matches
       const matchingRuns = allRuns.filter(run => {
         if (!run.importedFromSRC) return false;
         
         const runPlayerName = (run.playerName || "").trim().toLowerCase();
         const runPlayer2Name = (run.player2Name || "").trim().toLowerCase();
+        const runSRCPlayerName = (run.srcPlayerName || "").trim().toLowerCase();
+        const runSRCPlayer2Name = (run.srcPlayer2Name || "").trim().toLowerCase();
         
-        // Match by name (case-insensitive)
+        // Match by SRC username (preferred for imported runs) or display name (case-insensitive)
         const nameMatches = runPlayerName === normalizedSrcUsername || 
-                          (runPlayer2Name && runPlayer2Name === normalizedSrcUsername);
+                          (runPlayer2Name && runPlayer2Name === normalizedSrcUsername) ||
+                          runSRCPlayerName === normalizedSrcUsername ||
+                          (runSRCPlayer2Name && runSRCPlayer2Name === normalizedSrcUsername);
         
         if (nameMatches) {
           // Check if already assigned
@@ -2816,31 +2862,52 @@ export const claimRunFirestore = async (runId: string, userId: string): Promise<
     
     // Get the user's player data
     const player = await getPlayerByUidFirestore(userId);
-    if (!player || !player.displayName) {
-      console.error("Cannot claim run: User does not have a display name");
+    if (!player) {
+      console.error("Cannot claim run: User does not have a player profile");
       return false;
     }
     
-    const normalizedUserDisplayName = player.displayName.trim().toLowerCase();
+    const normalizedUserDisplayName = player.displayName ? player.displayName.trim().toLowerCase() : "";
+    const normalizedUserSRCUsername = player.srcUsername ? player.srcUsername.trim().toLowerCase() : "";
     const normalizedRunPlayerName = (runData.playerName || "").trim().toLowerCase();
     const normalizedRunPlayer2Name = (runData.player2Name || "").trim().toLowerCase();
+    const normalizedRunSRCPlayerName = (runData.srcPlayerName || "").trim().toLowerCase();
+    const normalizedRunSRCPlayer2Name = (runData.srcPlayer2Name || "").trim().toLowerCase();
     
-    // Allow claiming if:
-    // 1. The user's display name matches the run's playerName or player2Name (case-insensitive), OR
-    // 2. The run is unclaimed (playerId is "imported", "unlinked_*", "unclaimed_*", or empty)
-    // This allows users to claim any display name that appears in runs
-    const nameMatches = normalizedRunPlayerName === normalizedUserDisplayName ||
-                       (normalizedRunPlayer2Name && normalizedRunPlayer2Name === normalizedUserDisplayName);
-    
+    // Check if run is unclaimed
     const isUnclaimed = !runData.playerId || 
                        runData.playerId === "imported" || 
                        runData.playerId.startsWith("unlinked_") ||
                        runData.playerId.startsWith("unclaimed_");
     
-    // Allow claiming if name matches OR if run is unclaimed
-    // For unclaimed runs, allow claiming any display name from the run
-    if (!nameMatches && !isUnclaimed) {
-      console.error(`Cannot claim run: Display name "${player.displayName}" does not match run player name "${runData.playerName}" or player2 name "${runData.player2Name}", and run is already claimed`);
+    // For imported runs, check SRC username matching
+    if (runData.importedFromSRC && normalizedUserSRCUsername) {
+      const srcNameMatches = normalizedRunSRCPlayerName === normalizedUserSRCUsername ||
+                            (normalizedRunSRCPlayer2Name && normalizedRunSRCPlayer2Name === normalizedUserSRCUsername);
+      
+      if (srcNameMatches && isUnclaimed) {
+        // Allow claiming by SRC username match
+      } else if (!srcNameMatches && isUnclaimed) {
+        // SRC username doesn't match
+        console.error(`Cannot claim run: SRC username "${player.srcUsername}" does not match run SRC player name "${runData.srcPlayerName}" or "${runData.srcPlayer2Name}"`);
+        return false;
+      }
+    }
+    
+    // For non-imported runs or if display name is set, check display name matching
+    if (!runData.importedFromSRC && normalizedUserDisplayName) {
+      const nameMatches = normalizedRunPlayerName === normalizedUserDisplayName ||
+                         (normalizedRunPlayer2Name && normalizedRunPlayer2Name === normalizedUserDisplayName);
+      
+      if (!nameMatches && !isUnclaimed) {
+        console.error(`Cannot claim run: Display name "${player.displayName}" does not match run player name "${runData.playerName}" or player2 name "${runData.player2Name}", and run is already claimed`);
+        return false;
+      }
+    }
+    
+    // If run is already claimed by another user, don't allow claiming
+    if (!isUnclaimed && runData.playerId !== userId) {
+      console.error(`Cannot claim run: Run is already claimed by another user`);
       return false;
     }
     
@@ -2869,7 +2936,7 @@ export const claimRunFirestore = async (runId: string, userId: string): Promise<
     
     // Recalculate points for the old player (if they had an account)
     // This removes the run from their points if they were a linked player
-    if (oldPlayerId && oldPlayerId !== userId && !oldPlayerId.startsWith("unlinked_")) {
+    if (oldPlayerId && oldPlayerId !== userId && oldPlayerId !== "imported" && !oldPlayerId.startsWith("unlinked_") && !oldPlayerId.startsWith("unclaimed_")) {
       try {
         await recalculatePlayerPointsFirestore(oldPlayerId);
       } catch (error) {

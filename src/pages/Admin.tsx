@@ -3714,6 +3714,7 @@ const Admin = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+          </TabsContent>
 
         {/* Category Management Section */}
           <TabsContent value="categories" className="space-y-4 animate-fade-in">

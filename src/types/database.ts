@@ -27,6 +27,8 @@ export interface LeaderboardEntry {
   srcLevelName?: string; // Original level name from SRC
   srcPlayerId?: string; // Speedrun.com player ID (for claiming)
   srcPlayer2Id?: string; // Speedrun.com player2 ID (for co-op runs claiming)
+  srcPlayerName?: string; // Speedrun.com player name/username (for matching and claiming)
+  srcPlayer2Name?: string; // Speedrun.com player2 name/username (for co-op runs claiming)
 }
 
 export interface Player {

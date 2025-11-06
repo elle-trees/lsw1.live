@@ -25,19 +25,19 @@ const TwitchEmbed: React.FC<TwitchEmbedProps> = ({ channel }) => {
           title={`${channel} Twitch Stream`}
         ></iframe>
       </div>
-      <CardContent className="p-4 sm:p-5 lg:p-6 text-center space-y-2 sm:space-y-3 flex-shrink-0">
+      <CardContent className="p-2 sm:p-3 lg:p-3 text-center space-y-1 flex-shrink-0">
         <div className="flex items-center justify-center gap-2 flex-wrap">
-        <p className="text-base sm:text-lg font-semibold text-[hsl(220,17%,92%)]">
+          <p className="text-sm sm:text-base font-semibold text-[hsl(220,17%,92%)]">
             Watch <span className="text-[#cba6f7]">{channel}</span> live on Twitch!
           </p>
-          <Badge variant="outline" className="border-[#9147ff] bg-[#9147ff]/10 text-[#9147ff]">
+          <Badge variant="outline" className="border-[#9147ff] bg-[#9147ff]/10 text-[#9147ff] text-xs">
             <ExternalLink className="h-3 w-3 mr-1" />
             <a href={`https://twitch.tv/${channel}`} target="_blank" rel="noopener noreferrer" className="hover:underline">
               View on Twitch
             </a>
           </Badge>
         </div>
-        <p className="text-xs sm:text-sm text-[hsl(222,15%,60%)]">
+        <p className="text-[10px] sm:text-xs text-[hsl(222,15%,60%)]">
           (Stream is muted by default. Click the player to unmute.)
         </p>
       </CardContent>

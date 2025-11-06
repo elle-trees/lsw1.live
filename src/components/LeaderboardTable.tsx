@@ -76,25 +76,54 @@ export function LeaderboardTable({ data, platforms = [], categories = [] }: Lead
               </TableCell>
               <TableCell className="py-2 sm:py-3 px-2 sm:px-4 min-w-[200px] sm:min-w-[280px]">
                 <div className="flex flex-wrap items-center gap-x-1 sm:gap-x-2 gap-y-1">
-                <Link 
-                  to={`/player/${entry.playerId}`} 
-                  className="hover:opacity-80 transition-all group-hover:scale-105 inline-block"
-                  style={{ color: entry.nameColor || '#cba6f7' }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                    <span className="font-semibold text-sm sm:text-base whitespace-nowrap">{entry.playerName}</span>
-                </Link>
-                {entry.player2Name && (
-                  <>
-                      <span className="text-ctp-overlay0 text-xs sm:text-sm"> & </span>
-                    <span 
-                        className="font-semibold text-sm sm:text-base whitespace-nowrap"
-                      style={{ color: entry.player2Color || '#cba6f7' }}
-                    >
-                      {entry.player2Name}
-                    </span>
-                  </>
-                )}
+                {(() => {
+                  const isUnclaimed = entry.playerId === "imported" || entry.importedFromSRC === true;
+                  
+                  if (isUnclaimed) {
+                    // For unclaimed runs, show name without link
+                    return (
+                      <>
+                        <span className="font-semibold text-sm sm:text-base whitespace-nowrap text-ctp-text">{entry.playerName}</span>
+                        {entry.player2Name && (
+                          <>
+                            <span className="text-ctp-overlay0 text-xs sm:text-sm"> & </span>
+                            <span className="font-semibold text-sm sm:text-base whitespace-nowrap text-ctp-text">
+                              {entry.player2Name}
+                            </span>
+                          </>
+                        )}
+                        <Badge variant="outline" className="border-[#9147ff] bg-[#9147ff]/10 text-[#9147ff] text-xs px-1.5 py-0.5 ml-1">
+                          Unclaimed
+                        </Badge>
+                      </>
+                    );
+                  } else {
+                    // For claimed runs, show with link
+                    return (
+                      <>
+                        <Link 
+                          to={`/player/${entry.playerId}`} 
+                          className="hover:opacity-80 transition-all group-hover:scale-105 inline-block"
+                          style={{ color: entry.nameColor || '#cba6f7' }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <span className="font-semibold text-sm sm:text-base whitespace-nowrap">{entry.playerName}</span>
+                        </Link>
+                        {entry.player2Name && (
+                          <>
+                            <span className="text-ctp-overlay0 text-xs sm:text-sm"> & </span>
+                            <span 
+                              className="font-semibold text-sm sm:text-base whitespace-nowrap"
+                              style={{ color: entry.player2Color || '#cba6f7' }}
+                            >
+                              {entry.player2Name}
+                            </span>
+                          </>
+                        )}
+                      </>
+                    );
+                  }
+                })()}
                 </div>
                 <div className="sm:hidden mt-1">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -106,6 +135,11 @@ export function LeaderboardTable({ data, platforms = [], categories = [] }: Lead
                       {entry.runType === 'solo' ? <User className="h-3 w-3" /> : <Users className="h-3 w-3" />}
                       {entry.runType.charAt(0).toUpperCase() + entry.runType.slice(1)}
                     </Badge>
+                    {(entry.playerId === "imported" || entry.importedFromSRC === true) && (
+                      <Badge variant="outline" className="border-[#9147ff] bg-[#9147ff]/10 text-[#9147ff] text-xs px-1.5 py-0.5">
+                        Unclaimed
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </TableCell>

@@ -766,8 +766,10 @@ export async function mapSRCRunToLeaderboardEntry(
     srcCategoryName: categoryName || undefined,
     srcPlatformName: platformName || undefined,
     srcLevelName: levelName || undefined,
-    // Store SRC player IDs for claiming
+    // Store SRC player IDs and names for claiming
     srcPlayerId: srcPlayerId || undefined,
     srcPlayer2Id: srcPlayer2Id || undefined,
+    srcPlayerName: player1Name.trim() || undefined,
+    srcPlayer2Name: runType === 'co-op' && player2Name ? player2Name.trim() : undefined,
   };
 }
