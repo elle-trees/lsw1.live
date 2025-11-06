@@ -135,6 +135,43 @@ const Leaderboards = () => {
       abortController.abort();
     };
   }, [selectedCategory, selectedPlatform, selectedRunType, selectedLevel, showObsoleteRuns, leaderboardType]);
+  
+  // Refresh leaderboard data when page regains focus (e.g., after claiming a run in another tab)
+  useEffect(() => {
+    const handleFocus = () => {
+      // Refresh data when user returns to the page
+      if (selectedCategory && selectedPlatform && selectedRunType) {
+        const hasLevelFilter = leaderboardType === 'regular' || selectedLevel;
+        if (hasLevelFilter) {
+          // Trigger a refresh by incrementing request counter
+          requestCounterRef.current++;
+          const fetchLeaderboardData = async () => {
+            setLoading(true);
+            try {
+              const data = await getLeaderboardEntries(
+                selectedCategory,
+                selectedPlatform,
+                selectedRunType as 'solo' | 'co-op',
+                showObsoleteRuns === "true",
+                leaderboardType,
+                (leaderboardType === 'individual-level' || leaderboardType === 'community-golds') ? selectedLevel : undefined
+              );
+              setLeaderboardData(data);
+              setCurrentPage(1);
+            } catch (error) {
+              // Silent fail
+            } finally {
+              setLoading(false);
+            }
+          };
+          fetchLeaderboardData();
+        }
+      }
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [selectedCategory, selectedPlatform, selectedRunType, selectedLevel, showObsoleteRuns, leaderboardType]);
 
   return (
     <div className="min-h-screen bg-[#1e1e2e] text-ctp-text py-4 sm:py-6 overflow-x-hidden">

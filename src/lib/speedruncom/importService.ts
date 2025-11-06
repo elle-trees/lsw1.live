@@ -397,7 +397,7 @@ export async function importSRCRuns(
             mappings.categoryMapping,
             mappings.platformMapping,
             mappings.levelMapping,
-            "imported",
+            "", // CRITICAL: Use empty string for unclaimed imported runs - never create temporary profiles
             mappings.categoryNameMapping,
             mappings.platformNameMapping,
             mappings.srcPlatformIdToName,

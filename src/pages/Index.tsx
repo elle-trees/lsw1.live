@@ -32,6 +32,14 @@ const Index = () => {
     };
 
     fetchData();
+    
+    // Refresh recent runs when page regains focus (e.g., after claiming a run in another tab)
+    const handleFocus = () => {
+      fetchData();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, []);
 
   useEffect(() => {

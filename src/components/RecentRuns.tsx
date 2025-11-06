@@ -214,25 +214,68 @@ export function RecentRuns({ runs, loading, showRankBadge = true, maxRuns }: Rec
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-3 flex-wrap">
-                        <Link
-                          to={`/player/${run.playerId}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="font-bold text-xl sm:text-2xl truncate hover:opacity-80 transition-all group-hover:scale-105"
-                          style={{ color: run.nameColor || '#cba6f7' }}
-                        >
-                          {run.playerName}
-                        </Link>
-                        {run.player2Name && (
-                          <>
-                            <span className="text-ctp-overlay0 font-normal text-lg">&</span>
-                            <span 
-                              className="font-bold text-xl sm:text-2xl"
-                              style={{ color: run.player2Color || '#cba6f7' }}
-                            >
-                              {run.player2Name}
-                            </span>
-                          </>
-                        )}
+                        {(() => {
+                          // Check if run is unclaimed - simply check if playerId is empty/null
+                          const isUnclaimed = !run.playerId || run.playerId.trim() === "";
+                          
+                          if (isUnclaimed) {
+                            // For unclaimed runs, show name in plaintext with "Unclaimed" badge
+                            return (
+                              <>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-bold text-xl sm:text-2xl truncate text-ctp-text">{run.playerName}</span>
+                                  {run.player2Name && (
+                                    <>
+                                      <span className="text-ctp-overlay0 font-normal text-lg">&</span>
+                                      <span className="font-bold text-xl sm:text-2xl text-ctp-text">
+                                        {run.player2Name}
+                                      </span>
+                                    </>
+                                  )}
+                                  <Badge variant="outline" className="border-yellow-600/50 bg-yellow-600/10 text-yellow-400 text-xs">
+                                    Unclaimed
+                                  </Badge>
+                                </div>
+                              </>
+                            );
+                          } else {
+                            // For claimed runs, show with link
+                            return (
+                              <>
+                                <Link
+                                  to={`/player/${run.playerId}`}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="font-bold text-xl sm:text-2xl truncate hover:opacity-80 transition-all group-hover:scale-105"
+                                  style={{ color: run.nameColor || '#cba6f7' }}
+                                >
+                                  {run.playerName}
+                                </Link>
+                                {run.player2Name && (
+                                  <>
+                                    <span className="text-ctp-overlay0 font-normal text-lg">&</span>
+                                    {run.player2Id ? (
+                                      <Link
+                                        to={`/player/${run.player2Id}`}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="font-bold text-xl sm:text-2xl hover:opacity-80 transition-all"
+                                        style={{ color: run.player2Color || '#cba6f7' }}
+                                      >
+                                        {run.player2Name}
+                                      </Link>
+                                    ) : (
+                                      <span 
+                                        className="font-bold text-xl sm:text-2xl"
+                                        style={{ color: run.player2Color || '#cba6f7' }}
+                                      >
+                                        {run.player2Name}
+                                      </span>
+                                    )}
+                                  </>
+                                )}
+                              </>
+                            );
+                          }
+                        })()}
                       </div>
                       <div className="flex items-center gap-3 flex-wrap">
                         {getCategoryName(run.category) && (

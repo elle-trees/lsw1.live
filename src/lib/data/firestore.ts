@@ -680,6 +680,10 @@ export const autoClaimRunsBySRCUsernameFirestore = async (userId: string, srcUse
       return result;
     }
     
+    // Get the player's display name for updating playerName
+    const player = await getPlayerByUidFirestore(userId);
+    const playerDisplayName = player?.displayName || "";
+    
     // Batch update runs
     let batch = writeBatch(db);
     let batchCount = 0;
@@ -687,7 +691,31 @@ export const autoClaimRunsBySRCUsernameFirestore = async (userId: string, srcUse
     
     for (const run of runsToClaim) {
       const runDocRef = doc(db, "leaderboardEntries", run.id);
-      batch.update(runDocRef, { playerId: userId });
+      // Update both playerId and playerName
+      const updateData: Partial<LeaderboardEntry> = { playerId: userId };
+      if (playerDisplayName) {
+        // Determine if this is player1 or player2
+        const runSRCPlayerName = (run.srcPlayerName || "").trim().toLowerCase();
+        const runSRCPlayer2Name = (run.srcPlayer2Name || "").trim().toLowerCase();
+        
+        if (runSRCPlayerName === normalizedSrcUsername) {
+          // This is player1
+          updateData.playerName = playerDisplayName;
+        } else if (runSRCPlayer2Name === normalizedSrcUsername && run.runType === 'co-op') {
+          // This is player2
+          updateData.player2Id = userId;
+          updateData.player2Name = playerDisplayName;
+        } else {
+          // Fallback: update playerName if it's a solo run
+          if (run.runType === 'solo') {
+            updateData.playerName = playerDisplayName;
+          }
+        }
+      }
+      
+      // If run is verified but doesn't have points, we'll calculate them after batch update
+      // For now, just update player assignment
+      batch.update(runDocRef, updateData);
       batchCount++;
       
       if (batchCount >= MAX_BATCH_SIZE) {
@@ -699,6 +727,32 @@ export const autoClaimRunsBySRCUsernameFirestore = async (userId: string, srcUse
     
     if (batchCount > 0) {
       await batch.commit();
+    }
+    
+    // For verified runs that don't have points, calculate them now
+    const verifiedRunsWithoutPoints = runsToClaim.filter(run => 
+      run.verified && (run.points === undefined || run.points === null)
+    );
+    
+    if (verifiedRunsWithoutPoints.length > 0) {
+      // Calculate points for runs that need them
+      for (const run of verifiedRunsWithoutPoints) {
+        try {
+          // Use updateRunVerificationStatus to calculate points (it will handle already-verified runs)
+          const runDocRef = doc(db, "leaderboardEntries", run.id);
+          const runDocSnap = await getDoc(runDocRef);
+          if (runDocSnap.exists()) {
+            const runData = runDocSnap.data() as LeaderboardEntry;
+            // Only calculate if still missing points (might have been calculated by another process)
+            if (runData.verified && (runData.points === undefined || runData.points === null)) {
+              await updateRunVerificationStatusFirestore(run.id, true, player?.displayName || userId);
+            }
+          }
+        } catch (error) {
+          console.error(`Error calculating points for run ${run.id}:`, error);
+          result.errors.push(`Failed to calculate points for run ${run.id}: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      }
     }
     
     result.claimed = runsToClaim.length;
@@ -1517,10 +1571,18 @@ export const updateRunVerificationStatusFirestore = async (runId: string, verifi
     const runData = runDocSnap.data() as LeaderboardEntry;
     const updateData: { verified: boolean; verifiedBy?: string; points?: number } = { verified };
     
-    if (verified && verifiedBy) {
-      updateData.verifiedBy = verifiedBy;
+    // Calculate and store points when verifying OR if run is verified but doesn't have points yet
+    const needsPointsCalculation = verified && verifiedBy && (
+      !runData.verified || // Run is being verified now
+      (runData.verified && (runData.points === undefined || runData.points === null)) // Run is verified but missing points
+    );
+    
+    if (needsPointsCalculation) {
+      if (verifiedBy) {
+        updateData.verifiedBy = verifiedBy;
+      }
       
-      // Calculate and store points when verifying (always recalculate to ensure accuracy)
+      // Calculate and store points (always recalculate to ensure accuracy)
       // Fetch category and platform names in parallel for better performance
       // For imported runs, use SRC fallback names if IDs are empty
       let categoryName = runData.srcCategoryName || "Unknown";
@@ -1598,9 +1660,14 @@ export const updateRunVerificationStatusFirestore = async (runId: string, verifi
       await updateDoc(runDocRef, updateFields);
       
       // Recalculate points for affected players
+      // CRITICAL: Only process claimed runs (non-empty playerId)
       const playerIds: string[] = [];
-      if (runData.playerId && runData.playerId !== "imported" && !runData.playerId.startsWith("unlinked_") && !runData.playerId.startsWith("unclaimed_")) {
+      if (runData.playerId && runData.playerId.trim() !== "") {
         playerIds.push(runData.playerId);
+      }
+      // Also check player2Id for co-op runs
+      if (runData.runType === 'co-op' && runData.player2Id && runData.player2Id.trim() !== "") {
+        playerIds.push(runData.player2Id);
       }
       await recalculatePointsForPlayers(playerIds, runData);
       
@@ -1609,9 +1676,14 @@ export const updateRunVerificationStatusFirestore = async (runId: string, verifi
       await updateDoc(runDocRef, updateFields);
       
       // Recalculate points for affected players
+      // CRITICAL: Only process claimed runs (non-empty playerId)
       const playerIds: string[] = [];
-      if (runData.playerId && runData.playerId !== "imported" && !runData.playerId.startsWith("unlinked_") && !runData.playerId.startsWith("unclaimed_")) {
+      if (runData.playerId && runData.playerId.trim() !== "") {
         playerIds.push(runData.playerId);
+      }
+      // Also check player2Id for co-op runs
+      if (runData.runType === 'co-op' && runData.player2Id && runData.player2Id.trim() !== "") {
+        playerIds.push(runData.player2Id);
       }
       await recalculatePointsForPlayers(playerIds, runData);
     } else {
@@ -1655,6 +1727,13 @@ export const updatePlayerPointsFirestore = async (playerId: string, pointsToAdd:
  */
 export const recalculatePlayerPointsFirestore = async (playerId: string): Promise<boolean> => {
   if (!db) return false;
+  
+  // CRITICAL: Never create or update profiles for unclaimed runs
+  // Only process real player accounts (non-empty playerId)
+  if (!playerId || playerId.trim() === "") {
+    return false;
+  }
+  
   try {
     const playerDocRef = doc(db, "players", playerId);
     let playerDocSnap = null;
@@ -1668,9 +1747,16 @@ export const recalculatePlayerPointsFirestore = async (playerId: string): Promis
     
     // Get player document to find displayName
     const player = await getPlayerByUidFirestore(playerId);
-    let playerDisplayName: string | null = null;
     
-    if (player?.displayName) {
+    // CRITICAL: Only process if player exists - never create temporary profiles
+    if (!player) {
+      // Player doesn't exist - this is fine, just return false
+      // Don't create a profile - profiles should only be created by AuthProvider on signup
+      return false;
+    }
+    
+    let playerDisplayName: string | null = null;
+    if (player.displayName) {
       playerDisplayName = player.displayName.trim();
     }
     
@@ -1918,7 +2004,9 @@ export const recalculatePlayerPointsFirestore = async (playerId: string): Promis
     // Only count runs that are actually linked to this player (not unclaimed)
     const totalVerifiedRuns = allRuns.length; // allRuns already contains only claimed runs for this player
     
-    // Update or create player's total points and total runs
+    // Update player's total points and total runs
+    // CRITICAL: Only update if player exists - never create player documents here
+    // Player documents should only be created by AuthProvider when users sign up
     if (playerDocSnap && playerDocSnap.exists()) {
       // Update both totalPoints and totalRuns
       try {
@@ -1928,48 +2016,12 @@ export const recalculatePlayerPointsFirestore = async (playerId: string): Promis
         throw error; // Re-throw to be caught by outer catch
       }
     } else {
-      // Create player document if it doesn't exist
-      // Get player info from first run if available (try player1 runs first, then player2 runs)
-      const firstRun = querySnapshot.docs[0]?.data() as LeaderboardEntry | undefined;
-      const firstPlayer2Run = player2Runs[0];
-      
-      // Determine displayName - use playerName from player1 runs, or player2Name from player2 runs
-      let displayName = "Unknown Player";
-      if (firstRun?.playerName) {
-        displayName = firstRun.playerName;
-      } else if (firstPlayer2Run?.player2Name) {
-        displayName = firstPlayer2Run.player2Name;
-      } else if (player?.displayName) {
-        displayName = player.displayName;
-      }
-      
-      // Determine joinDate - use date from first available run
-      let joinDate = new Date().toISOString().split('T')[0];
-      if (firstRun?.date) {
-        joinDate = firstRun.date;
-      } else if (firstPlayer2Run?.date) {
-        joinDate = firstPlayer2Run.date;
-      }
-      
-      const playerData: Omit<Player, 'id'> = {
-        uid: playerId,
-        displayName: displayName,
-        email: "",
-        joinDate: joinDate,
-        totalRuns: totalVerifiedRuns,
-        bestRank: null,
-        favoriteCategory: null,
-        favoritePlatform: null,
-        nameColor: "#cba6f7",
-        isAdmin: false, // Explicitly set to false for new players
-        totalPoints,
-      };
-      try {
-      await setDoc(playerDocRef, playerData);
-      } catch (error: any) {
-        console.error(`Error creating player document ${playerId}:`, error?.code, error?.message);
-        throw error; // Re-throw to be caught by outer catch
-      }
+      // CRITICAL: Never create player documents here
+      // Player documents should only be created by AuthProvider when users sign up
+      // If a player doesn't exist, we can't recalculate their points
+      // This prevents creating temporary profiles for unclaimed runs
+      console.warn(`Cannot recalculate points for player ${playerId}: player document does not exist. Player profiles should only be created on signup.`);
+      return false;
     }
     
     return true;
@@ -2077,14 +2129,18 @@ async function recalculatePointsForPlayers(
 ): Promise<void> {
   if (!db || playerIds.length === 0) return;
   
+  // CRITICAL: Filter out empty/null playerIds - never process unclaimed runs
+  const validPlayerIds = playerIds.filter(id => id && id.trim() !== "");
+  if (validPlayerIds.length === 0) return;
+  
   // Use Set to deduplicate player IDs
-  const uniquePlayerIds = new Set(playerIds);
+  const uniquePlayerIds = new Set(validPlayerIds);
   
   // Add player2 if it's a co-op run
   if (runData?.runType === 'co-op' && runData.player2Name) {
     try {
       const player2 = await getPlayerByDisplayNameFirestore(runData.player2Name.trim());
-      if (player2?.uid) {
+      if (player2?.uid && player2.uid.trim() !== "") {
         uniquePlayerIds.add(player2.uid);
       }
     } catch (error) {
@@ -2093,14 +2149,17 @@ async function recalculatePointsForPlayers(
   }
   
   // Recalculate points for all affected players in parallel (but limit concurrency)
-  const recalculationPromises = Array.from(uniquePlayerIds).map(async (playerId) => {
-    try {
-      await recalculatePlayerPointsFirestore(playerId);
-    } catch (error) {
-      console.error(`Error recalculating points for player ${playerId}:`, error);
-      // Don't throw - continue with other players
-    }
-  });
+  // Only process valid, non-empty player IDs
+  const recalculationPromises = Array.from(uniquePlayerIds)
+    .filter(playerId => playerId && playerId.trim() !== "")
+    .map(async (playerId) => {
+      try {
+        await recalculatePlayerPointsFirestore(playerId);
+      } catch (error) {
+        console.error(`Error recalculating points for player ${playerId}:`, error);
+        // Don't throw - continue with other players
+      }
+    });
   
   // Wait for all recalculations to complete (with some parallelism)
   await Promise.all(recalculationPromises);
@@ -2120,12 +2179,14 @@ export const deleteLeaderboardEntryFirestore = async (runId: string): Promise<bo
     const playerIds: string[] = [];
     
     // Collect player IDs that need recalculation
-    if (runData.playerId && runData.verified) {
+    // CRITICAL: Only process claimed runs (non-empty playerId)
+    if (runData.playerId && runData.playerId.trim() !== "" && runData.verified) {
       // Only recalculate if run was verified (verified runs count for points)
-      const playerId = runData.playerId;
-      if (playerId && playerId !== "imported" && !playerId.startsWith("unlinked_") && !playerId.startsWith("unclaimed_")) {
-        playerIds.push(playerId);
-      }
+      playerIds.push(runData.playerId);
+    }
+    // Also check player2Id for co-op runs
+    if (runData.runType === 'co-op' && runData.player2Id && runData.player2Id.trim() !== "" && runData.verified) {
+      playerIds.push(runData.player2Id);
     }
     
     // Delete the run
@@ -3069,28 +3130,46 @@ export const claimRunFirestore = async (runId: string, userId: string): Promise<
     const isPlayer2 = normalizedRunPlayer2Name === normalizedUserDisplayName || 
                      (runData.importedFromSRC && normalizedRunSRCPlayer2Name === normalizedUserSRCUsername);
     
-    // Update the run with the new playerId(s)
+    // Update the run with the new playerId(s) and player names
     const updateData: Partial<LeaderboardEntry> = {};
     
     if (isCoOp) {
       // For co-op runs, update the appropriate player slot
       if (isPlayer1) {
         updateData.playerId = userId;
+        // Update playerName to the player's displayName
+        updateData.playerName = player.displayName;
       }
       if (isPlayer2) {
         updateData.player2Id = userId;
+        // For player2, we need to check if they have a profile
+        // If the run is being claimed by player2, update player2Name
+        if (normalizedRunPlayer2Name === normalizedUserDisplayName || 
+            (runData.importedFromSRC && normalizedRunSRCPlayer2Name === normalizedUserSRCUsername)) {
+          // Player2 is claiming - update player2Name to their displayName
+          updateData.player2Name = player.displayName;
+        } else {
+          // Player1 is claiming for both, need to find player2's profile
+          const player2Profile = await getPlayerByDisplayNameFirestore(runData.player2Name || "");
+          if (player2Profile) {
+            updateData.player2Name = player2Profile.displayName;
+          }
+        }
       }
       // If both players are claiming, update both
       if (isPlayer1 && isPlayer2) {
         updateData.playerId = userId;
         updateData.player2Id = userId;
+        updateData.playerName = player.displayName;
+        updateData.player2Name = player.displayName; // Same player claiming both slots
       }
     } else {
-      // For solo runs, just update playerId
+      // For solo runs, update playerId and playerName
       updateData.playerId = userId;
+      updateData.playerName = player.displayName;
     }
     
-    // Update player assignment first
+    // Update player assignment and names
     await updateDoc(runDocRef, updateData);
     
     // If run is not verified, verify it now (claiming verifies the run)
@@ -3109,6 +3188,85 @@ export const claimRunFirestore = async (runId: string, userId: string): Promise<
       const updatedRunDoc = await getDoc(runDocRef);
       if (updatedRunDoc.exists()) {
         Object.assign(runData, updatedRunDoc.data());
+      }
+    } else {
+      // Run is already verified - ensure it has points calculated
+      // Refresh runData to get current state
+      const updatedRunDoc = await getDoc(runDocRef);
+      if (updatedRunDoc.exists()) {
+        Object.assign(runData, updatedRunDoc.data());
+      }
+      
+      // If run doesn't have points, calculate them now
+      if (runData.verified && (runData.points === undefined || runData.points === null)) {
+        // Calculate points for the verified run
+        let categoryName = runData.srcCategoryName || "Unknown";
+        let platformName = runData.srcPlatformName || "Unknown";
+        
+        // Try to fetch category/platform by ID if they exist
+        if (runData.category && runData.category.trim() !== "") {
+          try {
+            const categoryDocSnap = await getDoc(doc(db, "categories", runData.category));
+            if (categoryDocSnap?.exists()) {
+              categoryName = categoryDocSnap.data().name || categoryName;
+            }
+          } catch (error) {
+            console.warn(`Could not fetch category ${runData.category}, using SRC fallback: ${categoryName}`);
+          }
+        }
+        
+        if (runData.platform && runData.platform.trim() !== "") {
+          try {
+            const platformDocSnap = await getDoc(doc(db, "platforms", runData.platform));
+            if (platformDocSnap?.exists()) {
+              platformName = platformDocSnap.data().name || platformName;
+            }
+          } catch (error) {
+            console.warn(`Could not fetch platform ${runData.platform}, using SRC fallback: ${platformName}`);
+          }
+        }
+        
+        // Calculate rank
+        const leaderboardType = runData.leaderboardType || 'regular';
+        const currentRunWithVerified: LeaderboardEntry = { ...runData, id: runId, verified: true };
+        const rankMap = await calculateRanksForGroup(
+          leaderboardType,
+          runData.category,
+          runData.platform,
+          (runData.runType || 'solo') as 'solo' | 'co-op',
+          runData.level,
+          currentRunWithVerified
+        );
+        
+        let rank: number | undefined = undefined;
+        if (!runData.isObsolete) {
+          const calculatedRank = rankMap.get(runId);
+          rank = normalizeRank(calculatedRank);
+        }
+        
+        // Calculate points
+        const points = calculatePoints(
+          runData.time,
+          categoryName,
+          platformName,
+          runData.category,
+          runData.platform,
+          rank,
+          runData.runType as 'solo' | 'co-op' | undefined
+        );
+        
+        // Update run with points and rank
+        const pointsUpdateData: { points: number; rank?: number | ReturnType<typeof deleteField> } = { points };
+        if (rank !== undefined) {
+          pointsUpdateData.rank = rank;
+        } else {
+          pointsUpdateData.rank = deleteField();
+        }
+        await updateDoc(runDocRef, pointsUpdateData);
+        
+        // Update runData with calculated points
+        runData.points = points;
+        runData.rank = rank;
       }
     }
     

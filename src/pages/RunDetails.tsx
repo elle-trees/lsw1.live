@@ -141,6 +141,43 @@ const RunDetails = () => {
 
     fetchRunData();
   }, [runId, navigate, toast]);
+  
+  // Refresh run data periodically to catch updates (e.g., when run is claimed)
+  useEffect(() => {
+    if (!runId) return;
+    
+    // Refresh every 30 seconds to catch any updates (like claiming)
+    const refreshInterval = setInterval(async () => {
+      try {
+        const runData = await getLeaderboardEntryById(runId);
+        if (runData) {
+          setRun(runData);
+          
+          // Re-fetch player data if playerId changed (run was claimed)
+          if (runData.playerId && runData.playerId !== run?.playerId) {
+            const playerData = await getPlayerByUid(runData.playerId);
+            setPlayer(playerData);
+          }
+          
+          // Re-fetch player2 data for co-op runs
+          if (runData.player2Id && runData.player2Id !== run?.player2Id && runData.runType === 'co-op') {
+            try {
+              const player2Data = await getPlayerByUid(runData.player2Id);
+              if (player2Data) {
+                setPlayer2(player2Data);
+              }
+            } catch {
+              // Silent fail
+            }
+          }
+        }
+      } catch (error) {
+        // Silent fail - don't spam errors
+      }
+    }, 30000); // Refresh every 30 seconds
+    
+    return () => clearInterval(refreshInterval);
+  }, [runId, run?.playerId, run?.player2Id]);
 
   useEffect(() => {
     if (leftColumnRef.current && detailsCardRef.current) {
@@ -669,25 +706,67 @@ const RunDetails = () => {
                   <>
                     <div>
                       <div className="text-base text-muted-foreground mb-2 font-medium">Player{run.runType === 'co-op' ? 's' : ''}</div>
-                      <div className="flex items-center gap-3">
-                        <Link
-                          to={`/player/${run.playerId}`}
-                          className="font-medium text-lg hover:opacity-80 transition-opacity"
-                          style={{ color: player?.nameColor || 'inherit' }}
-                        >
-                          {run.playerName}
-                        </Link>
-                        {run.player2Name && (
-                          <>
-                            <span className="text-muted-foreground">&</span>
-                            <span 
-                              className="font-medium text-lg"
-                              style={{ color: player2?.nameColor || run.player2Color || 'inherit' }}
-                            >
-                              {run.player2Name}
-                            </span>
-                          </>
-                        )}
+                      <div className="flex items-center gap-3 flex-wrap">
+                        {(() => {
+                          // Check if run is unclaimed - simply check if playerId is empty/null
+                          const isUnclaimed = !run.playerId || run.playerId.trim() === "";
+                          
+                          if (isUnclaimed) {
+                            // For unclaimed runs, show name in plaintext with "Unclaimed" badge
+                            return (
+                              <>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-medium text-lg text-ctp-text">{run.playerName}</span>
+                                  {run.player2Name && (
+                                    <>
+                                      <span className="text-muted-foreground">&</span>
+                                      <span className="font-medium text-lg text-ctp-text">
+                                        {run.player2Name}
+                                      </span>
+                                    </>
+                                  )}
+                                  <Badge variant="outline" className="border-yellow-600/50 bg-yellow-600/10 text-yellow-400 text-xs">
+                                    Unclaimed
+                                  </Badge>
+                                </div>
+                              </>
+                            );
+                          } else {
+                            // For claimed runs, show with link
+                            return (
+                              <>
+                                <Link
+                                  to={`/player/${run.playerId}`}
+                                  className="font-medium text-lg hover:opacity-80 transition-opacity"
+                                  style={{ color: player?.nameColor || 'inherit' }}
+                                >
+                                  {run.playerName}
+                                </Link>
+                                {run.player2Name && (
+                                  <>
+                                    <span className="text-muted-foreground">&</span>
+                                    {run.player2Id ? (
+                                      <Link
+                                        to={`/player/${run.player2Id}`}
+                                        className="font-medium text-lg hover:opacity-80 transition-opacity"
+                                        style={{ color: player2?.nameColor || run.player2Color || 'inherit' }}
+                                      >
+                                        {run.player2Name}
+                                      </Link>
+                                    ) : (
+                                      <span 
+                                        className="font-medium text-lg"
+                                        style={{ color: player2?.nameColor || run.player2Color || 'inherit' }}
+                                      >
+                                        {run.player2Name}
+                                      </span>
+                                    )}
+                                  </>
+                                )}
+                              </>
+                            );
+                          }
+                        })()}
                       </div>
                     </div>
 

@@ -60,7 +60,7 @@ import {
   findDuplicateRuns,
   removeDuplicateRuns,
   claimRun,
-  wipeLeaderboards,
+  getRecentRuns,
 } from "@/lib/db";
 import { importSRCRuns, type ImportResult } from "@/lib/speedruncom/importService";
 import { useUploadThing } from "@/lib/uploadthing";
@@ -98,9 +98,9 @@ const Admin = () => {
   const [clearingImportedRuns, setClearingImportedRuns] = useState(false);
   const [clearingUnverifiedRuns, setClearingUnverifiedRuns] = useState(false);
   const [showConfirmClearUnverifiedDialog, setShowConfirmClearUnverifiedDialog] = useState(false);
-  const [wipingLeaderboards, setWipingLeaderboards] = useState(false);
-  const [showConfirmWipeDialog, setShowConfirmWipeDialog] = useState(false);
-  const [wipeConfirmInput, setWipeConfirmInput] = useState("");
+  const [recentRuns, setRecentRuns] = useState<LeaderboardEntry[]>([]);
+  const [loadingRecentRuns, setLoadingRecentRuns] = useState(false);
+  const [deletingRunId, setDeletingRunId] = useState<string | null>(null);
   const itemsPerPage = 25;
   // Filters for imported runs
   const [importedRunsLeaderboardType, setImportedRunsLeaderboardType] = useState<'regular' | 'individual-level'>('regular');
@@ -472,6 +472,8 @@ const Admin = () => {
       setImportedSRCRuns(importedData);
       setVerifiedRunsWithInvalidData(invalidVerifiedData);
       setUnassignedRuns(unassignedData);
+      // Also refresh recent runs
+      await fetchRecentRuns();
     } catch (error) {
       console.error("Error refreshing run data:", error);
     }
@@ -494,6 +496,58 @@ const Admin = () => {
       setLoadingUnassignedRuns(false);
     }
   };
+
+  const fetchRecentRuns = async () => {
+    setLoadingRecentRuns(true);
+    try {
+      const data = await getRecentRuns(50); // Fetch 50 most recent runs
+      setRecentRuns(data);
+    } catch (error) {
+      console.error("Error fetching recent runs:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load recent runs.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingRecentRuns(false);
+    }
+  };
+
+  const handleDeleteRecentRun = async (runId: string) => {
+    if (!window.confirm("Are you sure you want to delete this run? This action cannot be undone.")) {
+      return;
+    }
+    
+    setDeletingRunId(runId);
+    try {
+      const success = await deleteLeaderboardEntry(runId);
+      if (success) {
+        toast({
+          title: "Run Deleted",
+          description: "The run has been successfully deleted.",
+        });
+        // Remove from local state and refresh
+        setRecentRuns(prev => prev.filter(run => run.id !== runId));
+        await refreshAllRunData();
+      } else {
+        throw new Error("Failed to delete run.");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete run.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingRunId(null);
+    }
+  };
+
+  // Fetch recent runs on mount
+  useEffect(() => {
+    fetchRecentRuns();
+  }, []);
 
   // Fetch data on mount
   useEffect(() => {
@@ -649,10 +703,7 @@ const Admin = () => {
 
       // For imported runs, try to auto-assign to matching user by display name
       if (runToVerify.importedFromSRC) {
-        const isUnclaimed = !runToVerify.playerId || 
-                           runToVerify.playerId === "imported" || 
-                           runToVerify.playerId.startsWith("unlinked_") ||
-                           runToVerify.playerId.startsWith("unclaimed_");
+        const isUnclaimed = !runToVerify.playerId || runToVerify.playerId.trim() === "";
         
         if (isUnclaimed && runToVerify.playerName) {
           // Try to find a user with matching display name (case-insensitive)
@@ -679,8 +730,9 @@ const Admin = () => {
             }
             
             if (matchingPlayer) {
-              // Found a matching user - assign the run to them
+              // Found a matching user - assign the run to them and update playerName
               updateData.playerId = matchingPlayer.uid;
+              updateData.playerName = matchingPlayer.displayName;
               
               let matchingPlayer2: { displayName: string } | null = null;
               
@@ -708,6 +760,7 @@ const Admin = () => {
                 
                 if (player2) {
                   updateData.player2Id = player2.uid;
+                  updateData.player2Name = player2.displayName;
                   matchingPlayer2 = player2;
                 }
               }
@@ -753,41 +806,6 @@ const Admin = () => {
     }
   };
 
-  const handleWipeLeaderboards = async () => {
-    if (!currentUser) return;
-    
-    setWipingLeaderboards(true);
-    setShowConfirmWipeDialog(false);
-    setWipeConfirmInput("");
-    
-    try {
-      const result = await wipeLeaderboards();
-      
-      if (result.errors.length > 0) {
-        toast({
-          title: "Wipe Complete with Errors",
-          description: `Deleted ${result.runsDeleted} runs and reset ${result.playersReset} players. ${result.errors.length} error(s) occurred.`,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Leaderboards Wiped",
-          description: `Successfully deleted ${result.runsDeleted} runs and reset ${result.playersReset} players.`,
-        });
-      }
-      
-      // Refresh all data
-      await refreshAllRunData();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to wipe leaderboards.",
-        variant: "destructive",
-      });
-    } finally {
-      setWipingLeaderboards(false);
-    }
-  };
 
   const handleReject = async (runId: string) => {
     try {
@@ -2247,44 +2265,114 @@ const Admin = () => {
               </CardContent>
             </Card>
 
-            {/* Wipe Leaderboards Card */}
-            <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl border-red-900/50">
-              <CardHeader className="bg-gradient-to-r from-red-900/30 to-red-800/20 border-b border-red-900/50">
-                <CardTitle className="flex items-center gap-2 text-xl text-red-400">
-                  <AlertTriangle className="h-5 w-5" />
-                  <span>
-                    Wipe All Leaderboards
-                  </span>
-                </CardTitle>
+            {/* Recent Runs Card */}
+            <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
+              <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-xl text-[#f2cdcd]">
+                    <Play className="h-5 w-5" />
+                    <span>Recent Runs</span>
+                  </CardTitle>
+                  <Button
+                    onClick={fetchRecentRuns}
+                    disabled={loadingRecentRuns}
+                    variant="outline"
+                    size="sm"
+                    className="border-[hsl(235,13%,30%)] bg-gradient-to-r from-transparent via-[hsl(237,16%,24%)]/50 to-transparent hover:from-[hsl(237,16%,24%)] hover:via-[hsl(237,16%,28%)] hover:to-[hsl(237,16%,24%)] hover:border-[#cba6f7]/50"
+                  >
+                    <RefreshCw className={`h-4 w-4 mr-2 ${loadingRecentRuns ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="pt-6">
-                <p className="text-sm text-ctp-subtext1 leading-relaxed mb-4">
-                  <strong className="text-red-400">DANGEROUS:</strong> This will permanently delete ALL runs from the database and reset all player statistics (points, total runs, best rank). This action cannot be undone. Use with extreme caution.
-                </p>
-                {wipingLeaderboards && (
-                  <p className="text-xs text-ctp-overlay0 mb-4 italic flex items-center gap-2">
-                    <span className="animate-pulse">●</span>
-                    This may take a while depending on the number of runs and players...
+                {loadingRecentRuns ? (
+                  <div className="flex items-center justify-center py-8">
+                    <LoadingSpinner size="md" />
+                  </div>
+                ) : recentRuns.length === 0 ? (
+                  <p className="text-sm text-ctp-subtext1 text-center py-8">
+                    No recent runs found.
                   </p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-[hsl(235,13%,30%)]">
+                          <TableHead className="text-ctp-text">Date</TableHead>
+                          <TableHead className="text-ctp-text">Player(s)</TableHead>
+                          <TableHead className="text-ctp-text">Time</TableHead>
+                          <TableHead className="text-ctp-text">Category</TableHead>
+                          <TableHead className="text-ctp-text">Platform</TableHead>
+                          <TableHead className="text-ctp-text">Type</TableHead>
+                          <TableHead className="text-ctp-text">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {recentRuns.map((run) => {
+                          const categoryName = getCategoryName(run.category, firestoreCategories, run.srcCategoryName);
+                          const platformName = getPlatformName(run.platform, firestorePlatforms, run.srcPlatformName);
+                          const isUnclaimed = !run.playerId || run.playerId.trim() === "";
+                          
+                          return (
+                            <TableRow key={run.id} className="border-[hsl(235,13%,30%)]">
+                              <TableCell className="text-ctp-text">{run.date}</TableCell>
+                              <TableCell className="text-ctp-text">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span style={{ color: run.nameColor || '#cba6f7' }}>
+                                    {run.playerName || "Unknown"}
+                                  </span>
+                                  {run.player2Name && (
+                                    <>
+                                      <span className="text-ctp-overlay0">&</span>
+                                      <span style={{ color: run.player2Color || '#cba6f7' }}>
+                                        {run.player2Name}
+                                      </span>
+                                    </>
+                                  )}
+                                  {isUnclaimed && (
+                                    <Badge variant="outline" className="border-yellow-600/50 bg-yellow-600/10 text-yellow-400 text-xs">
+                                      Unclaimed
+                                    </Badge>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-ctp-text font-mono">{formatTime(run.time)}</TableCell>
+                              <TableCell className="text-ctp-text">{categoryName}</TableCell>
+                              <TableCell className="text-ctp-text">{platformName}</TableCell>
+                              <TableCell className="text-ctp-text">
+                                <Badge variant="outline" className="border-[hsl(235,13%,30%)]">
+                                  {run.runType === 'co-op' ? 'Co-op' : 'Solo'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  onClick={() => handleDeleteRecentRun(run.id)}
+                                  disabled={deletingRunId === run.id}
+                                  variant="destructive"
+                                  size="sm"
+                                  className="bg-red-600/20 hover:bg-red-600/30 text-red-400 border-red-600/50"
+                                >
+                                  {deletingRunId === run.id ? (
+                                    <>
+                                      <LoadingSpinner size="sm" className="mr-2" />
+                                      Deleting...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </>
+                                  )}
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
                 )}
-                <Button
-                  onClick={() => setShowConfirmWipeDialog(true)}
-                  disabled={wipingLeaderboards}
-                  variant="destructive"
-                  className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-600 text-white font-semibold w-full sm:w-auto transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-red-600/50"
-                >
-                  {wipingLeaderboards ? (
-                    <>
-                      <LoadingSpinner size="sm" className="mr-2" />
-                      Wiping Leaderboards...
-                    </>
-                  ) : (
-                    <>
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Wipe All Leaderboards
-                    </>
-                  )}
-                </Button>
               </CardContent>
             </Card>
 
@@ -4948,84 +5036,6 @@ const Admin = () => {
         </Tabs>
       </div>
 
-      {/* Wipe Leaderboards Confirmation Dialog */}
-      <Dialog open={showConfirmWipeDialog} onOpenChange={(open) => {
-        setShowConfirmWipeDialog(open);
-        if (!open) {
-          setWipeConfirmInput(""); // Reset confirmation input when dialog closes
-        }
-      }}>
-        <DialogContent className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-red-900/50">
-          <DialogHeader>
-            <DialogTitle className="text-red-400 flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
-              Confirm Wipe All Leaderboards
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-ctp-subtext1">
-              <strong className="text-red-400">WARNING:</strong> This action will:
-            </p>
-            <ul className="list-disc list-inside text-sm text-ctp-subtext1 space-y-2 ml-4">
-              <li>Permanently delete <strong>ALL</strong> runs from the database</li>
-              <li>Reset all player statistics (totalPoints, totalRuns, bestRank)</li>
-              <li>Remove all runs from user profiles</li>
-              <li>This action <strong>CANNOT BE UNDONE</strong></li>
-            </ul>
-            <p className="text-sm text-ctp-subtext1 font-semibold text-red-400">
-              Are you absolutely sure you want to proceed?
-            </p>
-            <p className="text-xs text-ctp-overlay0 italic">
-              Type "WIPE" in the field below to confirm:
-            </p>
-            <Input
-              id="wipeConfirmInput"
-              type="text"
-              value={wipeConfirmInput}
-              placeholder="Type WIPE to confirm"
-              className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
-              onChange={(e) => setWipeConfirmInput(e.target.value)}
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowConfirmWipeDialog(false)}
-              disabled={wipingLeaderboards}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                if (wipeConfirmInput.toUpperCase() === "WIPE") {
-                  handleWipeLeaderboards();
-                } else {
-                  toast({
-                    title: "Confirmation Required",
-                    description: "Please type 'WIPE' in the confirmation field to proceed.",
-                    variant: "destructive",
-                  });
-                }
-              }}
-              disabled={wipingLeaderboards || wipeConfirmInput.toUpperCase() !== "WIPE"}
-              className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-600"
-            >
-              {wipingLeaderboards ? (
-                <>
-                  <LoadingSpinner size="sm" className="mr-2" />
-                  Wiping...
-                </>
-              ) : (
-                <>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Wipe All Leaderboards
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <style>{`
         @keyframes fadeIn {
