@@ -445,7 +445,9 @@ const Admin = () => {
         getImportedSRCRuns(),
         getVerifiedRunsWithInvalidData()
       ]);
-      setUnverifiedRuns(unverifiedData.filter(run => !run.importedFromSRC));
+      // Include all unverified runs (both imported and manually submitted)
+      // Imported runs will appear in both Unverified Runs and Imported Runs tabs
+      setUnverifiedRuns(unverifiedData);
       setImportedSRCRuns(importedData);
       setVerifiedRunsWithInvalidData(invalidVerifiedData);
     } catch (error) {
@@ -476,7 +478,8 @@ const Admin = () => {
   const fetchUnverifiedRuns = async () => {
     try {
       const data = await getUnverifiedLeaderboardEntries();
-      setUnverifiedRuns(data.filter(run => !run.importedFromSRC));
+      // Include all unverified runs (both imported and manually submitted)
+      setUnverifiedRuns(data);
       setUnverifiedPage(1); // Reset to first page when data changes
       
       try {
@@ -525,10 +528,18 @@ const Admin = () => {
             // Always store if we have at least one player to check
             if (run.playerName || run.player2Name) {
               unmatchedMap.set(run.id, playerStatus);
+              // Debug: log the status for this run
+              if (run.playerName && playerStatus.player1Matched === undefined) {
+                console.warn(`[Admin] Player1 match status undefined for run ${run.id}, player: ${run.playerName}`);
+              }
+              if (run.player2Name && playerStatus.player2Matched === undefined) {
+                console.warn(`[Admin] Player2 match status undefined for run ${run.id}, player: ${run.player2Name}`);
+              }
             }
           }
         }
         console.log(`[Admin] Player matching complete. Checked ${unmatchedMap.size} runs.`);
+        console.log(`[Admin] Sample entries:`, Array.from(unmatchedMap.entries()).slice(0, 3));
         setUnmatchedPlayers(unmatchedMap);
       } catch (importError) {
         console.error("Error fetching imported runs:", importError);
@@ -919,6 +930,7 @@ const Admin = () => {
         leaderboardType: finalForm.leaderboardType,
         time: finalForm.time.trim(),
         date: finalForm.date.trim(),
+        verified: false, // Ensure it remains unverified after editing
       };
 
       // Add optional fields only if they have values
@@ -2666,6 +2678,10 @@ const Admin = () => {
                           <TableBody>
                             {unverifiedImported.slice((importedPage - 1) * itemsPerPage, importedPage * itemsPerPage).map((run) => {
                               const unmatched = unmatchedPlayers.get(run.id);
+                              // Debug: log if we have a run with players but no match status (rarely, to avoid spam)
+                              if ((run.playerName || run.player2Name) && !unmatched && Math.random() < 0.01) {
+                                console.log(`[Admin] Run ${run.id} has players but no match status. Player1: ${run.playerName}, Player2: ${run.player2Name}, unmatchedPlayers size: ${unmatchedPlayers.size}`);
+                              }
                               return (
                           <TableRow key={run.id} className="border-b border-[hsl(235,13%,30%)] hover:bg-[hsl(235,19%,13%)] transition-all duration-200 hover:shadow-md">
                             <TableCell className="py-3 px-4 font-medium">
@@ -2673,31 +2689,61 @@ const Admin = () => {
                                 <div className="flex flex-col gap-1">
                                   <div className="flex items-center gap-1">
                                     <span style={{ color: run.nameColor || 'inherit' }}>{run.playerName}</span>
-                                    {unmatched && unmatched.player1Matched === true && (
-                                      <div title={`Player "${run.playerName}" found on site`}>
-                                        <CheckCircle className="h-4 w-4 text-green-500" />
-                                      </div>
-                                    )}
-                                    {unmatched && unmatched.player1Matched === false && (
-                                      <div title={`Player "${run.playerName}" not found on site`}>
-                                        <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                                      </div>
-                                    )}
+                                    {(() => {
+                                      if (!unmatched) {
+                                        // No match data yet - show loading indicator
+                                        return run.playerName && run.playerName.trim() ? (
+                                          <div className="h-4 w-4 flex-shrink-0 border border-gray-500 rounded animate-pulse" title="Checking player match status..." />
+                                        ) : null;
+                                      }
+                                      // Show checkmark if matched
+                                      if (unmatched.player1Matched === true) {
+                                        return (
+                                          <div title={`Player "${run.playerName}" found on site`} className="flex-shrink-0">
+                                            <CheckCircle className="h-4 w-4 text-green-500" />
+                                          </div>
+                                        );
+                                      }
+                                      // Show warning if not matched
+                                      if (unmatched.player1Matched === false) {
+                                        return (
+                                          <div title={`Player "${run.playerName}" not found on site`} className="flex-shrink-0">
+                                            <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                                          </div>
+                                        );
+                                      }
+                                      return null;
+                                    })()}
                                   </div>
                                   {run.player2Name && (
                                     <div className="flex items-center gap-1">
                                       <span className="text-muted-foreground"> & </span>
                                       <span style={{ color: run.player2Color || 'inherit' }}>{run.player2Name}</span>
-                                      {unmatched && unmatched.player2Matched === true && (
-                                        <div title={`Player "${run.player2Name}" found on site`}>
-                                          <CheckCircle className="h-4 w-4 text-green-500" />
-                                        </div>
-                                      )}
-                                      {unmatched && unmatched.player2Matched === false && (
-                                        <div title={`Player "${run.player2Name}" not found on site`}>
-                                          <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                                        </div>
-                                      )}
+                                      {(() => {
+                                        if (!unmatched) {
+                                          // No match data yet - show loading indicator
+                                          return run.player2Name && run.player2Name.trim() ? (
+                                            <div className="h-4 w-4 flex-shrink-0 border border-gray-500 rounded animate-pulse" title="Checking player match status..." />
+                                          ) : null;
+                                        }
+                                        // Show checkmark if matched
+                                        if (unmatched.player2Matched === true) {
+                                          return (
+                                            <div title={`Player "${run.player2Name}" found on site`} className="flex-shrink-0">
+                                              <CheckCircle className="h-4 w-4 text-green-500" />
+                                            </div>
+                                          );
+                                        }
+                                        // Show warning if not matched
+                                        if (unmatched.player2Matched === false) {
+                                          return (
+                                            <div title={`Player "${run.player2Name}" not found on site`} className="flex-shrink-0">
+                                              <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                                            </div>
+                                          );
+                                        }
+                                        return null;
+                                      })()}
                                     </div>
                                   )}
                                 </div>
