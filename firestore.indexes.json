@@ -383,16 +383,16 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "importedFromSRC",
-          "order": "ASCENDING"
-        },
-        {
           "fieldPath": "verified",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "date",
+          "fieldPath": "importedFromSRC",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "date",
+          "order": "DESCENDING"
         }
       ]
     }

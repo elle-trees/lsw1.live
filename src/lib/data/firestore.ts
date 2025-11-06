@@ -3073,10 +3073,54 @@ export const getImportedSRCRunsFirestore = async (): Promise<LeaderboardEntry[]>
     );
     
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ 
-      id: doc.id, 
-      ...doc.data() 
-    } as LeaderboardEntry));
+    
+    // Normalize and validate entries
+    const entries: LeaderboardEntry[] = querySnapshot.docs
+      .map(doc => {
+        const data = doc.data();
+        // Normalize the entry data
+        const normalized = normalizeLeaderboardEntry({ 
+          id: doc.id, 
+          ...data 
+        } as LeaderboardEntry);
+        // Ensure id is always present
+        return {
+          ...normalized,
+          id: doc.id,
+        } as LeaderboardEntry;
+      })
+      .filter(entry => {
+        // Validate entry
+        const validation = validateLeaderboardEntry(entry);
+        if (!validation.valid) {
+          return false;
+        }
+        
+        // Ensure required fields exist
+        if (!entry.category || !entry.platform || !entry.time || !entry.runType) {
+          return false;
+        }
+        
+        // Ensure it's actually an imported run
+        if (!entry.importedFromSRC) {
+          return false;
+        }
+        
+        // Ensure it's unverified
+        if (entry.verified !== false) {
+          return false;
+        }
+        
+        return true;
+      });
+    
+    // Sort by date descending (most recent first)
+    entries.sort((a, b) => {
+      if (!a.date || !b.date) return 0;
+      return b.date.localeCompare(a.date);
+    });
+    
+    return entries;
   } catch (error) {
     console.error("Error fetching imported SRC runs:", error);
     return [];
