@@ -623,21 +623,39 @@ export async function mapSRCRunToLeaderboardEntry(
   srcRunId: string;
   importedFromSRC: boolean;
 }> {
+  // Validate run object
+  if (!run || typeof run !== 'object') {
+    throw new Error("Invalid run object provided");
+  }
+
+  if (!run.id) {
+    throw new Error("Run missing ID");
+  }
+
   // === Extract Players ===
-  const players = run.players || [];
+  // Ensure players is always an array
+  let players: SRCRun['players'] = [];
+  if (run.players) {
+    if (Array.isArray(run.players)) {
+      players = run.players;
+    } else {
+      console.warn(`[mapSRCRunToLeaderboardEntry] Run ${run.id} has non-array players:`, run.players);
+      players = [];
+    }
+  }
   
   // Log first few runs for debugging
   const debugLog = run.id && run.id.length < 20;
   if (debugLog) {
     console.log(`[mapSRCRunToLeaderboardEntry] Run ${run.id} players:`, {
       playersCount: players.length,
-      players: players.map(p => ({
+      players: Array.isArray(players) ? players.map(p => ({
         rel: p.rel,
         id: p.id,
         name: p.name,
         hasData: !!p.data,
         dataNames: p.data?.names,
-      })),
+      })) : [],
     });
   }
   

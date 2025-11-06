@@ -423,6 +423,34 @@ export async function importSRCRuns(
         // Map SRC run to our format (now async to support fetching names from API)
         let mappedRun: Partial<LeaderboardEntry> & { srcRunId: string; importedFromSRC: boolean };
         try {
+          // Validate run structure before mapping
+          if (!srcRun || typeof srcRun !== 'object') {
+            throw new Error("Invalid run object");
+          }
+          if (!srcRun.id) {
+            throw new Error("Run missing ID");
+          }
+          if (srcRun.players && !Array.isArray(srcRun.players)) {
+            console.warn(`[importSRCRuns] Run ${srcRun.id} has non-array players, converting...`);
+            // Try to fix it - if it's a single player object, wrap it
+            if (typeof srcRun.players === 'object' && !Array.isArray(srcRun.players)) {
+              srcRun.players = [srcRun.players as any];
+            } else {
+              srcRun.players = [];
+            }
+          }
+
+          // Validate mappings are Maps
+          if (!(mappings.categoryMapping instanceof Map)) {
+            throw new Error("categoryMapping is not a Map");
+          }
+          if (!(mappings.platformMapping instanceof Map)) {
+            throw new Error("platformMapping is not a Map");
+          }
+          if (!(mappings.levelMapping instanceof Map)) {
+            throw new Error("levelMapping is not a Map");
+          }
+
           mappedRun = await mapSRCRunToLeaderboardEntry(
             srcRun,
             undefined,
@@ -438,9 +466,16 @@ export async function importSRCRuns(
             playerIdToNameCache,
             platformIdToNameCache
           );
-        } catch (mapError) {
+        } catch (mapError: any) {
           result.skipped++;
-          result.errors.push(`Run ${srcRun.id}: mapping failed: ${mapError instanceof Error ? mapError.message : String(mapError)}`);
+          const errorMessage = mapError instanceof Error 
+            ? mapError.message 
+            : String(mapError);
+          const errorStack = mapError instanceof Error && mapError.stack 
+            ? `\nStack: ${mapError.stack}` 
+            : '';
+          result.errors.push(`Run ${srcRun?.id || 'unknown'}: mapping failed: ${errorMessage}${errorStack}`);
+          console.error(`[importSRCRuns] Mapping failed for run ${srcRun?.id || 'unknown'}:`, mapError);
           onProgress?.({ total: srcRuns.length, imported: result.imported, skipped: result.skipped });
           continue;
         }
