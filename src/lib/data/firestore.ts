@@ -1573,7 +1573,9 @@ export const updateRunVerificationStatusFirestore = async (runId: string, verifi
     const updateData: { verified: boolean; verifiedBy?: string; points?: number } = { verified };
     
     // Calculate and store points when verifying OR if run is verified but doesn't have points yet
-    const needsPointsCalculation = verified && verifiedBy && (
+    // CRITICAL: Only calculate points for claimed runs (runs with a playerId)
+    const isClaimed = runData.playerId && runData.playerId.trim() !== "";
+    const needsPointsCalculation = verified && verifiedBy && isClaimed && (
       !runData.verified || // Run is being verified now
       (runData.verified && (runData.points === undefined || runData.points === null)) // Run is verified but missing points
     );
@@ -3173,12 +3175,18 @@ export const claimRunFirestore = async (runId: string, userId: string): Promise<
     // Update player assignment and names
     await updateDoc(runDocRef, updateData);
     
+    // Refresh runData to get the updated playerId before verification
+    const updatedRunDoc = await getDoc(runDocRef);
+    if (updatedRunDoc.exists()) {
+      Object.assign(runData, updatedRunDoc.data());
+    }
+    
     // If run is not verified, verify it now (claiming verifies the run)
     if (!runData.verified) {
       // Get the user's display name for verifiedBy
       const verifiedBy = player.displayName || player.email || userId;
       
-      // Verify the run (this will calculate points and rank)
+      // Verify the run (this will calculate points and rank now that it's claimed)
       const verificationSuccess = await updateRunVerificationStatusFirestore(runId, true, verifiedBy);
       if (!verificationSuccess) {
         console.error("Failed to verify run when claiming");

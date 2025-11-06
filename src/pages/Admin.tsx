@@ -102,6 +102,7 @@ const Admin = () => {
   const [clearingUnverifiedRuns, setClearingUnverifiedRuns] = useState(false);
   const [showConfirmClearUnverifiedDialog, setShowConfirmClearUnverifiedDialog] = useState(false);
   const [batchVerifying, setBatchVerifying] = useState(false);
+  const [batchVerifyingAll, setBatchVerifyingAll] = useState(false);
   const [recentRuns, setRecentRuns] = useState<LeaderboardEntry[]>([]);
   const [loadingRecentRuns, setLoadingRecentRuns] = useState(false);
   const [deletingRunId, setDeletingRunId] = useState<string | null>(null);
@@ -720,81 +721,8 @@ const Admin = () => {
         updateData.level = newLevel;
       }
 
-      // For imported runs, try to auto-assign to matching user by display name
-      if (runToVerify.importedFromSRC) {
-        const isUnclaimed = !runToVerify.playerId || runToVerify.playerId.trim() === "";
-        
-        if (isUnclaimed && runToVerify.playerName) {
-          // Try to find a user with matching display name (case-insensitive)
-          try {
-            // First try exact match (case-sensitive)
-            let matchingPlayer = await getPlayerByDisplayName(runToVerify.playerName.trim());
-            
-            // If no exact match, try case-insensitive search
-            if (!matchingPlayer) {
-              const normalizedRunName = runToVerify.playerName.trim().toLowerCase();
-              // Fetch all players and do case-insensitive match
-              const allPlayersQuery = query(collection(db, "players"), firestoreLimit(1000));
-              const allPlayersSnapshot = await getDocs(allPlayersQuery);
-              
-              const foundPlayer = allPlayersSnapshot.docs.find(doc => {
-                const player = doc.data() as Player;
-                const playerDisplayName = (player.displayName || "").trim().toLowerCase();
-                return playerDisplayName === normalizedRunName;
-              });
-              
-              if (foundPlayer) {
-                matchingPlayer = { id: foundPlayer.id, ...foundPlayer.data() } as Player;
-              }
-            }
-            
-            if (matchingPlayer) {
-              // Found a matching user - assign the run to them and update playerName
-              updateData.playerId = matchingPlayer.uid;
-              updateData.playerName = matchingPlayer.displayName;
-              
-              let matchingPlayer2: { displayName: string } | null = null;
-              
-              // For co-op runs, also check player2Name
-              if (runToVerify.runType === 'co-op' && runToVerify.player2Name) {
-                // Try exact match first
-                let player2 = await getPlayerByDisplayName(runToVerify.player2Name.trim());
-                
-                // If no exact match, try case-insensitive search
-                if (!player2) {
-                  const normalizedRun2Name = runToVerify.player2Name.trim().toLowerCase();
-                  const allPlayersQuery = query(collection(db, "players"), firestoreLimit(1000));
-                  const allPlayersSnapshot = await getDocs(allPlayersQuery);
-                  
-                  const foundPlayer2 = allPlayersSnapshot.docs.find(doc => {
-                    const player = doc.data() as Player;
-                    const playerDisplayName = (player.displayName || "").trim().toLowerCase();
-                    return playerDisplayName === normalizedRun2Name;
-                  });
-                  
-                  if (foundPlayer2) {
-                    player2 = { id: foundPlayer2.id, ...foundPlayer2.data() } as Player;
-                  }
-                }
-                
-                if (player2) {
-                  updateData.player2Id = player2.uid;
-                  updateData.player2Name = player2.displayName;
-                  matchingPlayer2 = player2;
-                }
-              }
-              
-              toast({
-                title: "Run Auto-Assigned",
-                description: `Run has been assigned to ${matchingPlayer.displayName}${matchingPlayer2 ? ` and ${matchingPlayer2.displayName}` : ''}.`,
-              });
-            }
-          } catch (error) {
-            // Silently fail - if we can't find a match, the run will remain unclaimed
-            console.warn("Could not auto-assign run to user:", error);
-          }
-        }
-      }
+      // Don't assign runs to users - they must be claimed first
+      // Runs will remain unclaimed until a user claims them
 
       // Update run data if needed (including player assignment), then verify
       if (Object.keys(updateData).length > 0) {
@@ -1008,74 +936,8 @@ const Admin = () => {
             continue;
           }
 
-          // Auto-assign player if unclaimed
-          const updateData: Partial<LeaderboardEntry> = {};
-          
-          if (run.importedFromSRC) {
-            const isUnclaimed = !run.playerId || run.playerId.trim() === "";
-            
-            if (isUnclaimed && run.playerName) {
-              try {
-                // Try to find a user with matching display name (case-insensitive)
-                let matchingPlayer = await getPlayerByDisplayName(run.playerName.trim());
-                
-                if (!matchingPlayer) {
-                  const normalizedRunName = run.playerName.trim().toLowerCase();
-                  const allPlayersQuery = query(collection(db, "players"), firestoreLimit(1000));
-                  const allPlayersSnapshot = await getDocs(allPlayersQuery);
-                  
-                  const foundPlayer = allPlayersSnapshot.docs.find(doc => {
-                    const player = doc.data() as Player;
-                    const playerDisplayName = (player.displayName || "").trim().toLowerCase();
-                    return playerDisplayName === normalizedRunName;
-                  });
-                  
-                  if (foundPlayer) {
-                    matchingPlayer = { id: foundPlayer.id, ...foundPlayer.data() } as Player;
-                  }
-                }
-                
-                if (matchingPlayer) {
-                  updateData.playerId = matchingPlayer.uid;
-                  updateData.playerName = matchingPlayer.displayName;
-                  
-                  // For co-op runs, also check player2Name
-                  if (run.runType === 'co-op' && run.player2Name) {
-                    let player2 = await getPlayerByDisplayName(run.player2Name.trim());
-                    
-                    if (!player2) {
-                      const normalizedRun2Name = run.player2Name.trim().toLowerCase();
-                      const allPlayersQuery = query(collection(db, "players"), firestoreLimit(1000));
-                      const allPlayersSnapshot = await getDocs(allPlayersQuery);
-                      
-                      const foundPlayer2 = allPlayersSnapshot.docs.find(doc => {
-                        const player = doc.data() as Player;
-                        const playerDisplayName = (player.displayName || "").trim().toLowerCase();
-                        return playerDisplayName === normalizedRun2Name;
-                      });
-                      
-                      if (foundPlayer2) {
-                        player2 = { id: foundPlayer2.id, ...foundPlayer2.data() } as Player;
-                      }
-                    }
-                    
-                    if (player2) {
-                      updateData.player2Id = player2.uid;
-                      updateData.player2Name = player2.displayName;
-                    }
-                  }
-                }
-              } catch (error) {
-                // Silently fail - if we can't find a match, the run will remain unclaimed
-                console.warn("Could not auto-assign run to user:", error);
-              }
-            }
-          }
-
-          // Update run data if needed (including player assignment), then verify
-          if (Object.keys(updateData).length > 0) {
-            await updateLeaderboardEntry(run.id, updateData);
-          }
+          // Don't assign runs to users - they must be claimed first
+          // Just verify the run without assigning playerId/player2Id
 
           // Verify the run
           const success = await updateRunVerificationStatus(run.id, true, verifiedBy);
@@ -1124,6 +986,135 @@ const Admin = () => {
       });
     } finally {
       setBatchVerifying(false);
+    }
+  };
+
+  const handleBatchVerifyAll = async () => {
+    if (!currentUser) return;
+    
+    // Apply the same filtering logic as the table
+    let unverifiedImported = importedSRCRuns.filter(r => r.verified !== true);
+    
+    // Apply leaderboardType filter
+    unverifiedImported = unverifiedImported.filter(run => {
+      const runLeaderboardType = run.leaderboardType || 'regular';
+      return runLeaderboardType === importedRunsLeaderboardType;
+    });
+    
+    // Apply category filter (only if a category is selected)
+    if (importedRunsCategory && importedRunsCategory !== '__all__') {
+      unverifiedImported = unverifiedImported.filter(run => {
+        const runCategory = normalizeCategoryId(run.category);
+        return runCategory === importedRunsCategory;
+      });
+    }
+    
+    // Apply platform filter (only if a platform is selected)
+    if (importedRunsPlatform && importedRunsPlatform !== '__all__') {
+      unverifiedImported = unverifiedImported.filter(run => {
+        const runPlatform = normalizePlatformId(run.platform);
+        return runPlatform === importedRunsPlatform;
+      });
+    }
+    
+    // Apply level filter for ILs (only if a level is selected)
+    if (importedRunsLeaderboardType === 'individual-level' && importedRunsLevel && importedRunsLevel !== '__all__') {
+      unverifiedImported = unverifiedImported.filter(run => {
+        const runLevel = normalizeLevelId(run.level);
+        return runLevel === importedRunsLevel;
+      });
+    }
+    
+    // Apply run type filter (solo/co-op)
+    if (importedRunsRunType && importedRunsRunType !== '__all__') {
+      unverifiedImported = unverifiedImported.filter(run => {
+        const runRunType = run.runType || 'solo';
+        return runRunType === importedRunsRunType;
+      });
+    }
+    
+    // Sort by date (most recent first)
+    unverifiedImported.sort((a, b) => {
+      if (!a.date && !b.date) return 0;
+      if (!a.date) return 1;
+      if (!b.date) return -1;
+      return b.date.localeCompare(a.date);
+    });
+
+    if (unverifiedImported.length === 0) {
+      toast({
+        title: "No Runs to Verify",
+        description: "There are no unverified imported runs matching the current filters.",
+        variant: "default",
+      });
+      return;
+    }
+
+    setBatchVerifyingAll(true);
+    const verifiedBy = currentUser.displayName || currentUser.email || currentUser.uid;
+    let successCount = 0;
+    let errorCount = 0;
+    const errors: string[] = [];
+
+    try {
+      for (const run of unverifiedImported) {
+        try {
+          if (!run.id) {
+            errors.push(`Run missing ID: ${run.playerName || 'Unknown'}`);
+            errorCount++;
+            continue;
+          }
+
+          // Don't assign runs to users - they must be claimed first
+          // Just verify the run without assigning playerId/player2Id
+
+          // Verify the run
+          const success = await updateRunVerificationStatus(run.id, true, verifiedBy);
+          if (success) {
+            successCount++;
+          } else {
+            errors.push(`Failed to verify run: ${run.playerName || 'Unknown'}`);
+            errorCount++;
+          }
+        } catch (error: any) {
+          errors.push(`Error verifying ${run.playerName || 'Unknown'}: ${error.message || String(error)}`);
+          errorCount++;
+        }
+      }
+
+      // Show summary toast
+      if (successCount > 0 && errorCount === 0) {
+        toast({
+          title: "Batch Verification Complete",
+          description: `Successfully verified ${successCount} run(s).`,
+        });
+      } else if (successCount > 0 && errorCount > 0) {
+        toast({
+          title: "Batch Verification Partial Success",
+          description: `Verified ${successCount} run(s), ${errorCount} error(s). Check console for details.`,
+          variant: "default",
+        });
+        console.error("Batch verify all errors:", errors);
+      } else {
+        toast({
+          title: "Batch Verification Failed",
+          description: `Failed to verify all runs. Check console for details.`,
+          variant: "destructive",
+        });
+        console.error("Batch verify all errors:", errors);
+      }
+
+      // Refresh the runs list
+      await refreshAllRunData();
+    } catch (error: any) {
+      console.error("Error in batch verify all:", error);
+      toast({
+        title: "Batch Verification Error",
+        description: error.message || "An error occurred during batch verification.",
+        variant: "destructive",
+      });
+    } finally {
+      setBatchVerifyingAll(false);
     }
   };
 
@@ -3216,23 +3207,42 @@ const Admin = () => {
                       )}
                     </Button>
                     {importedSRCRuns.filter(r => r.verified !== true).length > 0 && (
-                      <Button
-                        onClick={handleBatchVerify}
-                        disabled={batchVerifying || importingRuns}
-                        className="bg-gradient-to-r from-[#94e2d5] to-[#74c7b0] hover:from-[#74c7b0] hover:to-[#94e2d5] text-[hsl(240,21%,15%)] font-bold transition-all duration-300 hover:scale-105 hover:shadow-lg"
-                      >
-                        {batchVerifying ? (
-                          <>
-                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                            Verifying...
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Batch Verify 10 Most Recent
-                          </>
-                        )}
-                      </Button>
+                      <>
+                        <Button
+                          onClick={handleBatchVerify}
+                          disabled={batchVerifying || batchVerifyingAll || importingRuns}
+                          className="bg-gradient-to-r from-[#94e2d5] to-[#74c7b0] hover:from-[#74c7b0] hover:to-[#94e2d5] text-[hsl(240,21%,15%)] font-bold transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                        >
+                          {batchVerifying ? (
+                            <>
+                              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                              Verifying...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Batch Verify 10 Most Recent
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          onClick={handleBatchVerifyAll}
+                          disabled={batchVerifying || batchVerifyingAll || importingRuns}
+                          className="bg-gradient-to-r from-[#a6e3a1] to-[#86c77a] hover:from-[#86c77a] hover:to-[#a6e3a1] text-[hsl(240,21%,15%)] font-bold transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                        >
+                          {batchVerifyingAll ? (
+                            <>
+                              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                              Verifying All...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Batch Verify All in Tab
+                            </>
+                          )}
+                        </Button>
+                      </>
                     )}
                   </div>
                   {importingRuns && importProgress.total > 0 && (
