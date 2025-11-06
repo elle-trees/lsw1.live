@@ -294,13 +294,25 @@ export async function fetchPlatformById(platformId: string): Promise<string | nu
 }
 
 /**
+ * Normalize SRC username for consistent comparison
+ * This ensures the same normalization is used during import and claiming
+ */
+export function normalizeSRCUsername(username: string | null | undefined): string {
+  if (!username) return "";
+  return username.trim().toLowerCase();
+}
+
+/**
  * Fetch a single player by ID from speedrun.com
  * Returns the player's username (from names.international)
+ * This is the same field used during import, ensuring consistency
  */
 export async function fetchPlayerById(playerId: string): Promise<string | null> {
   try {
     const data = await fetchSRCAPI<{ data: SRCPlayer }>(`/users/${playerId}`);
-    return data?.data?.names?.international || null;
+    const name = data?.data?.names?.international || null;
+    // Return the name as-is (same as during import), normalization happens at comparison time
+    return name;
   } catch (error) {
     console.error(`[fetchPlayerById] Error fetching player ${playerId}:`, error);
     return null;

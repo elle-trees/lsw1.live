@@ -665,19 +665,47 @@ export const autoClaimRunsBySRCUsernameFirestore = async (userId: string, srcUse
   }
   
   const result = { claimed: 0, errors: [] as string[] };
-  const normalizedSrcUsername = srcUsername.trim().toLowerCase();
+  // Use the same normalization function as import and claiming for consistency
+  const { normalizeSRCUsername } = await import("@/lib/speedruncom");
+  const normalizedSrcUsername = normalizeSRCUsername(srcUsername);
   
   try {
     // Get all runs (verified and unverified) to check for matches
-    const queries = [
-      query(collection(db, "leaderboardEntries"), where("verified", "==", true), firestoreLimit(1000)),
-      query(collection(db, "leaderboardEntries"), where("verified", "==", false), firestoreLimit(1000))
-    ];
+    // Note: Non-admin users can only read verified entries, so we'll handle permission errors gracefully
+    let verifiedSnapshot;
+    let unverifiedSnapshot;
     
-    const [verifiedSnapshot, unverifiedSnapshot] = await Promise.all([
-      getDocs(queries[0]),
-      getDocs(queries[1])
-    ]);
+    try {
+      const verifiedQuery = query(
+        collection(db, "leaderboardEntries"), 
+        where("verified", "==", true), 
+        firestoreLimit(1000)
+      );
+      verifiedSnapshot = await getDocs(verifiedQuery);
+    } catch (error) {
+      console.error("Error fetching verified runs for autoclaiming:", error);
+      verifiedSnapshot = { docs: [] } as any;
+    }
+    
+    try {
+      const unverifiedQuery = query(
+        collection(db, "leaderboardEntries"), 
+        where("verified", "==", false), 
+        firestoreLimit(1000)
+      );
+      unverifiedSnapshot = await getDocs(unverifiedQuery);
+    } catch (error: any) {
+      // Non-admin users can't read unverified entries - that's okay, we'll just use verified entries
+      const errorCode = error?.code || error?.message || '';
+      const isPermissionError = errorCode === 'permission-denied' || 
+                                errorCode === 'missing-or-insufficient-permissions' ||
+                                (typeof errorCode === 'string' && errorCode.toLowerCase().includes('permission'));
+      
+      if (!isPermissionError) {
+        console.error("Error fetching unverified runs for autoclaiming:", error);
+      }
+      unverifiedSnapshot = { docs: [] } as any;
+    }
     
     const allRuns = [
       ...verifiedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LeaderboardEntry)),
@@ -685,11 +713,12 @@ export const autoClaimRunsBySRCUsernameFirestore = async (userId: string, srcUse
     ];
     
     // Find imported runs where srcPlayerName or srcPlayer2Name matches (case-insensitive)
+    // Use the same normalization function as import and claiming for consistency
     const runsToClaim = allRuns.filter(run => {
       if (!run.importedFromSRC) return false;
       
-      const runSRCPlayerName = (run.srcPlayerName || "").trim().toLowerCase();
-      const runSRCPlayer2Name = (run.srcPlayer2Name || "").trim().toLowerCase();
+      const runSRCPlayerName = normalizeSRCUsername(run.srcPlayerName);
+      const runSRCPlayer2Name = normalizeSRCUsername(run.srcPlayer2Name);
       
       // Match if either SRC player name matches (case-insensitive)
       const matches = runSRCPlayerName === normalizedSrcUsername || 
@@ -724,8 +753,9 @@ export const autoClaimRunsBySRCUsernameFirestore = async (userId: string, srcUse
       const updateData: Partial<LeaderboardEntry> = { playerId: userId };
       if (playerDisplayName) {
         // Determine if this is player1 or player2
-        const runSRCPlayerName = (run.srcPlayerName || "").trim().toLowerCase();
-        const runSRCPlayer2Name = (run.srcPlayer2Name || "").trim().toLowerCase();
+        // Use the same normalization function as import and claiming for consistency
+        const runSRCPlayerName = normalizeSRCUsername(run.srcPlayerName);
+        const runSRCPlayer2Name = normalizeSRCUsername(run.srcPlayer2Name);
         
         if (runSRCPlayerName === normalizedSrcUsername) {
           // This is player1
@@ -835,15 +865,41 @@ export const autoLinkRunsByDisplayNameFirestore = async (userId: string, display
   
   try {
     // Get all runs (verified and unverified) to check for matches
-    const queries = [
-      query(collection(db, "leaderboardEntries"), where("verified", "==", true), firestoreLimit(1000)),
-      query(collection(db, "leaderboardEntries"), where("verified", "==", false), firestoreLimit(1000))
-    ];
+    // Note: Non-admin users can only read verified entries, so we'll handle permission errors gracefully
+    let verifiedSnapshot;
+    let unverifiedSnapshot;
     
-    const [verifiedSnapshot, unverifiedSnapshot] = await Promise.all([
-      getDocs(queries[0]),
-      getDocs(queries[1])
-    ]);
+    try {
+      const verifiedQuery = query(
+        collection(db, "leaderboardEntries"), 
+        where("verified", "==", true), 
+        firestoreLimit(1000)
+      );
+      verifiedSnapshot = await getDocs(verifiedQuery);
+    } catch (error) {
+      console.error("Error fetching verified runs for auto-linking:", error);
+      verifiedSnapshot = { docs: [] } as any;
+    }
+    
+    try {
+      const unverifiedQuery = query(
+        collection(db, "leaderboardEntries"), 
+        where("verified", "==", false), 
+        firestoreLimit(1000)
+      );
+      unverifiedSnapshot = await getDocs(unverifiedQuery);
+    } catch (error: any) {
+      // Non-admin users can't read unverified entries - that's okay, we'll just use verified entries
+      const errorCode = error?.code || error?.message || '';
+      const isPermissionError = errorCode === 'permission-denied' || 
+                                errorCode === 'missing-or-insufficient-permissions' ||
+                                (typeof errorCode === 'string' && errorCode.toLowerCase().includes('permission'));
+      
+      if (!isPermissionError) {
+        console.error("Error fetching unverified runs for auto-linking:", error);
+      }
+      unverifiedSnapshot = { docs: [] } as any;
+    }
     
     const allRuns = [
       ...verifiedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LeaderboardEntry)),
@@ -2953,7 +3009,9 @@ export const getUnclaimedRunsBySRCUsernameFirestore = async (srcUsername: string
       // SRC API doesn't have a direct username lookup, so we'll search by name
       // For now, we'll match by display name and srcPlayerId
       // Users should enter their exact SRC username
-      const normalizedSrcUsername = srcUsername.trim().toLowerCase();
+      // Use the same normalization function as import and claiming for consistency
+      const { normalizeSRCUsername } = await import("@/lib/speedruncom");
+      const normalizedSrcUsername = normalizeSRCUsername(srcUsername);
       
       // Filter runs where playerName matches SRC username OR srcPlayerName matches
       const matchingRuns = allRuns.filter(run => {
@@ -2961,8 +3019,9 @@ export const getUnclaimedRunsBySRCUsernameFirestore = async (srcUsername: string
         
         const runPlayerName = (run.playerName || "").trim().toLowerCase();
         const runPlayer2Name = (run.player2Name || "").trim().toLowerCase();
-        const runSRCPlayerName = (run.srcPlayerName || "").trim().toLowerCase();
-        const runSRCPlayer2Name = (run.srcPlayer2Name || "").trim().toLowerCase();
+        // Use the same normalization function as import and claiming for consistency
+        const runSRCPlayerName = normalizeSRCUsername(run.srcPlayerName);
+        const runSRCPlayer2Name = normalizeSRCUsername(run.srcPlayer2Name);
         
         // Match by SRC username (preferred for imported runs) or display name (case-insensitive)
         const nameMatches = runPlayerName === normalizedSrcUsername || 
@@ -3064,12 +3123,16 @@ export const claimRunFirestore = async (runId: string, userId: string): Promise<
       return false;
     }
     
+    // Import normalizeSRCUsername for consistent normalization
+    const { normalizeSRCUsername } = await import("@/lib/speedruncom");
+    
     const normalizedUserDisplayName = player.displayName ? player.displayName.trim().toLowerCase() : "";
-    const normalizedUserSRCUsername = player.srcUsername ? player.srcUsername.trim().toLowerCase() : "";
+    const normalizedUserSRCUsername = normalizeSRCUsername(player.srcUsername);
     const normalizedRunPlayerName = (runData.playerName || "").trim().toLowerCase();
     const normalizedRunPlayer2Name = (runData.player2Name || "").trim().toLowerCase();
-    const normalizedRunSRCPlayerName = (runData.srcPlayerName || "").trim().toLowerCase();
-    const normalizedRunSRCPlayer2Name = (runData.srcPlayer2Name || "").trim().toLowerCase();
+    // Use the same normalization function as import for consistency
+    const normalizedRunSRCPlayerName = normalizeSRCUsername(runData.srcPlayerName);
+    const normalizedRunSRCPlayer2Name = normalizeSRCUsername(runData.srcPlayer2Name);
     
     // Check if run is unclaimed - simply check if playerId is empty/null
     const isUnclaimed = !runData.playerId || runData.playerId.trim() === "";
@@ -3090,12 +3153,15 @@ export const claimRunFirestore = async (runId: string, userId: string): Promise<
       }
       
       // If srcPlayerName is "Unknown" or empty but srcPlayerId exists, fetch from SRC API
+      // Use the same fetchPlayerById function and normalization as during import
       if ((!actualSRCPlayerName || actualSRCPlayerName === "unknown") && runData.srcPlayerId) {
         try {
           console.log(`[claimRun] Fetching player name for srcPlayerId: ${runData.srcPlayerId}`);
+          const { fetchPlayerById } = await import("@/lib/speedruncom");
           const fetchedName = await fetchPlayerById(runData.srcPlayerId);
           if (fetchedName) {
-            actualSRCPlayerName = fetchedName.trim().toLowerCase();
+            // Use the same normalization function as import for consistency
+            actualSRCPlayerName = normalizeSRCUsername(fetchedName);
             console.log(`[claimRun] Fetched player name: ${fetchedName} (normalized: ${actualSRCPlayerName})`);
           } else {
             console.warn(`[claimRun] fetchPlayerById returned null/empty for srcPlayerId: ${runData.srcPlayerId}`);
@@ -3104,7 +3170,19 @@ export const claimRunFirestore = async (runId: string, userId: string): Promise<
           console.error(`[claimRun] Error fetching player name from SRC API for srcPlayerId ${runData.srcPlayerId}:`, error);
           // Continue with "Unknown" - will fail validation below with helpful error
         }
-      } else if ((!actualSRCPlayerName || actualSRCPlayerName === "unknown") && !runData.srcPlayerId) {
+      }
+      
+      // Fallback: If srcPlayerName is "Unknown" but playerName might have the actual SRC username
+      // This can happen if the run was imported and playerName was set correctly but srcPlayerName wasn't
+      // Use the same normalization function for consistency
+      if ((!actualSRCPlayerName || actualSRCPlayerName === "unknown") && runData.playerName && 
+          normalizeSRCUsername(runData.playerName) !== "unknown" && 
+          normalizeSRCUsername(runData.playerName) === normalizedUserSRCUsername) {
+        console.log(`[claimRun] Using playerName as fallback SRC username: ${runData.playerName}`);
+        actualSRCPlayerName = normalizeSRCUsername(runData.playerName);
+      }
+      
+      if ((!actualSRCPlayerName || actualSRCPlayerName === "unknown") && !runData.srcPlayerId) {
         console.warn(`[claimRun] Run ${runId} has "Unknown" player name but no srcPlayerId. Run data:`, {
           srcPlayerName: runData.srcPlayerName,
           srcPlayerId: runData.srcPlayerId,
@@ -3116,9 +3194,11 @@ export const claimRunFirestore = async (runId: string, userId: string): Promise<
       if ((!actualSRCPlayer2Name || actualSRCPlayer2Name === "unknown") && runData.srcPlayer2Id) {
         try {
           console.log(`[claimRun] Fetching player2 name for srcPlayer2Id: ${runData.srcPlayer2Id}`);
+          const { fetchPlayerById } = await import("@/lib/speedruncom");
           const fetchedName = await fetchPlayerById(runData.srcPlayer2Id);
           if (fetchedName) {
-            actualSRCPlayer2Name = fetchedName.trim().toLowerCase();
+            // Use the same normalization function as import for consistency
+            actualSRCPlayer2Name = normalizeSRCUsername(fetchedName);
             console.log(`[claimRun] Fetched player2 name: ${fetchedName} (normalized: ${actualSRCPlayer2Name})`);
           } else {
             console.warn(`[claimRun] fetchPlayerById returned null/empty for srcPlayer2Id: ${runData.srcPlayer2Id}`);
@@ -3126,6 +3206,15 @@ export const claimRunFirestore = async (runId: string, userId: string): Promise<
         } catch (error) {
           console.error(`[claimRun] Error fetching player2 name from SRC API for srcPlayer2Id ${runData.srcPlayer2Id}:`, error);
         }
+      }
+      
+      // Fallback: If srcPlayer2Name is "Unknown" but player2Name might have the actual SRC username
+      // Use the same normalization function for consistency
+      if ((!actualSRCPlayer2Name || actualSRCPlayer2Name === "unknown") && runData.player2Name && 
+          normalizeSRCUsername(runData.player2Name) !== "unknown" && 
+          normalizeSRCUsername(runData.player2Name) === normalizedUserSRCUsername) {
+        console.log(`[claimRun] Using player2Name as fallback SRC username: ${runData.player2Name}`);
+        actualSRCPlayer2Name = normalizeSRCUsername(runData.player2Name);
       }
       
       const srcNameMatches = actualSRCPlayerName === normalizedUserSRCUsername ||
@@ -4325,9 +4414,15 @@ export const getExistingSRCRunIdsFirestore = async (): Promise<Set<string>> => {
     } catch (error: any) {
       // If permission denied, that's okay - we'll just use verified entries
       // This function is typically called by admins during import, but might be called elsewhere
-      if (error?.code !== 'permission-denied') {
+      const errorCode = error?.code || error?.message || '';
+      const isPermissionError = errorCode === 'permission-denied' || 
+                                errorCode === 'missing-or-insufficient-permissions' ||
+                                (typeof errorCode === 'string' && errorCode.toLowerCase().includes('permission'));
+      
+      if (!isPermissionError) {
         console.error("Error fetching unverified SRC run IDs:", error);
       }
+      // Silently continue - we have verified entries at least
     }
     
     return srcRunIds;
