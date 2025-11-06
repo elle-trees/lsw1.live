@@ -390,6 +390,7 @@ const Admin = () => {
         date: editingImportedRun.date,
         videoUrl: editingImportedRun.videoUrl,
         comment: editingImportedRun.comment,
+        subcategory: editingImportedRun.subcategory,
       });
 
       // Fetch categories for the run's leaderboard type
@@ -400,7 +401,7 @@ const Admin = () => {
       setEditingImportedRunForm({});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editingImportedRun?.id]); // Only re-initialize when the run ID changes (opening different run)
+  }, [editingImportedRun]); // Re-initialize when editingImportedRun changes
 
   useEffect(() => {
     if (verifyingRun) {
