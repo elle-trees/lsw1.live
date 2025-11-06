@@ -244,8 +244,11 @@ function validateMappedRun(
   }
 
   // For co-op, player2Name should be present
-  if (run.runType === 'co-op' && (!run.player2Name || run.player2Name.trim() === '')) {
-    errors.push('missing player 2 name for co-op run');
+  // Allow "Unknown" as a placeholder (admin can fix later)
+  if (run.runType === 'co-op') {
+    if (!run.player2Name || (run.player2Name.trim() === '' && run.player2Name !== 'Unknown')) {
+      errors.push('missing player 2 name for co-op run');
+    }
   }
 
   return errors;
@@ -396,8 +399,17 @@ export async function importSRCRuns(
 
         // Normalize player names
         mappedRun.playerName = mappedRun.playerName.trim();
-        if (mappedRun.player2Name) {
-          mappedRun.player2Name = mappedRun.player2Name.trim() || undefined;
+        
+        // For co-op runs, preserve player2Name even if it's "Unknown"
+        if (mappedRun.runType === 'co-op') {
+          if (mappedRun.player2Name) {
+            mappedRun.player2Name = mappedRun.player2Name.trim() || "Unknown";
+          } else {
+            mappedRun.player2Name = "Unknown";
+          }
+        } else {
+          // For solo runs, clear player2Name
+          mappedRun.player2Name = undefined;
         }
 
         // Check for duplicates

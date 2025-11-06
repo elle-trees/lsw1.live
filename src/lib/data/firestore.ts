@@ -2334,28 +2334,63 @@ export const getAllVerifiedRunsFirestore = async (): Promise<LeaderboardEntry[]>
   }
 };
 
-export const getUnclaimedRunsByUsernameFirestore = async (username: string): Promise<LeaderboardEntry[]> => {
+export const getUnclaimedRunsByUsernameFirestore = async (username: string, currentUserId?: string): Promise<LeaderboardEntry[]> => {
   if (!db) return [];
   try {
-    // Get all verified runs
-    const q = query(
-      collection(db, "leaderboardEntries"),
-      where("verified", "==", true),
-      firestoreLimit(500)
-    );
-    const querySnapshot = await getDocs(q);
+    // Get ALL runs (verified and unverified, manual and imported)
+    // We need to check both verified and unverified runs to include:
+    // - Manually submitted unverified runs
+    // - Imported runs (both verified and unverified)
+    const queries = [
+      query(
+        collection(db, "leaderboardEntries"),
+        where("verified", "==", true),
+        firestoreLimit(500)
+      ),
+      query(
+        collection(db, "leaderboardEntries"),
+        where("verified", "==", false),
+        firestoreLimit(500)
+      )
+    ];
+    
+    const [verifiedSnapshot, unverifiedSnapshot] = await Promise.all([
+      getDocs(queries[0]),
+      getDocs(queries[1])
+    ]);
     
     const normalizedUsername = username.trim().toLowerCase();
     
-    const unclaimedRuns = querySnapshot.docs
-      .map(doc => ({ id: doc.id, ...doc.data() } as LeaderboardEntry))
+    // Combine all runs
+    const allRuns = [
+      ...verifiedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LeaderboardEntry)),
+      ...unverifiedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LeaderboardEntry))
+    ];
+    
+    // Filter runs that match the username (as player1 or player2) and aren't already claimed by current user
+    const unclaimedRuns = allRuns
       .filter(entry => {
         const entryPlayerName = (entry.playerName || "").trim().toLowerCase();
-        return entryPlayerName === normalizedUsername;
+        const entryPlayer2Name = (entry.player2Name || "").trim().toLowerCase();
+        
+        // Check if username matches player1 or player2
+        const nameMatches = entryPlayerName === normalizedUsername || 
+                           (entryPlayer2Name && entryPlayer2Name === normalizedUsername);
+        
+        if (!nameMatches) return false;
+        
+        // Exclude runs already claimed by the current user
+        if (currentUserId && entry.playerId === currentUserId) {
+          return false;
+        }
+        
+        // Include the run - it matches the username and isn't already claimed
+        return true;
       });
     
     return unclaimedRuns;
   } catch (error) {
+    console.error("Error fetching unclaimed runs:", error);
     return [];
   }
 };

@@ -288,25 +288,65 @@ const Admin = () => {
 
   useEffect(() => {
     if (editingImportedRun) {
+      // Initialize form with current values
+      let initialPlatform = editingImportedRun.platform;
+      
+      // If platform is empty but we have SRC platform name, try to auto-match
+      if ((!initialPlatform || initialPlatform.trim() === '') && editingImportedRun.srcPlatformName) {
+        const matchingPlatform = firestorePlatforms.find(p => 
+          p.name.toLowerCase().trim() === editingImportedRun.srcPlatformName!.toLowerCase().trim()
+        );
+        if (matchingPlatform) {
+          initialPlatform = matchingPlatform.id;
+        }
+      }
+      
+      // Also try to match category if empty
+      let initialCategory = editingImportedRun.category;
+      if ((!initialCategory || initialCategory.trim() === '') && editingImportedRun.srcCategoryName) {
+        const categoryType = editingImportedRun.leaderboardType || 'regular';
+        const categoriesForType = firestoreCategories.filter(c => {
+          const catType = c.leaderboardType || 'regular';
+          return catType === categoryType;
+        });
+        const matchingCategory = categoriesForType.find(c => 
+          c.name.toLowerCase().trim() === editingImportedRun.srcCategoryName!.toLowerCase().trim()
+        );
+        if (matchingCategory) {
+          initialCategory = matchingCategory.id;
+        }
+      }
+      
+      // Also try to match level if empty
+      let initialLevel = editingImportedRun.level;
+      if ((!initialLevel || initialLevel.trim() === '') && editingImportedRun.srcLevelName) {
+        const matchingLevel = availableLevels.find(l => 
+          l.name.toLowerCase().trim() === editingImportedRun.srcLevelName!.toLowerCase().trim()
+        );
+        if (matchingLevel) {
+          initialLevel = matchingLevel.id;
+        }
+      }
+      
       setEditingImportedRunForm({
         playerName: editingImportedRun.playerName,
         player2Name: editingImportedRun.player2Name,
-        category: editingImportedRun.category,
-        platform: editingImportedRun.platform,
+        category: initialCategory,
+        platform: initialPlatform,
         runType: editingImportedRun.runType,
         leaderboardType: editingImportedRun.leaderboardType,
-        level: editingImportedRun.level,
+        level: initialLevel,
         time: editingImportedRun.time,
         date: editingImportedRun.date,
         videoUrl: editingImportedRun.videoUrl,
         comment: editingImportedRun.comment,
       });
-      
+
       // Fetch categories for the run's leaderboard type
       const categoryType = editingImportedRun.leaderboardType || 'regular';
       fetchCategories(categoryType);
     }
-  }, [editingImportedRun]);
+  }, [editingImportedRun, firestorePlatforms, firestoreCategories, availableLevels]);
 
   useEffect(() => {
     if (verifyingRun) {

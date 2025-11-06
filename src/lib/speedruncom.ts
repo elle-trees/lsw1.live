@@ -316,15 +316,15 @@ export async function fetchPlayerById(playerId: string): Promise<string | null> 
  * If only ID is available, can optionally fetch from API (async version available)
  */
 export function getPlayerName(player: SRCRun['players'][0]): string {
-  if (!player) return "Unknown";
+  if (!player) return "";
   
-  // Guest runs have direct name field (anonymous/unregistered players)
-  if (player.name && typeof player.name === 'string' && player.name.trim()) {
+  // Guest runs (rel: "guest") have direct name field (anonymous/unregistered players)
+  if (player.rel === "guest" && player.name && typeof player.name === 'string' && player.name.trim()) {
     return String(player.name).trim();
   }
   
-  // Registered users have embedded data: player.data.names.international
-  if (player.data?.names?.international && typeof player.data.names.international === 'string') {
+  // Registered users (rel: "user") have embedded data: player.data.names.international
+  if (player.rel === "user" && player.data?.names?.international && typeof player.data.names.international === 'string') {
     const name = String(player.data.names.international).trim();
     if (name) return name;
   }
@@ -334,13 +334,18 @@ export function getPlayerName(player: SRCRun['players'][0]): string {
     return String(player.data.name).trim();
   }
   
-  // If we have an ID but no name, return a placeholder that indicates we need to fetch
+  // If we have an ID but no name, return empty string to signal we need to fetch
   // The async version will handle fetching
-  if (player.id) {
+  if (player.id && player.rel === "user") {
     return ""; // Return empty string to signal we need to fetch
   }
   
-  return "Unknown";
+  // If it's a guest without a name, return empty
+  if (player.rel === "guest") {
+    return "";
+  }
+  
+  return "";
 }
 
 /**
@@ -353,23 +358,34 @@ export async function getPlayerNameAsync(
 ): Promise<string> {
   if (!player) return "Unknown";
   
-  // Try synchronous extraction first
+  // Check if it's a guest player (rel: "guest") - these have name field directly
+  if (player.rel === "guest" || player.name) {
+    if (player.name && typeof player.name === 'string' && player.name.trim()) {
+      return String(player.name).trim();
+    }
+    // Guest without name - return placeholder
+    return "Guest Player";
+  }
+  
+  // Try synchronous extraction first (handles embedded data)
   const syncName = getPlayerName(player);
-  if (syncName && syncName !== "" && syncName !== "Unknown") {
+  if (syncName && syncName !== "") {
     return syncName;
   }
   
-  // If we have an ID but no name, try cache first
+  // For registered users, if we have an ID but no name, fetch from API
+  // Check both explicit rel === "user" and presence of ID
   if (player.id) {
-    // Check cache
+    // Check cache first
     if (playerIdToNameCache?.has(player.id)) {
-      return playerIdToNameCache.get(player.id)!;
+      const cachedName = playerIdToNameCache.get(player.id)!;
+      if (cachedName) return cachedName;
     }
     
     // Fetch from API
     try {
       const name = await fetchPlayerById(player.id);
-      if (name) {
+      if (name && name.trim()) {
         // Cache it
         playerIdToNameCache?.set(player.id, name);
         return name;
@@ -378,7 +394,7 @@ export async function getPlayerNameAsync(
       console.error(`Failed to fetch player ${player.id}:`, error);
     }
     
-    // Last resort: return placeholder
+    // Last resort: return placeholder with ID (better than "Unknown")
     return `Player ${player.id}`;
   }
   
@@ -535,23 +551,32 @@ export async function mapSRCRunToLeaderboardEntry(
   // === Extract Players ===
   const players = run.players || [];
   
+  // Determine run type based on player count
+  const runType: 'solo' | 'co-op' = players.length > 1 ? 'co-op' : 'solo';
+  
   // Use async version to fetch names if needed
   let player1Name = players[0] ? await getPlayerNameAsync(players[0], playerIdToNameCache) : "Unknown";
   let player2Name: string | undefined;
   
-  if (players.length > 1) {
-    player2Name = await getPlayerNameAsync(players[1], playerIdToNameCache);
+  if (runType === 'co-op' && players.length > 1) {
+    const fetchedPlayer2Name = await getPlayerNameAsync(players[1], playerIdToNameCache);
+    // For co-op runs, always set player2Name even if it's "Unknown"
+    // This ensures the run passes validation
+    player2Name = fetchedPlayer2Name || "Unknown";
   }
   
-  // Ensure we have valid names
+  // Ensure we have valid names - but don't clear player2Name for co-op runs
   if (!player1Name || player1Name.trim() === "") {
     player1Name = "Unknown";
   }
-  if (player2Name && player2Name.trim() === "") {
-    player2Name = undefined;
-  }
   
-  const runType: 'solo' | 'co-op' = players.length > 1 ? 'co-op' : 'solo';
+  // For co-op runs, ensure player2Name is set (even if Unknown)
+  // For solo runs, clear it
+  if (runType === 'solo') {
+    player2Name = undefined;
+  } else if (runType === 'co-op' && (!player2Name || player2Name.trim() === "")) {
+    player2Name = "Unknown";
+  }
   
   // === Extract Category ===
   const categoryData = extractIdAndName(run.category);

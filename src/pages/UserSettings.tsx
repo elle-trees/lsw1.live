@@ -97,7 +97,10 @@ const UserSettings = () => {
     if (!username || !currentUser) return;
     setLoadingUnclaimed(true);
     try {
-      const runs = await getUnclaimedRunsByUsername(username);
+      // Pass currentUserId to filter out already claimed runs
+      // This now includes all runs (verified, unverified, manual, imported) that match the username
+      const runs = await getUnclaimedRunsByUsername(username, currentUser.uid);
+      // Additional client-side filter as backup (though it should already be filtered)
       const trulyUnclaimed = runs.filter(run => run.playerId !== currentUser.uid);
       setUnclaimedRuns(trulyUnclaimed);
     } catch (error) {
