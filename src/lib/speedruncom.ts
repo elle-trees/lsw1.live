@@ -383,36 +383,49 @@ export async function getPlayerNameAsync(
     console.warn("[getPlayerNameAsync] No player data provided");
     return "Unknown";
   }
+
+  // Handle case where player might be wrapped in { data: [...] } structure
+  // This can happen if the API returns embedded data in a different format
+  let actualPlayer = player;
+  if (typeof player === 'object' && 'data' in player && Array.isArray((player as any).data) && (player as any).data.length > 0) {
+    // Extract first player from data array
+    actualPlayer = (player as any).data[0];
+  } else if (typeof player === 'object' && 'data' in player && !Array.isArray((player as any).data)) {
+    // Single player in data object
+    actualPlayer = (player as any).data;
+  }
   
   // Log player structure for debugging (first few calls only)
   const debugLog = playerIdToNameCache && playerIdToNameCache.size < 3;
   if (debugLog) {
     console.log("[getPlayerNameAsync] Player data:", {
-      rel: player.rel,
-      id: player.id,
-      name: player.name,
-      hasData: !!player.data,
-      dataNames: player.data?.names,
-      dataName: player.data?.name,
+      original: player,
+      actual: actualPlayer,
+      rel: actualPlayer?.rel,
+      id: actualPlayer?.id,
+      name: actualPlayer?.name,
+      hasData: !!actualPlayer?.data,
+      dataNames: actualPlayer?.data?.names,
+      dataName: actualPlayer?.data?.name,
     });
   }
   
   // Guest players (rel: "guest") have name field directly
-  if (player.rel === "guest") {
-    if (player.name && typeof player.name === 'string' && player.name.trim()) {
-      return String(player.name).trim();
+  if (actualPlayer?.rel === "guest") {
+    if (actualPlayer.name && typeof actualPlayer.name === 'string' && actualPlayer.name.trim()) {
+      return String(actualPlayer.name).trim();
     }
     // Guest without name - return placeholder
     return "Guest Player";
   }
   
   // If player has direct name field (sometimes present even for registered users)
-  if (player.name && typeof player.name === 'string' && player.name.trim()) {
-    return String(player.name).trim();
+  if (actualPlayer?.name && typeof actualPlayer.name === 'string' && actualPlayer.name.trim()) {
+    return String(actualPlayer.name).trim();
   }
   
   // Try synchronous extraction first (handles embedded data)
-  const syncName = getPlayerName(player);
+  const syncName = getPlayerName(actualPlayer as SRCRun['players'][0]);
   if (syncName && syncName !== "") {
     if (debugLog) {
       console.log(`[getPlayerNameAsync] Found name from sync extraction: "${syncName}"`);
@@ -424,10 +437,10 @@ export async function getPlayerNameAsync(
   // Registered users have rel: "user" or just an ID without rel
   // Extract player ID - could be in player.id or player.data.id
   let playerId: string | undefined;
-  if (player.id && typeof player.id === 'string' && player.id.trim()) {
-    playerId = player.id.trim();
-  } else if (player.data?.id && typeof player.data.id === 'string' && player.data.id.trim()) {
-    playerId = player.data.id.trim();
+  if (actualPlayer?.id && typeof actualPlayer.id === 'string' && actualPlayer.id.trim()) {
+    playerId = actualPlayer.id.trim();
+  } else if (actualPlayer?.data?.id && typeof actualPlayer.data.id === 'string' && actualPlayer.data.id.trim()) {
+    playerId = actualPlayer.data.id.trim();
   }
   
   if (playerId) {
@@ -470,7 +483,10 @@ export async function getPlayerNameAsync(
   
   // If we have no ID and no name, log it for debugging
   if (debugLog) {
-    console.warn("[getPlayerNameAsync] No player ID or name found:", player);
+    console.warn("[getPlayerNameAsync] No player ID or name found:", {
+      original: player,
+      actual: actualPlayer,
+    });
   }
   
   return "Unknown";
@@ -634,12 +650,26 @@ export async function mapSRCRunToLeaderboardEntry(
 
   // === Extract Players ===
   // Ensure players is always an array
+  // SRC API can return players as: array, { data: array }, or single object
   let players: SRCRun['players'] = [];
   if (run.players) {
     if (Array.isArray(run.players)) {
       players = run.players;
+    } else if (typeof run.players === 'object') {
+      // Handle { data: [...] } structure
+      if ('data' in run.players && Array.isArray((run.players as any).data)) {
+        players = (run.players as any).data;
+      } 
+      // Handle single player object
+      else if ('rel' in run.players || 'id' in run.players || 'name' in run.players) {
+        players = [run.players as any];
+      } 
+      else {
+        console.warn(`[mapSRCRunToLeaderboardEntry] Run ${run.id} has unexpected players structure:`, run.players);
+        players = [];
+      }
     } else {
-      console.warn(`[mapSRCRunToLeaderboardEntry] Run ${run.id} has non-array players:`, run.players);
+      console.warn(`[mapSRCRunToLeaderboardEntry] Run ${run.id} has invalid players type:`, typeof run.players);
       players = [];
     }
   }

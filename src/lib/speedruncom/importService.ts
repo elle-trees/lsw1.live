@@ -431,10 +431,21 @@ export async function importSRCRuns(
             throw new Error("Run missing ID");
           }
           if (srcRun.players && !Array.isArray(srcRun.players)) {
-            console.warn(`[importSRCRuns] Run ${srcRun.id} has non-array players, converting...`);
-            // Try to fix it - if it's a single player object, wrap it
-            if (typeof srcRun.players === 'object' && !Array.isArray(srcRun.players)) {
-              srcRun.players = [srcRun.players as any];
+            // Handle SRC API structure where players might be { data: [...] } or a single object
+            if (typeof srcRun.players === 'object') {
+              // Check if it's { data: [...] } structure
+              if ('data' in srcRun.players && Array.isArray((srcRun.players as any).data)) {
+                srcRun.players = (srcRun.players as any).data;
+              } 
+              // Check if it's a single player object
+              else if ('rel' in srcRun.players || 'id' in srcRun.players || 'name' in srcRun.players) {
+                srcRun.players = [srcRun.players as any];
+              } 
+              // Unknown structure, log and set to empty
+              else {
+                console.warn(`[importSRCRuns] Run ${srcRun.id} has unexpected players structure:`, srcRun.players);
+                srcRun.players = [];
+              }
             } else {
               srcRun.players = [];
             }
