@@ -271,7 +271,7 @@ const SubmitRun = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-6 max-w-4xl mx-auto">
+          <div className="space-y-6 max-w-6xl mx-auto">
             {/* Main Form */}
             <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
                 <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)] py-4">
