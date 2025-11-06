@@ -54,6 +54,7 @@ import {
   getAllRunsForDuplicateCheck,
   deleteAllImportedSRCRuns,
   getCategories,
+  getVerifiedRunsWithInvalidData,
 } from "@/lib/db";
 import { 
   getLSWGameId, 
@@ -78,6 +79,7 @@ const Admin = () => {
 
   const [unverifiedRuns, setUnverifiedRuns] = useState<LeaderboardEntry[]>([]);
   const [importedSRCRuns, setImportedSRCRuns] = useState<LeaderboardEntry[]>([]);
+  const [verifiedRunsWithInvalidData, setVerifiedRunsWithInvalidData] = useState<LeaderboardEntry[]>([]);
   const [importingRuns, setImportingRuns] = useState(false);
   const [importProgress, setImportProgress] = useState({ total: 0, imported: 0, skipped: 0 });
   const [editingImportedRun, setEditingImportedRun] = useState<LeaderboardEntry | null>(null);
@@ -273,14 +275,16 @@ const Admin = () => {
     if (hasFetchedData) return;
     setLoading(true);
     try {
-      const [unverifiedData, importedData, downloadData, categoriesData] = await Promise.all([
+      const [unverifiedData, importedData, downloadData, categoriesData, invalidVerifiedData] = await Promise.all([
         getUnverifiedLeaderboardEntries(),
         getImportedSRCRuns(),
         getDownloadEntries(),
-        getCategoriesFromFirestore('regular')
+        getCategoriesFromFirestore('regular'),
+        getVerifiedRunsWithInvalidData()
       ]);
       setUnverifiedRuns(unverifiedData.filter(run => !run.importedFromSRC));
       setImportedSRCRuns(importedData);
+      setVerifiedRunsWithInvalidData(invalidVerifiedData);
       setDownloadEntries(downloadData);
       setFirestoreCategories(categoriesData);
       setHasFetchedData(true);
@@ -293,6 +297,22 @@ const Admin = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Helper function to refresh all run data
+  const refreshAllRunData = async () => {
+    try {
+      const [unverifiedData, importedData, invalidVerifiedData] = await Promise.all([
+        getUnverifiedLeaderboardEntries(),
+        getImportedSRCRuns(),
+        getVerifiedRunsWithInvalidData()
+      ]);
+      setUnverifiedRuns(unverifiedData.filter(run => !run.importedFromSRC));
+      setImportedSRCRuns(importedData);
+      setVerifiedRunsWithInvalidData(invalidVerifiedData);
+    } catch (error) {
+      console.error("Error refreshing run data:", error);
     }
   };
 
@@ -702,10 +722,14 @@ const Admin = () => {
             continue;
           }
           
-          // Debug: Log player extraction for first few runs
+          // Debug: Log extraction for first few runs
           if (imported < 3) {
-            console.log(`Run ${srcRun.id} players:`, JSON.stringify(srcRun.players, null, 2));
-            console.log(`Extracted player1: "${mappedRun.playerName}", player2: "${mappedRun.player2Name}"`);
+            console.log(`Run ${srcRun.id}:`);
+            console.log(`  Players:`, JSON.stringify(srcRun.players, null, 2));
+            console.log(`  Extracted player1: "${mappedRun.playerName}", player2: "${mappedRun.player2Name}"`);
+            console.log(`  Category: ID="${mappedRun.category}", SRC Name="${mappedRun.srcCategoryName}"`);
+            console.log(`  Platform: ID="${mappedRun.platform}", SRC Name="${mappedRun.srcPlatformName}"`);
+            console.log(`  Level: ID="${mappedRun.level}", SRC Name="${mappedRun.srcLevelName}"`);
           }
           
           // Ensure player names are strings and not empty
@@ -959,11 +983,12 @@ const Admin = () => {
       if (success) {
         toast({
           title: "Run Updated",
-          description: "The imported run has been updated successfully.",
+          description: "The run has been updated successfully.",
         });
         setEditingImportedRun(null);
         setEditingImportedRunForm({});
-        await fetchUnverifiedRuns();
+        // Refresh all run lists
+        await refreshAllRunData();
       } else {
         throw new Error("Failed to update run");
       }
@@ -2751,6 +2776,189 @@ const Admin = () => {
           </CardContent>
         </Card>
 
+        {/* Verified Runs with Invalid Data Card */}
+        <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl border-yellow-500/30">
+          <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
+            <CardTitle className="flex items-center gap-2 text-xl text-yellow-400">
+              <AlertTriangle className="h-5 w-5" />
+              <span>Verified Runs with Invalid Data</span>
+            </CardTitle>
+            <p className="text-sm text-[hsl(222,15%,60%)] mt-2">
+              These runs are verified but won't appear on leaderboards due to missing or invalid category, platform, or level data.
+            </p>
+          </CardHeader>
+          <CardContent className="pt-6">
+            {verifiedRunsWithInvalidData.length === 0 ? (
+              <p className="text-[hsl(222,15%,60%)] text-center py-8">No verified runs with invalid data found.</p>
+            ) : (
+              <>
+                <div className="overflow-x-auto mb-4">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-b border-[hsl(235,13%,30%)] hover:bg-transparent">
+                        <TableHead className="py-3 px-4 text-left">Player(s)</TableHead>
+                        <TableHead className="py-3 px-4 text-left">Category</TableHead>
+                        <TableHead className="py-3 px-4 text-left">Platform</TableHead>
+                        <TableHead className="py-3 px-4 text-left">Level</TableHead>
+                        <TableHead className="py-3 px-4 text-left">Time</TableHead>
+                        <TableHead className="py-3 px-4 text-left">Issues</TableHead>
+                        <TableHead className="py-3 px-4 text-center">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {verifiedRunsWithInvalidData.map((run) => {
+                        const categoryExists = firestoreCategories.some(c => c.id === run.category);
+                        const platformExists = firestorePlatforms.some(p => p.id === run.platform);
+                        const levelExists = run.level ? availableLevels.some(l => l.id === run.level) : true;
+                        const issues: string[] = [];
+                        if (!run.category || !categoryExists) issues.push("Invalid/Missing Category");
+                        if (!run.platform || !platformExists) issues.push("Invalid/Missing Platform");
+                        if ((run.leaderboardType === 'individual-level' || run.leaderboardType === 'community-golds') && (!run.level || !levelExists)) {
+                          issues.push("Invalid/Missing Level");
+                        }
+                        if (!run.playerName) issues.push("Missing Player Name");
+                        if (!run.time) issues.push("Missing Time");
+                        if (!run.date) issues.push("Missing Date");
+                        if (!run.runType) issues.push("Missing Run Type");
+                        
+                        return (
+                          <TableRow key={run.id} className="border-b border-[hsl(235,13%,30%)] hover:bg-[hsl(235,19%,13%)]">
+                            <TableCell className="py-3 px-4">
+                              <div className="flex flex-col gap-1">
+                                <span>{run.playerName || "Unknown"}</span>
+                                {run.player2Name && (
+                                  <span className="text-muted-foreground text-sm"> & {run.player2Name}</span>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="py-3 px-4">
+                              {categoryExists ? (
+                                getCategoryName(run.category, firestoreCategories, run.srcCategoryName)
+                              ) : (
+                                <span className="text-yellow-500">Invalid: {run.category || "Missing"}</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="py-3 px-4">
+                              {platformExists ? (
+                                getPlatformName(run.platform, firestorePlatforms, run.srcPlatformName)
+                              ) : (
+                                <span className="text-yellow-500">Invalid: {run.platform || "Missing"}</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="py-3 px-4">
+                              {run.level ? (
+                                levelExists ? (
+                                  getLevelName(run.level, availableLevels, run.srcLevelName)
+                                ) : (
+                                  <span className="text-yellow-500">Invalid: {run.level}</span>
+                                )
+                              ) : (
+                                run.leaderboardType === 'individual-level' || run.leaderboardType === 'community-golds' ? (
+                                  <span className="text-yellow-500">Missing</span>
+                                ) : (
+                                  <span className="text-muted-foreground">N/A</span>
+                                )
+                              )}
+                            </TableCell>
+                            <TableCell className="py-3 px-4 font-mono">{formatTime(run.time || '00:00:00')}</TableCell>
+                            <TableCell className="py-3 px-4">
+                              <div className="flex flex-col gap-1">
+                                {issues.map((issue, idx) => (
+                                  <Badge key={idx} variant="destructive" className="text-xs w-fit">
+                                    {issue}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </TableCell>
+                            <TableCell className="py-3 px-4">
+                              <div className="flex gap-2 justify-center">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setEditingImportedRun(run);
+                                    setEditingImportedRunForm({
+                                      playerName: run.playerName,
+                                      player2Name: run.player2Name,
+                                      category: run.category,
+                                      platform: run.platform,
+                                      level: run.level,
+                                      runType: run.runType,
+                                      leaderboardType: run.leaderboardType,
+                                      time: run.time,
+                                      date: run.date,
+                                      videoUrl: run.videoUrl,
+                                      comment: run.comment,
+                                    });
+                                  }}
+                                  className="text-blue-400 border-blue-400 hover:bg-blue-400/10"
+                                >
+                                  <Edit2 className="h-4 w-4 mr-1" />
+                                  Edit
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={async () => {
+                                    if (!window.confirm(`Unverify this run? It will be moved to unverified runs.`)) return;
+                                    try {
+                                      await updateRunVerificationStatus(run.id, false);
+                                      toast({
+                                        title: "Run Unverified",
+                                        description: "The run has been moved to unverified runs.",
+                                      });
+                                      await refreshAllRunData();
+                                    } catch (error: any) {
+                                      toast({
+                                        title: "Error",
+                                        description: error.message || "Failed to unverify run.",
+                                        variant: "destructive",
+                                      });
+                                    }
+                                  }}
+                                  className="text-yellow-400 border-yellow-400 hover:bg-yellow-400/10"
+                                >
+                                  <XCircle className="h-4 w-4 mr-1" />
+                                  Unverify
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={async () => {
+                                    if (!window.confirm(`Delete this run permanently? This action cannot be undone.`)) return;
+                                    try {
+                                      await deleteLeaderboardEntry(run.id);
+                                      toast({
+                                        title: "Run Deleted",
+                                        description: "The run has been deleted.",
+                                      });
+                                      await refreshAllRunData();
+                                    } catch (error: any) {
+                                      toast({
+                                        title: "Error",
+                                        description: error.message || "Failed to delete run.",
+                                        variant: "destructive",
+                                      });
+                                    }
+                                  }}
+                                  className="text-red-400 border-red-400 hover:bg-red-400/10"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-1" />
+                                  Delete
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
           </TabsContent>
 
         {/* Edit Imported Run Dialog */}
@@ -2762,7 +2970,9 @@ const Admin = () => {
         }}>
           <DialogContent className="bg-[hsl(240,21%,16%)] border-[hsl(235,13%,30%)] max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-[#f2cdcd]">Edit Imported Run</DialogTitle>
+              <DialogTitle className="text-[#f2cdcd]">
+                {editingImportedRun?.importedFromSRC ? "Edit Imported Run" : "Edit Run"}
+              </DialogTitle>
             </DialogHeader>
             {editingImportedRun && (
               <div className="space-y-4 py-4">

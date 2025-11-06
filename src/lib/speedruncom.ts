@@ -318,17 +318,22 @@ function extractId(value: string | { data: { id: string } } | { data: Array<{ id
  */
 function extractName(value: string | { data: { name?: string; names?: { international?: string } } } | { data: Array<{ name?: string; names?: { international?: string } }> } | undefined): string {
   if (!value) return "";
-  if (typeof value === "string") return value.trim();
+  if (typeof value === "string") {
+    // If it's a string, it's likely an ID, not a name
+    return "";
+  }
   
   // Handle single embedded object
   if (value.data && !Array.isArray(value.data)) {
-    // Try name field first
+    // Try name field first (most common for categories, platforms, levels)
     if (value.data.name) {
-      return String(value.data.name).trim();
+      const name = String(value.data.name).trim();
+      if (name) return name;
     }
-    // Try names.international
+    // Try names.international (for games, players)
     if (value.data.names?.international) {
-      return String(value.data.names.international).trim();
+      const name = String(value.data.names.international).trim();
+      if (name) return name;
     }
   }
   
@@ -336,10 +341,12 @@ function extractName(value: string | { data: { name?: string; names?: { internat
   if (Array.isArray(value.data) && value.data.length > 0) {
     const first = value.data[0];
     if (first.name) {
-      return String(first.name).trim();
+      const name = String(first.name).trim();
+      if (name) return name;
     }
     if (first.names?.international) {
-      return String(first.names.international).trim();
+      const name = String(first.names.international).trim();
+      if (name) return name;
     }
   }
   

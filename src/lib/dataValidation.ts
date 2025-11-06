@@ -110,6 +110,10 @@ export function normalizeLeaderboardEntry(entry: Partial<LeaderboardEntry>): Par
     leaderboardType: normalizeLeaderboardType(entry.leaderboardType),
     verified: Boolean(entry.verified),
     importedFromSRC: entry.importedFromSRC !== undefined ? Boolean(entry.importedFromSRC) : undefined,
+    // Preserve SRC fallback names (don't normalize them, just trim)
+    srcCategoryName: entry.srcCategoryName ? String(entry.srcCategoryName).trim() : undefined,
+    srcPlatformName: entry.srcPlatformName ? String(entry.srcPlatformName).trim() : undefined,
+    srcLevelName: entry.srcLevelName ? String(entry.srcLevelName).trim() : undefined,
   };
 }
 

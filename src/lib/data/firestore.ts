@@ -290,8 +290,19 @@ export const addLeaderboardEntryFirestore = async (entry: Omit<LeaderboardEntry,
     if (normalized.srcRunId) {
       newEntry.srcRunId = normalized.srcRunId;
     }
+    // Save SRC fallback names for display when ID mapping fails
+    if (entry.srcCategoryName) {
+      newEntry.srcCategoryName = entry.srcCategoryName;
+    }
+    if (entry.srcPlatformName) {
+      newEntry.srcPlatformName = entry.srcPlatformName;
+    }
+    if (entry.srcLevelName) {
+      newEntry.srcLevelName = entry.srcLevelName;
+    }
     
     await setDoc(newDocRef, newEntry);
+    console.log(`Saved entry with SRC names: category="${entry.srcCategoryName}", platform="${entry.srcPlatformName}", level="${entry.srcLevelName}"`);
     return newDocRef.id;
   } catch (error: any) {
     console.error("Error adding leaderboard entry:", error);
@@ -3020,6 +3031,67 @@ export const getAllRunsForDuplicateCheckFirestore = async (): Promise<Leaderboar
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LeaderboardEntry));
   } catch (error) {
     console.error("Error fetching runs for duplicate check:", error);
+    return [];
+  }
+};
+
+/**
+ * Get verified runs that have missing or invalid data (won't appear on leaderboards)
+ * These are runs where category, platform, or level IDs don't match existing records
+ */
+export const getVerifiedRunsWithInvalidDataFirestore = async (): Promise<LeaderboardEntry[]> => {
+  if (!db) return [];
+  try {
+    // Get all verified runs
+    const q = query(
+      collection(db, "leaderboardEntries"),
+      where("verified", "==", true),
+      firestoreLimit(1000)
+    );
+    const querySnapshot = await getDocs(q);
+    const runs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LeaderboardEntry));
+    
+    // Get all categories, platforms, and levels
+    const [categoriesSnapshot, platformsSnapshot, levelsSnapshot] = await Promise.all([
+      getDocs(collection(db, "categories")),
+      getDocs(collection(db, "platforms")),
+      getDocs(collection(db, "levels"))
+    ]);
+    
+    const categoryIds = new Set(categoriesSnapshot.docs.map(doc => doc.id));
+    const platformIds = new Set(platformsSnapshot.docs.map(doc => doc.id));
+    const levelIds = new Set(levelsSnapshot.docs.map(doc => doc.id));
+    
+    // Filter runs with invalid data
+    const invalidRuns = runs.filter(run => {
+      // Check if category is missing or invalid
+      if (!run.category || !categoryIds.has(run.category)) {
+        return true;
+      }
+      
+      // Check if platform is missing or invalid
+      if (!run.platform || !platformIds.has(run.platform)) {
+        return true;
+      }
+      
+      // Check if level is required but missing or invalid (for ILs and Community Golds)
+      if (run.leaderboardType === 'individual-level' || run.leaderboardType === 'community-golds') {
+        if (!run.level || !levelIds.has(run.level)) {
+          return true;
+        }
+      }
+      
+      // Check if required fields are missing
+      if (!run.playerName || !run.time || !run.date || !run.runType) {
+        return true;
+      }
+      
+      return false;
+    });
+    
+    return invalidRuns;
+  } catch (error) {
+    console.error("Error fetching verified runs with invalid data:", error);
     return [];
   }
 };
