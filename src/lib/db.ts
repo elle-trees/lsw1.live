@@ -243,6 +243,11 @@ export const backfillPointsForAllRuns = async () => {
   return backfillPointsForAllRunsFirestore();
 };
 
+export const wipeLeaderboards = async () => {
+  const { wipeLeaderboardsFirestore } = await import("./data/firestore");
+  return wipeLeaderboardsFirestore();
+};
+
 /**
  * Set admin status for a player
  * Creates player document if it doesn't exist

@@ -2296,6 +2296,88 @@ export const deleteAllLeaderboardEntriesFirestore = async (): Promise<{ deleted:
   }
 };
 
+/**
+ * Wipe all leaderboards: Delete all runs and reset all player stats
+ * This is a destructive operation that cannot be undone
+ */
+export const wipeLeaderboardsFirestore = async (): Promise<{ 
+  runsDeleted: number; 
+  playersReset: number; 
+  errors: string[] 
+}> => {
+  if (!db) return { runsDeleted: 0, playersReset: 0, errors: ["Firestore not initialized"] };
+  
+  const result = { runsDeleted: 0, playersReset: 0, errors: [] as string[] };
+  
+  try {
+    // Step 1: Delete all leaderboard entries
+    const deleteResult = await deleteAllLeaderboardEntriesFirestore();
+    result.runsDeleted = deleteResult.deleted;
+    result.errors.push(...deleteResult.errors);
+    
+    // Step 2: Reset all player stats (totalPoints, totalRuns, bestRank)
+    try {
+      let hasMore = true;
+      let batchCount = 0;
+      const batchSize = 500;
+      
+      while (hasMore) {
+        const playersQuery = query(collection(db, "players"), firestoreLimit(batchSize));
+        const playersSnapshot = await getDocs(playersQuery);
+        
+        if (playersSnapshot.empty) {
+          hasMore = false;
+          break;
+        }
+        
+        // Use batch writes for efficiency
+        let batch = writeBatch(db);
+        let batchWriteCount = 0;
+        const MAX_BATCH_SIZE = 500;
+        
+        for (const playerDoc of playersSnapshot.docs) {
+          // Reset stats but keep other player data (displayName, email, etc.)
+          batch.update(playerDoc.ref, {
+            totalPoints: 0,
+            totalRuns: 0,
+            bestRank: null,
+          });
+          batchWriteCount++;
+          result.playersReset++;
+          
+          if (batchWriteCount >= MAX_BATCH_SIZE) {
+            await batch.commit();
+            batchWriteCount = 0;
+            batch = writeBatch(db);
+          }
+        }
+        
+        // Commit remaining updates
+        if (batchWriteCount > 0) {
+          await batch.commit();
+        }
+        
+        if (playersSnapshot.docs.length < batchSize) {
+          hasMore = false;
+        }
+        
+        batchCount++;
+        if (batchCount > 100) {
+          result.errors.push("Stopped resetting players after 100 batches to prevent infinite loop");
+          break;
+        }
+      }
+    } catch (error) {
+      result.errors.push(`Error resetting player stats: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    
+    return result;
+  } catch (error) {
+    result.errors.push(`Fatal error: ${error instanceof Error ? error.message : String(error)}`);
+    return result;
+  }
+};
+
 export const updateRunObsoleteStatusFirestore = async (runId: string, isObsolete: boolean): Promise<boolean> => {
   if (!db) return false;
   try {
