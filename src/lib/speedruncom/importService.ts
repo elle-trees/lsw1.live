@@ -88,7 +88,6 @@ function extractPlatformFromRun(run: SRCRun): { id: string; name: string } | nul
  * Only fetches platforms that are actually used in the runs being imported
  */
 export async function createSRCMappings(srcRuns: SRCRun[]): Promise<SRCMappings> {
-  // Validate input
   if (!Array.isArray(srcRuns)) {
     throw new Error("srcRuns must be an array");
   }
@@ -98,7 +97,7 @@ export async function createSRCMappings(srcRuns: SRCRun[]): Promise<SRCMappings>
     throw new Error("Could not find LEGO Star Wars game on speedrun.com");
   }
 
-  // Fetch our local data and SRC game-specific data
+  // Fetch our local data and SRC game-specific data in parallel
   const [ourCategories, ourPlatforms, ourLevels, srcCategories, srcLevels] = await Promise.all([
     getCategoriesFromFirestore(),
     getPlatformsFromFirestore(),
@@ -117,13 +116,8 @@ export async function createSRCMappings(srcRuns: SRCRun[]): Promise<SRCMappings>
   // Extract unique platform IDs/names from runs (only LSW1 platforms)
   const uniquePlatforms = new Map<string, { id: string; name: string }>();
   
-  // Safely iterate through runs
-  const safeSrcRuns = Array.isArray(srcRuns) ? srcRuns : [];
-  for (const run of safeSrcRuns) {
-    if (!run || typeof run !== 'object') {
-      console.warn("[createSRCMappings] Skipping invalid run:", run);
-      continue;
-    }
+  for (const run of srcRuns) {
+    if (!run || typeof run !== 'object') continue;
     const platformData = extractPlatformFromRun(run);
     if (platformData && platformData.id) {
       // If we already have this platform ID, skip
@@ -189,25 +183,16 @@ export async function createSRCMappings(srcRuns: SRCRun[]): Promise<SRCMappings>
   // Map platforms (only those used in LSW1 runs)
   for (const [platformId, platformData] of uniquePlatforms) {
     const platformName = platformData?.name;
-    if (!platformName) {
-      console.warn(`[SRC Mapping] Platform ${platformId} has no name`);
-      continue;
-    }
+    if (!platformName) continue;
     
-    // Store SRC ID -> name mapping (critical for fallback)
     srcPlatformIdToName.set(platformId, platformName);
     
-    // Find matching local platform
     const ourPlatform = safeOurPlatforms.find(p => p && normalize(p.name) === normalize(platformName));
     if (ourPlatform) {
       platformMapping.set(platformId, ourPlatform.id);
       platformNameMapping.set(normalize(platformName), ourPlatform.id);
-    } else {
-      console.log(`[SRC Mapping] Platform "${platformName}" (ID: ${platformId}) not found locally`);
     }
   }
-
-  console.log(`[SRC Mapping] Created ${srcPlatformIdToName.size} platform ID->name mappings (from ${srcRuns.length} LSW1 runs)`);
 
   // Map levels
   for (const srcLevel of safeSrcLevels) {
@@ -423,44 +408,7 @@ export async function importSRCRuns(
         // Map SRC run to our format (now async to support fetching names from API)
         let mappedRun: Partial<LeaderboardEntry> & { srcRunId: string; importedFromSRC: boolean };
         try {
-          // Validate run structure before mapping
-          if (!srcRun || typeof srcRun !== 'object') {
-            throw new Error("Invalid run object");
-          }
-          if (!srcRun.id) {
-            throw new Error("Run missing ID");
-          }
-          if (srcRun.players && !Array.isArray(srcRun.players)) {
-            // Handle SRC API structure where players might be { data: [...] } or a single object
-            if (typeof srcRun.players === 'object') {
-              // Check if it's { data: [...] } structure
-              if ('data' in srcRun.players && Array.isArray((srcRun.players as any).data)) {
-                srcRun.players = (srcRun.players as any).data;
-              } 
-              // Check if it's a single player object
-              else if ('rel' in srcRun.players || 'id' in srcRun.players || 'name' in srcRun.players) {
-                srcRun.players = [srcRun.players as any];
-              } 
-              // Unknown structure, log and set to empty
-              else {
-                console.warn(`[importSRCRuns] Run ${srcRun.id} has unexpected players structure:`, srcRun.players);
-                srcRun.players = [];
-              }
-            } else {
-              srcRun.players = [];
-            }
-          }
-
-          // Validate mappings are Maps
-          if (!(mappings.categoryMapping instanceof Map)) {
-            throw new Error("categoryMapping is not a Map");
-          }
-          if (!(mappings.platformMapping instanceof Map)) {
-            throw new Error("platformMapping is not a Map");
-          }
-          if (!(mappings.levelMapping instanceof Map)) {
-            throw new Error("levelMapping is not a Map");
-          }
+          // Validation and normalization handled in mapSRCRunToLeaderboardEntry
 
           mappedRun = await mapSRCRunToLeaderboardEntry(
             srcRun,
@@ -479,14 +427,8 @@ export async function importSRCRuns(
           );
         } catch (mapError: any) {
           result.skipped++;
-          const errorMessage = mapError instanceof Error 
-            ? mapError.message 
-            : String(mapError);
-          const errorStack = mapError instanceof Error && mapError.stack 
-            ? `\nStack: ${mapError.stack}` 
-            : '';
-          result.errors.push(`Run ${srcRun?.id || 'unknown'}: mapping failed: ${errorMessage}${errorStack}`);
-          console.error(`[importSRCRuns] Mapping failed for run ${srcRun?.id || 'unknown'}:`, mapError);
+          const errorMessage = mapError instanceof Error ? mapError.message : String(mapError);
+          result.errors.push(`Run ${srcRun?.id || 'unknown'}: ${errorMessage}`);
           onProgress?.({ total: srcRuns.length, imported: result.imported, skipped: result.skipped });
           continue;
         }

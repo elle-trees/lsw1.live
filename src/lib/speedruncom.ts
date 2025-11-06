@@ -299,38 +299,28 @@ export async function fetchPlatformById(platformId: string): Promise<string | nu
  */
 export async function fetchPlayerById(playerId: string): Promise<string | null> {
   try {
-    const endpoint = `/users/${playerId}`;
-    const data = await fetchSRCAPI<{ data: SRCPlayer }>(endpoint);
-    
-    if (!data || !data.data) {
-      console.warn(`[fetchPlayerById] No data returned for player ${playerId}`);
-      return null;
-    }
-    
-    const player = data.data;
-    const name = player.names?.international || null;
-    
-    if (!name) {
-      console.warn(`[fetchPlayerById] Player ${playerId} has no names.international:`, {
-        player,
-        names: player.names,
-        hasNames: !!player.names,
-      });
-    }
-    
-    return name;
-  } catch (error: any) {
-    // Log more details about the error
-    const errorMessage = error?.message || String(error);
-    const errorStatus = error?.status || error?.statusCode || 'unknown';
-    console.error(`[fetchPlayerById] Error fetching player ${playerId}:`, {
-      error: errorMessage,
-      status: errorStatus,
-      endpoint: `/users/${playerId}`,
-      fullError: error,
-    });
+    const data = await fetchSRCAPI<{ data: SRCPlayer }>(`/users/${playerId}`);
+    return data?.data?.names?.international || null;
+  } catch (error) {
+    console.error(`[fetchPlayerById] Error fetching player ${playerId}:`, error);
     return null;
   }
+}
+
+/**
+ * Normalize players array from various SRC API response formats
+ */
+function normalizePlayersArray(players: any): SRCRun['players'] {
+  if (Array.isArray(players)) return players;
+  if (!players || typeof players !== 'object') return [];
+  
+  if ('data' in players && Array.isArray(players.data)) {
+    return players.data;
+  }
+  if ('rel' in players || 'id' in players || 'name' in players) {
+    return [players];
+  }
+  return [];
 }
 
 /**
@@ -395,27 +385,11 @@ export async function getPlayerNameAsync(
     actualPlayer = (player as any).data;
   }
   
-  // Log player structure for debugging (first few calls only)
-  const debugLog = playerIdToNameCache && playerIdToNameCache.size < 3;
-  if (debugLog) {
-    console.log("[getPlayerNameAsync] Player data:", {
-      original: player,
-      actual: actualPlayer,
-      rel: actualPlayer?.rel,
-      id: actualPlayer?.id,
-      name: actualPlayer?.name,
-      hasData: !!actualPlayer?.data,
-      dataNames: actualPlayer?.data?.names,
-      dataName: actualPlayer?.data?.name,
-    });
-  }
-  
   // Guest players (rel: "guest") have name field directly
   if (actualPlayer?.rel === "guest") {
     if (actualPlayer.name && typeof actualPlayer.name === 'string' && actualPlayer.name.trim()) {
       return String(actualPlayer.name).trim();
     }
-    // Guest without name - return placeholder
     return "Guest Player";
   }
   
@@ -427,15 +401,10 @@ export async function getPlayerNameAsync(
   // Try synchronous extraction first (handles embedded data)
   const syncName = getPlayerName(actualPlayer as SRCRun['players'][0]);
   if (syncName && syncName !== "") {
-    if (debugLog) {
-      console.log(`[getPlayerNameAsync] Found name from sync extraction: "${syncName}"`);
-    }
     return syncName;
   }
   
   // For registered users, if we have an ID but no name, fetch from API
-  // Registered users have rel: "user" or just an ID without rel
-  // Extract player ID - could be in player.id or player.data.id
   let playerId: string | undefined;
   if (actualPlayer?.id && typeof actualPlayer.id === 'string' && actualPlayer.id.trim()) {
     playerId = actualPlayer.id.trim();
@@ -448,45 +417,23 @@ export async function getPlayerNameAsync(
     if (playerIdToNameCache?.has(playerId)) {
       const cachedName = playerIdToNameCache.get(playerId)!;
       if (cachedName && cachedName.trim()) {
-        if (debugLog) {
-          console.log(`[getPlayerNameAsync] Found cached name for ${playerId}: "${cachedName}"`);
-        }
         return cachedName;
       }
     }
     
     // Fetch from API
-    if (debugLog) {
-      console.log(`[getPlayerNameAsync] Fetching player ${playerId} from SRC API...`);
-    }
     try {
       const name = await fetchPlayerById(playerId);
       if (name && name.trim()) {
-        // Cache it
         playerIdToNameCache?.set(playerId, name);
-        if (debugLog) {
-          console.log(`[getPlayerNameAsync] Successfully fetched name for ${playerId}: "${name}"`);
-        }
         return name;
-      } else {
-        if (debugLog) {
-          console.warn(`[getPlayerNameAsync] fetchPlayerById returned null/empty for ${playerId}`);
-        }
       }
     } catch (error) {
       console.error(`[getPlayerNameAsync] Failed to fetch player ${playerId}:`, error);
     }
     
-    // Last resort: return placeholder with ID (better than "Unknown")
+    // Last resort: return placeholder with ID
     return `Player ${playerId}`;
-  }
-  
-  // If we have no ID and no name, log it for debugging
-  if (debugLog) {
-    console.warn("[getPlayerNameAsync] No player ID or name found:", {
-      original: player,
-      actual: actualPlayer,
-    });
   }
   
   return "Unknown";
@@ -639,55 +586,12 @@ export async function mapSRCRunToLeaderboardEntry(
   srcRunId: string;
   importedFromSRC: boolean;
 }> {
-  // Validate run object
-  if (!run || typeof run !== 'object') {
-    throw new Error("Invalid run object provided");
+  if (!run?.id) {
+    throw new Error("Invalid run object or missing ID");
   }
 
-  if (!run.id) {
-    throw new Error("Run missing ID");
-  }
-
-  // === Extract Players ===
-  // Ensure players is always an array
-  // SRC API can return players as: array, { data: array }, or single object
-  let players: SRCRun['players'] = [];
-  if (run.players) {
-    if (Array.isArray(run.players)) {
-      players = run.players;
-    } else if (typeof run.players === 'object') {
-      // Handle { data: [...] } structure
-      if ('data' in run.players && Array.isArray((run.players as any).data)) {
-        players = (run.players as any).data;
-      } 
-      // Handle single player object
-      else if ('rel' in run.players || 'id' in run.players || 'name' in run.players) {
-        players = [run.players as any];
-      } 
-      else {
-        console.warn(`[mapSRCRunToLeaderboardEntry] Run ${run.id} has unexpected players structure:`, run.players);
-        players = [];
-      }
-    } else {
-      console.warn(`[mapSRCRunToLeaderboardEntry] Run ${run.id} has invalid players type:`, typeof run.players);
-      players = [];
-    }
-  }
-  
-  // Log first few runs for debugging
-  const debugLog = run.id && run.id.length < 20;
-  if (debugLog) {
-    console.log(`[mapSRCRunToLeaderboardEntry] Run ${run.id} players:`, {
-      playersCount: players.length,
-      players: Array.isArray(players) ? players.map(p => ({
-        rel: p.rel,
-        id: p.id,
-        name: p.name,
-        hasData: !!p.data,
-        dataNames: p.data?.names,
-      })) : [],
-    });
-  }
+  // Extract and normalize players array
+  const players = normalizePlayersArray(run.players);
   
   // Determine run type based on player count
   const runType: 'solo' | 'co-op' = players.length > 1 ? 'co-op' : 'solo';
@@ -697,18 +601,7 @@ export async function mapSRCRunToLeaderboardEntry(
   let player2Name: string | undefined;
   
   if (runType === 'co-op' && players.length > 1) {
-    const fetchedPlayer2Name = await getPlayerNameAsync(players[1], playerIdToNameCache);
-    // For co-op runs, always set player2Name even if it's "Unknown"
-    // This ensures the run passes validation
-    player2Name = fetchedPlayer2Name || "Unknown";
-  }
-  
-  if (debugLog) {
-    console.log(`[mapSRCRunToLeaderboardEntry] Run ${run.id} extracted names:`, {
-      player1Name,
-      player2Name,
-      runType,
-    });
+    player2Name = await getPlayerNameAsync(players[1], playerIdToNameCache) || "Unknown";
   }
   
   // Ensure we have valid names - but don't clear player2Name for co-op runs

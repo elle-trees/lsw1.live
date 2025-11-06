@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Settings, User, Mail, Lock, Palette, Trophy, CheckCircle, Upload, X } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
-import { updatePlayerProfile, getPlayerByUid, getUnclaimedRunsByUsername, claimRun } from "@/lib/db";
+import { updatePlayerProfile, getPlayerByUid, getUnclaimedRunsByUsername, claimRun, getCategories, getPlatforms } from "@/lib/db";
 import { updateEmail, updatePassword, updateProfile } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useNavigate, Link } from "react-router-dom";
@@ -36,6 +36,8 @@ const UserSettings = () => {
   const [pageLoading, setPageLoading] = useState(true);
   const [unclaimedRuns, setUnclaimedRuns] = useState<LeaderboardEntry[]>([]);
   const [loadingUnclaimed, setLoadingUnclaimed] = useState(false);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  const [platforms, setPlatforms] = useState<{ id: string; name: string }[]>([]);
   const { startUpload, isUploading } = useUploadThing("profilePicture");
 
   useEffect(() => {
@@ -53,6 +55,14 @@ const UserSettings = () => {
       const fetchPlayerData = async () => {
         setPageLoading(true);
         try {
+          // Fetch categories and platforms for displaying unclaimed runs
+          const [fetchedCategories, fetchedPlatforms] = await Promise.all([
+            getCategories(),
+            getPlatforms(),
+          ]);
+          setCategories(fetchedCategories);
+          setPlatforms(fetchedPlatforms);
+
           const player = await getPlayerByUid(currentUser.uid);
           if (player) {
             setDisplayName(player.displayName || currentUser.displayName || "");
@@ -659,10 +669,10 @@ const UserSettings = () => {
                           {formatTime(run.time)}
                         </span>
                         <Badge variant="outline" className="border-[hsl(235,13%,30%)]">
-                          {categories.find(c => c.id === run.category)?.name || run.category}
+                          {categories?.find(c => c.id === run.category)?.name || run.category || "Unknown"}
                         </Badge>
                         <Badge variant="outline" className="border-[hsl(235,13%,30%)]">
-                          {platforms.find(p => p.id === run.platform)?.name || run.platform}
+                          {platforms?.find(p => p.id === run.platform)?.name || run.platform || "Unknown"}
                         </Badge>
                         {run.rank && (
                           <Badge variant={run.rank <= 3 ? "default" : "secondary"}>
