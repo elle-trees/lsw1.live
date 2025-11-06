@@ -253,34 +253,7 @@ export async function createSRCMappings(srcRuns: SRCRun[]): Promise<SRCMappings>
   };
 }
 
-/**
- * Check if a run is a duplicate based on run data
- */
-function isDuplicateRun(
-  run: Partial<LeaderboardEntry>,
-  existingRunKeys: Set<string>
-): boolean {
-  const normalizeName = (name: string) => name.trim().toLowerCase();
-  const player1Name = normalizeName(run.playerName || '');
-  const player2Name = run.player2Name ? normalizeName(run.player2Name) : '';
-  
-  // Create run key: player1|player2|category|platform|runType|time|leaderboardType|level
-  const runKey = `${player1Name}|${player2Name}|${run.category || ''}|${run.platform || ''}|${run.runType || 'solo'}|${run.time || ''}|${run.leaderboardType || 'regular'}|${run.level || ''}`;
-  
-  if (existingRunKeys.has(runKey)) {
-    return true;
-  }
-
-  // For co-op runs, also check swapped players
-  if (run.runType === 'co-op' && player2Name) {
-    const swappedKey = `${player2Name}|${player1Name}|${run.category || ''}|${run.platform || ''}|${run.runType || 'co-op'}|${run.time || ''}|${run.leaderboardType || 'regular'}|${run.level || ''}`;
-    if (existingRunKeys.has(swappedKey)) {
-      return true;
-    }
-  }
-
-  return false;
-}
+// Duplicate checking removed - we now import all runs, admin can handle duplicates manually
 
 /**
  * Validate a mapped run before importing
@@ -309,15 +282,9 @@ function validateMappedRun(
     errors.push(`invalid date format "${run.date}" (expected YYYY-MM-DD)`);
   }
 
-  // Category must be mapped (we only import runs with matching categories)
-  if (!run.category || run.category.trim() === '') {
-    errors.push(`category "${run.srcCategoryName || 'Unknown'}" not found on leaderboards`);
-  }
-
-  // Platform validation - allow empty if SRC name exists
-  if (!run.platform && !run.srcPlatformName) {
-    errors.push('missing platform');
-  }
+  // Category and platform are optional - we'll import runs even if they don't match local categories/platforms
+  // Admin can assign them during verification
+  // No validation errors for missing category/platform - just warnings
 
   // Run type must be valid
   if (run.runType && run.runType !== 'solo' && run.runType !== 'co-op') {
@@ -332,11 +299,8 @@ function validateMappedRun(
     errors.push(`invalid leaderboard type "${run.leaderboardType}"`);
   }
 
-  // For IL/Community Golds, level should be present if category requires it
-  if ((run.leaderboardType === 'individual-level' || run.leaderboardType === 'community-golds') && 
-      !run.level && !run.srcLevelName) {
-    errors.push('missing level for individual level run');
-  }
+  // For IL/Community Golds, level is optional - admin can assign during verification
+  // No validation error for missing level - just a warning
 
   // For co-op, player2Name should be present
   // Allow "Unknown" as a placeholder (admin can fix later)
@@ -394,7 +358,7 @@ export async function importSRCRuns(
       return result;
     }
 
-    // Step 4: Get existing runs for duplicate checking
+    // Step 4: Get existing runs to check if they're already verified
     let existingRuns: LeaderboardEntry[];
     try {
       existingRuns = await getAllRunsForDuplicateCheck();
@@ -403,33 +367,20 @@ export async function importSRCRuns(
       return result;
     }
 
-    // Build sets for duplicate checking
-    const existingSRCRunIds = new Set(
-      existingRuns.filter(r => r.srcRunId).map(r => r.srcRunId!)
+    // Build set of verified SRC run IDs to skip (only skip if already verified)
+    const verifiedSRCRunIds = new Set(
+      existingRuns
+        .filter(r => r.srcRunId && r.verified)
+        .map(r => r.srcRunId!)
     );
-
-    const normalizeName = (name: string) => name.trim().toLowerCase();
-    const existingRunKeys = new Set<string>();
-    for (const run of existingRuns.filter(r => r.verified)) {
-      const player1Name = normalizeName(run.playerName);
-      const player2Name = run.player2Name ? normalizeName(run.player2Name) : '';
-      const key = `${player1Name}|${player2Name}|${run.category || ''}|${run.platform || ''}|${run.runType || 'solo'}|${run.time || ''}|${run.leaderboardType || 'regular'}|${run.level || ''}`;
-      existingRunKeys.add(key);
-      
-      // For co-op runs, also add swapped key
-      if (run.runType === 'co-op' && player2Name) {
-        const swappedKey = `${player2Name}|${player1Name}|${run.category || ''}|${run.platform || ''}|${run.runType || 'co-op'}|${run.time || ''}|${run.leaderboardType || 'regular'}|${run.level || ''}`;
-        existingRunKeys.add(swappedKey);
-      }
-    }
 
     onProgress?.({ total: srcRuns.length, imported: 0, skipped: 0 });
 
     // Step 5: Process each run
     for (const srcRun of srcRuns) {
       try {
-        // Skip if already imported
-        if (existingSRCRunIds.has(srcRun.id)) {
+        // Skip if already verified (don't re-import verified runs)
+        if (verifiedSRCRunIds.has(srcRun.id)) {
           result.skipped++;
           onProgress?.({ total: srcRuns.length, imported: result.imported, skipped: result.skipped });
           continue;
@@ -506,13 +457,35 @@ export async function importSRCRuns(
           }
         }
 
-        // Validate the mapped run
+        // Validate the mapped run (only essential fields - category/platform are optional)
         const validationErrors = validateMappedRun(mappedRun, srcRun.id);
-        if (validationErrors.length > 0) {
+        // Only skip if essential fields are missing (time, date, playerName)
+        // Category/platform mismatches are warnings, not blockers
+        const criticalErrors = validationErrors.filter(err => 
+          err.includes('missing player name') || 
+          err.includes('missing time') || 
+          err.includes('invalid time format') ||
+          err.includes('missing date') ||
+          err.includes('invalid date format')
+        );
+        
+        if (criticalErrors.length > 0) {
           result.skipped++;
-          result.errors.push(`Run ${srcRun.id}: ${validationErrors.join(', ')}`);
+          result.errors.push(`Run ${srcRun.id}: ${criticalErrors.join(', ')}`);
           onProgress?.({ total: srcRuns.length, imported: result.imported, skipped: result.skipped });
           continue;
+        }
+        
+        // Log non-critical validation issues as warnings (category/platform)
+        const warnings = validationErrors.filter(err => 
+          !err.includes('missing player name') && 
+          !err.includes('missing time') && 
+          !err.includes('invalid time format') &&
+          !err.includes('missing date') &&
+          !err.includes('invalid date format')
+        );
+        if (warnings.length > 0) {
+          console.warn(`Run ${srcRun.id} has warnings: ${warnings.join(', ')}`);
         }
 
         // Handle platform - allow empty if SRC name exists
@@ -541,12 +514,7 @@ export async function importSRCRuns(
           mappedRun.player2Name = undefined;
         }
 
-        // Check for duplicates
-        if (isDuplicateRun(mappedRun, existingRunKeys)) {
-          result.skipped++;
-          onProgress?.({ total: srcRuns.length, imported: result.imported, skipped: result.skipped });
-          continue;
-        }
+        // No duplicate checking - import all runs, admin can handle duplicates manually
 
         // Check player matching (for warnings, doesn't block import)
         const player1Matched = await getPlayerByDisplayName(mappedRun.playerName);
@@ -571,11 +539,7 @@ export async function importSRCRuns(
             result.unmatchedPlayers.set(addedRunId, unmatched);
           }
 
-          // Add to existing keys to prevent batch duplicates
-          const player1Name = normalizeName(mappedRun.playerName);
-          const player2Name = mappedRun.player2Name ? normalizeName(mappedRun.player2Name) : '';
-          const runKey = `${player1Name}|${player2Name}|${mappedRun.category || ''}|${mappedRun.platform || ''}|${mappedRun.runType || 'solo'}|${mappedRun.time || ''}|${mappedRun.leaderboardType || 'regular'}|${mappedRun.level || ''}`;
-          existingRunKeys.add(runKey);
+          // No need to track run keys anymore - we're importing all runs
 
           result.imported++;
           onProgress?.({ total: srcRuns.length, imported: result.imported, skipped: result.skipped });

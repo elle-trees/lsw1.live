@@ -68,6 +68,9 @@ import { useNavigate } from "react-router-dom";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { formatTime } from "@/lib/utils";
 import { getCategoryName, getPlatformName, getLevelName, normalizeCategoryId, normalizePlatformId, normalizeLevelId } from "@/lib/dataValidation";
+import { db } from "@/lib/firebase";
+import { collection, query, getDocs, limit as firestoreLimit } from "firebase/firestore";
+import { Player } from "@/types/database";
 
 const Admin = () => {
   const { currentUser, loading: authLoading } = useAuth();
@@ -640,7 +643,84 @@ const Admin = () => {
         updateData.level = newLevel;
       }
 
-      // Update run data if needed, then verify
+      // For imported runs, try to auto-assign to matching user by display name
+      if (runToVerify.importedFromSRC) {
+        const isUnclaimed = !runToVerify.playerId || 
+                           runToVerify.playerId === "imported" || 
+                           runToVerify.playerId.startsWith("unlinked_") ||
+                           runToVerify.playerId.startsWith("unclaimed_");
+        
+        if (isUnclaimed && runToVerify.playerName) {
+          // Try to find a user with matching display name (case-insensitive)
+          try {
+            // First try exact match (case-sensitive)
+            let matchingPlayer = await getPlayerByDisplayName(runToVerify.playerName.trim());
+            
+            // If no exact match, try case-insensitive search
+            if (!matchingPlayer) {
+              const normalizedRunName = runToVerify.playerName.trim().toLowerCase();
+              // Fetch all players and do case-insensitive match
+              const allPlayersQuery = query(collection(db, "players"), firestoreLimit(1000));
+              const allPlayersSnapshot = await getDocs(allPlayersQuery);
+              
+              const foundPlayer = allPlayersSnapshot.docs.find(doc => {
+                const player = doc.data() as Player;
+                const playerDisplayName = (player.displayName || "").trim().toLowerCase();
+                return playerDisplayName === normalizedRunName;
+              });
+              
+              if (foundPlayer) {
+                matchingPlayer = { id: foundPlayer.id, ...foundPlayer.data() } as Player;
+              }
+            }
+            
+            if (matchingPlayer) {
+              // Found a matching user - assign the run to them
+              updateData.playerId = matchingPlayer.uid;
+              
+              let matchingPlayer2: { displayName: string } | null = null;
+              
+              // For co-op runs, also check player2Name
+              if (runToVerify.runType === 'co-op' && runToVerify.player2Name) {
+                // Try exact match first
+                let player2 = await getPlayerByDisplayName(runToVerify.player2Name.trim());
+                
+                // If no exact match, try case-insensitive search
+                if (!player2) {
+                  const normalizedRun2Name = runToVerify.player2Name.trim().toLowerCase();
+                  const allPlayersQuery = query(collection(db, "players"), firestoreLimit(1000));
+                  const allPlayersSnapshot = await getDocs(allPlayersQuery);
+                  
+                  const foundPlayer2 = allPlayersSnapshot.docs.find(doc => {
+                    const player = doc.data() as Player;
+                    const playerDisplayName = (player.displayName || "").trim().toLowerCase();
+                    return playerDisplayName === normalizedRun2Name;
+                  });
+                  
+                  if (foundPlayer2) {
+                    player2 = { id: foundPlayer2.id, ...foundPlayer2.data() } as Player;
+                  }
+                }
+                
+                if (player2) {
+                  updateData.player2Id = player2.uid;
+                  matchingPlayer2 = player2;
+                }
+              }
+              
+              toast({
+                title: "Run Auto-Assigned",
+                description: `Run has been assigned to ${matchingPlayer.displayName}${matchingPlayer2 ? ` and ${matchingPlayer2.displayName}` : ''}.`,
+              });
+            }
+          } catch (error) {
+            // Silently fail - if we can't find a match, the run will remain unclaimed
+            console.warn("Could not auto-assign run to user:", error);
+          }
+        }
+      }
+
+      // Update run data if needed (including player assignment), then verify
       if (Object.keys(updateData).length > 0) {
         await updateLeaderboardEntry(runId, updateData);
       }
