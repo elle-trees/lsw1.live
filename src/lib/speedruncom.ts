@@ -622,14 +622,26 @@ export async function mapSRCRunToLeaderboardEntry(
   let ourCategoryId = categoryMapping.get(categoryData.id);
   let categoryName = categoryData.name;
   
-  // Try name-based mapping if ID mapping failed
-  if (!ourCategoryId && categoryName && categoryNameMapping) {
-    ourCategoryId = categoryNameMapping.get(categoryName.toLowerCase().trim());
-  }
-  
-  // Fallback to ID->name map if we don't have name yet
+  // Fallback to ID->name map if we don't have name yet (do this first!)
   if (!categoryName && categoryData.id && srcCategoryIdToName) {
     categoryName = srcCategoryIdToName.get(categoryData.id) || "";
+  }
+  
+  // Try name-based mapping if ID mapping failed
+  if (!ourCategoryId && categoryName && categoryNameMapping) {
+    const normalizedName = categoryName.toLowerCase().trim();
+    ourCategoryId = categoryNameMapping.get(normalizedName);
+    
+    // Also try with common variations (remove special characters for fuzzy matching)
+    if (!ourCategoryId) {
+      const simplifiedName = normalizedName.replace(/[^a-z0-9]/g, '');
+      for (const [key, value] of categoryNameMapping.entries()) {
+        if (key.replace(/[^a-z0-9]/g, '') === simplifiedName) {
+          ourCategoryId = value;
+          break;
+        }
+      }
+    }
   }
   
   // === Extract Platform ===

@@ -479,14 +479,15 @@ const Admin = () => {
         setImportedSRCRuns(importedData);
         setImportedPage(1); // Reset to first page when data changes
         
-        // Check for matched/unmatched players in imported runs
+        // Check for matched/unmatched players in imported runs (only check unverified runs)
         const unmatchedMap = new Map<string, { player1?: string; player2?: string; player1Matched?: boolean; player2Matched?: boolean }>();
         for (const run of importedData) {
-          if (!run.verified) {
+          // Only check unverified imported runs
+          if (!run.verified && run.importedFromSRC) {
             const playerStatus: { player1?: string; player2?: string; player1Matched?: boolean; player2Matched?: boolean } = {};
             
             // Check player1
-            if (run.playerName) {
+            if (run.playerName && run.playerName.trim()) {
               const player1 = await getPlayerByDisplayName(run.playerName);
               if (player1) {
                 playerStatus.player1Matched = true;
@@ -497,7 +498,7 @@ const Admin = () => {
             }
             
             // Check player2
-            if (run.player2Name) {
+            if (run.player2Name && run.player2Name.trim()) {
               const player2 = await getPlayerByDisplayName(run.player2Name);
               if (player2) {
                 playerStatus.player2Matched = true;
@@ -508,7 +509,10 @@ const Admin = () => {
             }
             
             // Store status for all runs (both matched and unmatched)
-            unmatchedMap.set(run.id, playerStatus);
+            // Only store if we have at least one player to check
+            if (run.playerName || run.player2Name) {
+              unmatchedMap.set(run.id, playerStatus);
+            }
           }
         }
         setUnmatchedPlayers(unmatchedMap);
@@ -2647,6 +2651,10 @@ const Admin = () => {
                           <TableBody>
                             {unverifiedImported.slice((importedPage - 1) * itemsPerPage, importedPage * itemsPerPage).map((run) => {
                               const unmatched = unmatchedPlayers.get(run.id);
+                              // Debug: log if unmatched is undefined but run has players
+                              if (!unmatched && (run.playerName || run.player2Name)) {
+                                console.log(`[Admin] No match status for run ${run.id}, player1: ${run.playerName}, player2: ${run.player2Name}`);
+                              }
                               return (
                           <TableRow key={run.id} className="border-b border-[hsl(235,13%,30%)] hover:bg-[hsl(235,19%,13%)] transition-all duration-200 hover:shadow-md">
                             <TableCell className="py-3 px-4 font-medium">
@@ -2654,12 +2662,12 @@ const Admin = () => {
                                 <div className="flex flex-col gap-1">
                                   <div className="flex items-center gap-1">
                                     <span style={{ color: run.nameColor || 'inherit' }}>{run.playerName}</span>
-                                    {unmatched?.player1Matched === true && (
+                                    {unmatched && unmatched.player1Matched === true && (
                                       <div title={`Player "${run.playerName}" found on site`}>
                                         <CheckCircle className="h-4 w-4 text-green-500" />
                                       </div>
                                     )}
-                                    {unmatched?.player1Matched === false && (
+                                    {unmatched && unmatched.player1Matched === false && (
                                       <div title={`Player "${run.playerName}" not found on site`}>
                                         <AlertTriangle className="h-4 w-4 text-yellow-500" />
                                       </div>
@@ -2669,12 +2677,12 @@ const Admin = () => {
                                     <div className="flex items-center gap-1">
                                       <span className="text-muted-foreground"> & </span>
                                       <span style={{ color: run.player2Color || 'inherit' }}>{run.player2Name}</span>
-                                      {unmatched?.player2Matched === true && (
+                                      {unmatched && unmatched.player2Matched === true && (
                                         <div title={`Player "${run.player2Name}" found on site`}>
                                           <CheckCircle className="h-4 w-4 text-green-500" />
                                         </div>
                                       )}
-                                      {unmatched?.player2Matched === false && (
+                                      {unmatched && unmatched.player2Matched === false && (
                                         <div title={`Player "${run.player2Name}" not found on site`}>
                                           <AlertTriangle className="h-4 w-4 text-yellow-500" />
                                         </div>

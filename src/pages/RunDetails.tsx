@@ -784,7 +784,24 @@ const RunDetails = () => {
                 {/* Verification Status */}
                 <div>
                   <div className="text-base text-muted-foreground mb-2 font-medium">Verification Status</div>
-                  {run.verified ? (
+                  {run.importedFromSRC ? (
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="h-5 w-5 text-blue-500" />
+                      <span className="text-blue-500 text-lg">Imported from Speedrun.com</span>
+                      {run.srcRunId && (
+                        <div className="text-base text-muted-foreground ml-2">
+                          <a
+                            href={`https://www.speedrun.com/run/${run.srcRunId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:text-[hsl(var(--mocha-mauve))] transition-colors underline"
+                          >
+                            View on SRC
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  ) : run.verified ? (
                     <div className="flex items-center gap-3">
                       <CheckCircle className="h-5 w-5 text-green-500" />
                       <span className="text-green-500 text-lg">Verified</span>

@@ -165,18 +165,48 @@ export async function createSRCMappings(srcRuns: SRCRun[]): Promise<SRCMappings>
   // Helper: normalize for comparison
   const normalize = (str: string) => str.toLowerCase().trim();
 
-  // Map categories
+  // Map categories - match by name, considering leaderboardType
   for (const srcCat of safeSrcCategories) {
     if (!srcCat || !srcCat.name || !srcCat.id) continue;
     
     // Store SRC ID -> name mapping
     srcCategoryIdToName.set(srcCat.id, srcCat.name);
     
-    // Find matching local category
-    const ourCat = safeOurCategories.find(c => c && normalize(c.name) === normalize(srcCat.name));
+    // Determine leaderboardType for this SRC category
+    // SRC categories have type: "per-game" or "per-level"
+    const srcCategoryType = srcCat.type || 'per-game';
+    const expectedLeaderboardType: 'regular' | 'individual-level' = srcCategoryType === 'per-level' ? 'individual-level' : 'regular';
+    
+    // Find matching local category - try exact match first, then fallback to any match
+    let ourCat = safeOurCategories.find(c => {
+      if (!c) return false;
+      const nameMatch = normalize(c.name) === normalize(srcCat.name);
+      if (!nameMatch) return false;
+      
+      // Prefer match with same leaderboardType, but allow fallback
+      const catType = c.leaderboardType || 'regular';
+      return catType === expectedLeaderboardType;
+    });
+    
+    // Fallback: if no match with correct type, try any category with matching name
+    if (!ourCat) {
+      ourCat = safeOurCategories.find(c => c && normalize(c.name) === normalize(srcCat.name));
+    }
+    
     if (ourCat) {
       categoryMapping.set(srcCat.id, ourCat.id);
-      categoryNameMapping.set(normalize(srcCat.name), ourCat.id);
+      // Store name mapping with normalized name (for all name variations)
+      const normalizedSrcName = normalize(srcCat.name);
+      categoryNameMapping.set(normalizedSrcName, ourCat.id);
+      
+      // Also store variations (without special chars) for fuzzy matching
+      const simplifiedName = normalizedSrcName.replace(/[^a-z0-9]/g, '');
+      if (simplifiedName !== normalizedSrcName) {
+        categoryNameMapping.set(simplifiedName, ourCat.id);
+      }
+    } else {
+      // Log unmatched categories for debugging
+      console.warn(`[SRC Mapping] Category "${srcCat.name}" (type: ${srcCategoryType}) not found in local categories`);
     }
   }
 
