@@ -411,7 +411,7 @@ export function mapSRCRunToLeaderboardEntry(
   }
   
   // Check if level exists and has a valid ID (not just empty string or null)
-  const levelId = extractId(run.level);
+  const levelId = extractIdAndName(run.level).id;
   const hasLevel = levelId && levelId.trim() !== '';
   
   // Determine leaderboard type based on category type first, then level

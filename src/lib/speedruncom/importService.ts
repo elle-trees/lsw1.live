@@ -1,6 +1,6 @@
 /**
  * Speedrun.com Import Service
- * Handles importing runs from speedrun.com API with proper data mapping and validation
+ * Simplified, robust import system based on SRC API best practices
  */
 
 import { 
@@ -10,7 +10,6 @@ import {
   fetchCategories as fetchSRCCategories,
   fetchLevels as fetchSRCLevels,
   fetchPlatforms as fetchSRCPlatforms,
-  extractIdAndName,
   type SRCRun,
 } from "../speedruncom";
 import { 
@@ -55,40 +54,44 @@ export async function createSRCMappings() {
     fetchSRCLevels(gameId),
   ]);
 
-  // Generic mapping helper
-  const createMapping = <T extends { id: string; name: string }>(
-    srcItems: T[],
-    ourItems: Array<{ id: string; name: string }>,
-    createNameMapping: boolean = true
-  ): { idMapping: Map<string, string>; nameMapping: Map<string, string> } => {
-    const idMapping = new Map<string, string>();
-    const nameMapping = new Map<string, string>();
-    
-    for (const srcItem of srcItems) {
-      const ourItem = ourItems.find(item => 
-        item.name.toLowerCase().trim() === srcItem.name.toLowerCase().trim()
-      );
-      if (ourItem) {
-        idMapping.set(srcItem.id, ourItem.id);
-        if (createNameMapping) {
-          nameMapping.set(srcItem.name.toLowerCase().trim(), ourItem.id);
-        }
-      }
+  // Create mappings by matching names (case-insensitive)
+  const categoryMapping = new Map<string, string>();
+  const platformMapping = new Map<string, string>();
+  const levelMapping = new Map<string, string>();
+  const categoryNameMapping = new Map<string, string>();
+  const platformNameMapping = new Map<string, string>();
+
+  // Map categories
+  for (const srcCat of srcCategories) {
+    const ourCat = ourCategories.find(c => 
+      c.name.toLowerCase().trim() === srcCat.name.toLowerCase().trim()
+    );
+    if (ourCat) {
+      categoryMapping.set(srcCat.id, ourCat.id);
+      categoryNameMapping.set(srcCat.name.toLowerCase().trim(), ourCat.id);
     }
-    
-    return { idMapping, nameMapping };
-  };
+  }
 
-  // Create mappings for categories, platforms, and levels
-  const categoryMaps = createMapping(srcCategories, ourCategories, true);
-  const platformMaps = createMapping(srcPlatforms, ourPlatforms, true);
-  const levelMaps = createMapping(srcLevels, ourLevels, false);
+  // Map platforms
+  for (const srcPlatform of srcPlatforms) {
+    const ourPlatform = ourPlatforms.find(p => 
+      p.name.toLowerCase().trim() === srcPlatform.name.toLowerCase().trim()
+    );
+    if (ourPlatform) {
+      platformMapping.set(srcPlatform.id, ourPlatform.id);
+      platformNameMapping.set(srcPlatform.name.toLowerCase().trim(), ourPlatform.id);
+    }
+  }
 
-  const categoryMapping = categoryMaps.idMapping;
-  const platformMapping = platformMaps.idMapping;
-  const levelMapping = levelMaps.idMapping;
-  const categoryNameMapping = categoryMaps.nameMapping;
-  const platformNameMapping = platformMaps.nameMapping;
+  // Map levels
+  for (const srcLevel of srcLevels) {
+    const ourLevel = ourLevels.find(l => 
+      l.name.toLowerCase().trim() === srcLevel.name.toLowerCase().trim()
+    );
+    if (ourLevel) {
+      levelMapping.set(srcLevel.id, ourLevel.id);
+    }
+  }
 
   return {
     categoryMapping,
@@ -103,28 +106,9 @@ export async function createSRCMappings() {
 }
 
 /**
- * Extract SRC data from embedded API response
- * Uses the unified extraction from speedruncom.ts
- */
-export function extractSRCData(srcRun: SRCRun) {
-  const categoryData = extractIdAndName(srcRun.category);
-  const platformData = extractIdAndName(srcRun.system?.platform);
-  const levelData = extractIdAndName(srcRun.level);
-
-  return {
-    srcCategoryId: categoryData.id,
-    srcCategoryName: categoryData.name,
-    srcPlatformId: platformData.id,
-    srcPlatformName: platformData.name,
-    srcLevelId: levelData.id,
-    srcLevelName: levelData.name,
-  };
-}
-
-/**
  * Check if a run is a duplicate
  */
-export function isDuplicateRun(
+function isDuplicateRun(
   run: Partial<LeaderboardEntry>,
   existingRunKeys: Set<string>
 ): boolean {
@@ -151,7 +135,7 @@ export function isDuplicateRun(
 
 /**
  * Import runs from speedrun.com
- * Simple import - maps SRC data to leaderboard entries and adds them
+ * Simplified approach: try to import, catch and log errors but continue
  */
 export async function importSRCRuns(
   onProgress?: (progress: ImportProgress) => void
@@ -172,37 +156,16 @@ export async function importSRCRuns(
     }
 
     // Fetch runs from SRC
-    let srcRuns: SRCRun[];
-    try {
-      srcRuns = await fetchRunsNotOnLeaderboards(gameId);
-    } catch (error) {
-      result.errors.push(`Failed to fetch runs from speedrun.com: ${error instanceof Error ? error.message : String(error)}`);
-      return result;
-    }
-    
+    const srcRuns = await fetchRunsNotOnLeaderboards(gameId, 500);
     if (srcRuns.length === 0) {
-      result.errors.push("No runs found to import from speedrun.com");
       return result;
     }
 
     // Create mappings
-    let mappings;
-    try {
-      mappings = await createSRCMappings();
-    } catch (error) {
-      result.errors.push(`Failed to create mappings: ${error instanceof Error ? error.message : String(error)}`);
-      return result;
-    }
+    const mappings = await createSRCMappings();
 
     // Get existing runs for duplicate checking
-    let existingRuns;
-    try {
-      existingRuns = await getAllRunsForDuplicateCheck();
-    } catch (error) {
-      result.errors.push(`Failed to fetch existing runs: ${error instanceof Error ? error.message : String(error)}`);
-      return result;
-    }
-    
+    const existingRuns = await getAllRunsForDuplicateCheck();
     const existingSRCRunIds = new Set(
       existingRuns.filter(r => r.srcRunId).map(r => r.srcRunId!)
     );
@@ -231,7 +194,7 @@ export async function importSRCRuns(
           continue;
         }
 
-        // Map the run using the utility function (it already handles all mapping)
+        // Map the run
         const mappedRun = mapSRCRunToLeaderboardEntry(
           srcRun,
           undefined,
@@ -243,50 +206,49 @@ export async function importSRCRuns(
           mappings.platformNameMapping
         );
 
-        // Log first few runs for debugging
-        if (result.imported + result.skipped < 3) {
-          console.log(`[Import Debug] Run ${srcRun.id}:`, {
-            category: mappedRun.category,
-            platform: mappedRun.platform,
-            srcCategoryName: mappedRun.srcCategoryName,
-            srcPlatformName: mappedRun.srcPlatformName,
-            playerName: mappedRun.playerName,
-            time: mappedRun.time,
-            date: mappedRun.date,
-            leaderboardType: mappedRun.leaderboardType,
-            level: mappedRun.level,
-          });
+        // Set import flags
+        mappedRun.importedFromSRC = true;
+        mappedRun.srcRunId = srcRun.id;
+        mappedRun.verified = false;
+
+        // Ensure required fields are present
+        if (!mappedRun.playerName || mappedRun.playerName.trim() === '') {
+          mappedRun.playerName = 'Unknown';
+        }
+        if (!mappedRun.time || !mappedRun.date) {
+          result.skipped++;
+          result.errors.push(`Run ${srcRun.id}: missing time or date`);
+          onProgress?.({ total: srcRuns.length, imported: result.imported, skipped: result.skipped });
+          continue;
         }
 
-        // Basic validation - must have category and platform (either mapped ID or SRC name)
-        // mappedRun already has srcCategoryName, srcPlatformName, srcLevelName set
-        const hasCategory = (mappedRun.category && mappedRun.category.trim() !== '') || !!mappedRun.srcCategoryName;
-        const hasPlatform = (mappedRun.platform && mappedRun.platform.trim() !== '') || !!mappedRun.srcPlatformName;
-        
-        if (!hasCategory) {
-          result.skipped++;
-          result.errors.push(`Run ${srcRun.id}: missing category (SRC category: ${mappedRun.srcCategoryName || 'unknown'})`);
-          onProgress?.({ total: srcRuns.length, imported: result.imported, skipped: result.skipped });
-          continue;
-        }
-        if (!hasPlatform) {
-          result.skipped++;
-          result.errors.push(`Run ${srcRun.id}: missing platform (SRC platform: ${mappedRun.srcPlatformName || 'unknown'})`);
-          onProgress?.({ total: srcRuns.length, imported: result.imported, skipped: result.skipped });
-          continue;
-        }
-        
-        // If mapping failed, ensure we have at least empty strings (not undefined) for required fields
-        // Empty strings are allowed for imported runs with SRC names (validation handles this)
+        // Use placeholder values if mapping failed (for imported runs, empty strings are OK if we have SRC names)
+        // But validation might still require non-empty, so use a placeholder
         if (!mappedRun.category || mappedRun.category.trim() === '') {
+          // Use placeholder if no SRC name either
+          if (!mappedRun.srcCategoryName) {
+            result.skipped++;
+            result.errors.push(`Run ${srcRun.id}: missing category`);
+            onProgress?.({ total: srcRuns.length, imported: result.imported, skipped: result.skipped });
+            continue;
+          }
+          // For imported runs with SRC names, empty category ID is OK - validation allows it
           mappedRun.category = '';
         }
         if (!mappedRun.platform || mappedRun.platform.trim() === '') {
+          // Use placeholder if no SRC name either
+          if (!mappedRun.srcPlatformName) {
+            result.skipped++;
+            result.errors.push(`Run ${srcRun.id}: missing platform`);
+            onProgress?.({ total: srcRuns.length, imported: result.imported, skipped: result.skipped });
+            continue;
+          }
+          // For imported runs with SRC names, empty platform ID is OK - validation allows it
           mappedRun.platform = '';
         }
 
         // Normalize player names
-        mappedRun.playerName = (mappedRun.playerName || 'Unknown').trim();
+        mappedRun.playerName = mappedRun.playerName.trim();
         if (mappedRun.player2Name) {
           mappedRun.player2Name = mappedRun.player2Name.trim() || undefined;
         }
@@ -298,7 +260,7 @@ export async function importSRCRuns(
           continue;
         }
 
-        // Check player matching
+        // Check player matching (for warnings, but don't block import)
         const player1Matched = await getPlayerByDisplayName(mappedRun.playerName);
         const player2Matched = mappedRun.player2Name ? await getPlayerByDisplayName(mappedRun.player2Name) : null;
 
@@ -306,56 +268,45 @@ export async function importSRCRuns(
         if (!player1Matched) unmatched.player1 = mappedRun.playerName;
         if (mappedRun.player2Name && !player2Matched) unmatched.player2 = mappedRun.player2Name;
 
-        // Set import flags BEFORE adding (required for validation)
-        mappedRun.importedFromSRC = true;
-        mappedRun.srcRunId = srcRun.id;
-        mappedRun.verified = false;
-        
-        // Ensure all required fields are present for the entry
-        // Time and date should already be set by mapSRCRunToLeaderboardEntry
-        if (!mappedRun.time || !mappedRun.date) {
-          result.skipped++;
-          result.errors.push(`Run ${srcRun.id}: missing time or date`);
-          onProgress?.({ total: srcRuns.length, imported: result.imported, skipped: result.skipped });
-          continue;
-        }
-
-        // Add the run
-        let addedRunId: string | null = null;
+        // Try to add the run
         try {
-          addedRunId = await addLeaderboardEntry(mappedRun as LeaderboardEntry);
-        } catch (error) {
-          result.skipped++;
-          result.errors.push(`Run ${srcRun.id}: ${error instanceof Error ? error.message : String(error)}`);
-          console.error(`Failed to add run ${srcRun.id}:`, error, mappedRun);
+          const addedRunId = await addLeaderboardEntry(mappedRun as LeaderboardEntry);
+
+          if (!addedRunId) {
+            result.skipped++;
+            result.errors.push(`Run ${srcRun.id}: failed to add to database`);
+            onProgress?.({ total: srcRuns.length, imported: result.imported, skipped: result.skipped });
+            continue;
+          }
+
+          // Store unmatched players
+          if (unmatched.player1 || unmatched.player2) {
+            result.unmatchedPlayers.set(addedRunId, unmatched);
+          }
+
+          // Add to existing keys to prevent batch duplicates
+          const player1Name = normalizeName(mappedRun.playerName);
+          const player2Name = mappedRun.player2Name ? normalizeName(mappedRun.player2Name) : '';
+          const runKey = `${player1Name}|${mappedRun.category}|${mappedRun.platform}|${mappedRun.runType}|${mappedRun.time}|${mappedRun.leaderboardType || 'regular'}|${mappedRun.level || ''}`;
+          existingRunKeys.add(runKey);
+
+          result.imported++;
           onProgress?.({ total: srcRuns.length, imported: result.imported, skipped: result.skipped });
-          continue;
-        }
 
-        if (!addedRunId) {
+        } catch (addError: any) {
+          // Catch validation or database errors
           result.skipped++;
-          result.errors.push(`Run ${srcRun.id}: failed to add`);
+          const errorMsg = addError?.message || String(addError);
+          result.errors.push(`Run ${srcRun.id}: ${errorMsg}`);
+          console.error(`Failed to add run ${srcRun.id}:`, addError, mappedRun);
           onProgress?.({ total: srcRuns.length, imported: result.imported, skipped: result.skipped });
-          continue;
         }
-
-        // Store unmatched players
-        if ((unmatched.player1 || unmatched.player2)) {
-          result.unmatchedPlayers.set(addedRunId, unmatched);
-        }
-
-        // Add to existing keys to prevent batch duplicates
-        const player1Name = normalizeName(mappedRun.playerName);
-        const player2Name = mappedRun.player2Name ? normalizeName(mappedRun.player2Name) : '';
-        const runKey = `${player1Name}|${mappedRun.category}|${mappedRun.platform}|${mappedRun.runType}|${mappedRun.time}|${mappedRun.leaderboardType || 'regular'}|${mappedRun.level || ''}`;
-        existingRunKeys.add(runKey);
-
-        result.imported++;
-        onProgress?.({ total: srcRuns.length, imported: result.imported, skipped: result.skipped });
 
       } catch (error) {
+        // Catch any other errors in processing this run
         result.skipped++;
         result.errors.push(`Run ${srcRun.id}: ${error instanceof Error ? error.message : String(error)}`);
+        console.error(`Error processing run ${srcRun.id}:`, error);
         onProgress?.({ total: srcRuns.length, imported: result.imported, skipped: result.skipped });
       }
     }
@@ -368,4 +319,3 @@ export async function importSRCRuns(
     return result;
   }
 }
-
