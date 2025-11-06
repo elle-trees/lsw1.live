@@ -285,11 +285,12 @@ const Admin = () => {
 
   useEffect(() => {
     if (editingImportedRun) {
-      // Initialize form with current values
+      // Initialize form with current values when opening dialog
+      // This will only run when editingImportedRun changes (when opening dialog)
       let initialPlatform = editingImportedRun.platform;
       
       // If platform is empty but we have SRC platform name, try to auto-match
-      if ((!initialPlatform || initialPlatform.trim() === '') && editingImportedRun.srcPlatformName) {
+      if ((!initialPlatform || initialPlatform.trim() === '') && editingImportedRun.srcPlatformName && firestorePlatforms.length > 0) {
         const matchingPlatform = firestorePlatforms.find(p => 
           p.name.toLowerCase().trim() === editingImportedRun.srcPlatformName!.toLowerCase().trim()
         );
@@ -300,7 +301,7 @@ const Admin = () => {
       
       // Also try to match category if empty
       let initialCategory = editingImportedRun.category;
-      if ((!initialCategory || initialCategory.trim() === '') && editingImportedRun.srcCategoryName) {
+      if ((!initialCategory || initialCategory.trim() === '') && editingImportedRun.srcCategoryName && firestoreCategories.length > 0) {
         const categoryType = editingImportedRun.leaderboardType || 'regular';
         const categoriesForType = firestoreCategories.filter(c => {
           const catType = c.leaderboardType || 'regular';
@@ -316,7 +317,7 @@ const Admin = () => {
       
       // Also try to match level if empty
       let initialLevel = editingImportedRun.level;
-      if ((!initialLevel || initialLevel.trim() === '') && editingImportedRun.srcLevelName) {
+      if ((!initialLevel || initialLevel.trim() === '') && editingImportedRun.srcLevelName && availableLevels.length > 0) {
         const matchingLevel = availableLevels.find(l => 
           l.name.toLowerCase().trim() === editingImportedRun.srcLevelName!.toLowerCase().trim()
         );
@@ -342,8 +343,12 @@ const Admin = () => {
       // Fetch categories for the run's leaderboard type
       const categoryType = editingImportedRun.leaderboardType || 'regular';
       fetchCategories(categoryType);
+    } else {
+      // Clear form when dialog is closed
+      setEditingImportedRunForm({});
     }
-  }, [editingImportedRun, firestorePlatforms, firestoreCategories, availableLevels]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingImportedRun?.id]); // Only re-initialize when the run ID changes (opening different run)
 
   useEffect(() => {
     if (verifyingRun) {
@@ -942,9 +947,9 @@ const Admin = () => {
           title: "Run Updated",
           description: "The run has been updated successfully. You can now verify it from the Unverified Runs tab.",
         });
+        // Close dialog and reset form
         setEditingImportedRun(null);
         setEditingImportedRunForm({});
-        setSrcRunData(null);
         // Refresh all run lists
         await refreshAllRunData();
       } else {
@@ -2735,20 +2740,7 @@ const Admin = () => {
                                 size="sm" 
                                 onClick={() => {
                                   setEditingImportedRun(run);
-                                  setEditingImportedRunForm({
-                                    playerName: run.playerName,
-                                    player2Name: run.player2Name,
-                                    category: run.category,
-                                    platform: run.platform,
-                                    level: run.level,
-                                    runType: run.runType,
-                                    leaderboardType: run.leaderboardType,
-                                    time: run.time,
-                                    date: run.date,
-                                    videoUrl: run.videoUrl,
-                                    comment: run.comment,
-                                  });
-                                  setSrcRunData(null); // Reset SRC data when opening edit
+                                  // Form will be initialized by useEffect
                                 }}
                                 className="text-blue-500 hover:bg-blue-900/20 transition-all duration-300 hover:scale-110 hover:shadow-md"
                               >
@@ -2974,8 +2966,11 @@ const Admin = () => {
         {/* Edit Imported Run Dialog */}
           <Dialog open={!!editingImportedRun} onOpenChange={(open) => {
           if (!open) {
-            setEditingImportedRun(null);
-            setEditingImportedRunForm({});
+            // Only close if not currently saving
+            if (!savingImportedRun) {
+              setEditingImportedRun(null);
+              setEditingImportedRunForm({});
+            }
           }
         }}>
           <DialogContent className="bg-[hsl(240,21%,16%)] border-[hsl(235,13%,30%)] max-w-4xl max-h-[90vh] overflow-y-auto">
