@@ -115,10 +115,10 @@ const PlayerDetails = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#1e1e2e] text-ctp-text py-8 overflow-x-hidden">
+    <div className="min-h-screen text-ctp-text py-8 overflow-x-hidden relative">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full">
-        <div className="mb-6">
-          <Button variant="outline" className="text-[hsl(220,17%,92%)] border-[hsl(235,13%,30%)] hover:bg-[hsl(234,14%,29%)]" asChild>
+        <div className="mb-6 animate-fade-in">
+          <Button variant="outline" className="text-ctp-text border-ctp-surface1/50 bg-glass hover:bg-ctp-surface0/50 hover:border-ctp-mauve/50 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-ctp-mauve/20 rounded-lg backdrop-blur-sm" asChild>
             <Link to="/leaderboards">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Leaderboards
@@ -126,11 +126,12 @@ const PlayerDetails = () => {
           </Button>
         </div>
 
-        <div className="mb-8">
+        <div className="mb-8 animate-fade-in-delay">
           <h1 className="text-4xl font-bold mb-2">
-            <span style={{ color: player.nameColor || 'inherit' }}>{player.displayName}</span>'s Profile
+            <span className="text-glow" style={{ color: player.nameColor || '#cba6f7' }}>{player.displayName}</span>
+            <span className="text-ctp-text">'s Profile</span>
           </h1>
-          <p className="text-ctp-overlay0">View all runs and achievements</p>
+          <p className="text-ctp-overlay0 text-lg">View all runs and achievements</p>
         </div>
 
         <PlayerProfile 
@@ -151,9 +152,11 @@ const PlayerDetails = () => {
 
         {/* Pending Submissions Panel - Only show for own profile */}
         {isOwnProfile && (
-          <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] mt-8 shadow-xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-ctp-text">
+          <Card className="glass shadow-colored card-hover-subtle rounded-xl border-ctp-surface1/50 mt-8 overflow-hidden relative animate-fade-in-delay-2">
+            <div className="absolute inset-0 bg-gradient-to-br from-ctp-yellow/5 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-500" />
+            <CardHeader className="bg-gradient-to-r from-ctp-surface0/30 to-ctp-surface1/20 border-b border-ctp-surface1/50 relative z-10">
+              <CardTitle className="flex items-center gap-2 text-ctp-text font-bold">
+                <Clock className="h-5 w-5 text-ctp-yellow" />
                 Pending Submissions
               </CardTitle>
             </CardHeader>
@@ -208,18 +211,20 @@ const PlayerDetails = () => {
           </Card>
         )}
 
-        <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] mt-8 shadow-xl">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-ctp-text">
+        <Card className="glass shadow-colored card-hover-subtle rounded-xl border-ctp-surface1/50 mt-8 overflow-hidden relative animate-fade-in-delay-2">
+          <div className="absolute inset-0 bg-gradient-to-br from-ctp-mauve/5 via-transparent to-ctp-pink/5 opacity-0 hover:opacity-100 transition-opacity duration-500" />
+          <CardHeader className="bg-gradient-to-r from-ctp-surface0/30 to-ctp-surface1/20 border-b border-ctp-surface1/50 relative z-10">
+            <CardTitle className="flex items-center gap-2 text-ctp-text font-bold">
+              <Trophy className="h-5 w-5 text-ctp-yellow animate-float" />
               Runs
             </CardTitle>
           </CardHeader>
           <CardContent>
             <Tabs value={leaderboardType} onValueChange={(value) => setLeaderboardType(value as 'regular' | 'individual-level' | 'community-golds')} className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-4 p-0.5 gap-1">
+              <TabsList className="grid w-full grid-cols-3 mb-4 p-0.5 gap-1 glass rounded-xl border-ctp-surface1/50 shadow-colored">
                 <TabsTrigger 
                   value="regular" 
-                  className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-ctp-yellow data-[state=active]:to-ctp-peach data-[state=active]:text-[#11111b] bg-ctp-surface0/50 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1/50 hover:border-ctp-yellow/50 data-[state=active]:shadow-colored-yellow text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap rounded-lg"
                 >
                   <Trophy className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
                   <span className="hidden min-[375px]:inline">Full Game</span>
@@ -227,7 +232,7 @@ const PlayerDetails = () => {
                 </TabsTrigger>
                 <TabsTrigger 
                   value="individual-level" 
-                  className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-ctp-yellow data-[state=active]:to-ctp-peach data-[state=active]:text-[#11111b] bg-ctp-surface0/50 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1/50 hover:border-ctp-yellow/50 data-[state=active]:shadow-colored-yellow text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap rounded-lg"
                 >
                   <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
                   <span className="hidden sm:inline">Individual Levels</span>
@@ -235,7 +240,7 @@ const PlayerDetails = () => {
                 </TabsTrigger>
                 <TabsTrigger 
                   value="community-golds" 
-                  className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-ctp-yellow data-[state=active]:to-ctp-peach data-[state=active]:text-[#11111b] bg-ctp-surface0/50 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1/50 hover:border-ctp-yellow/50 data-[state=active]:shadow-colored-yellow text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap rounded-lg"
                 >
                   <Gem className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
                   <span className="hidden sm:inline">Community Golds</span>
@@ -260,30 +265,31 @@ const PlayerDetails = () => {
                   }
 
                   return (
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto scrollbar-custom rounded-lg">
                       <table className="w-full">
                         <thead>
-                          <tr className="border-b border-[hsl(235,13%,30%)]">
-                            <th className="py-3 px-4 text-left">Rank</th>
-                            <th className="py-3 px-4 text-left">Category</th>
+                          <tr className="border-b-2 border-ctp-surface1/50 bg-gradient-to-r from-ctp-surface0/30 to-ctp-surface1/20">
+                            <th className="py-3 px-4 text-left font-bold text-ctp-text">Rank</th>
+                            <th className="py-3 px-4 text-left font-bold text-ctp-text">Category</th>
                             {leaderboardType !== 'regular' && (
-                              <th className="py-3 px-4 text-left">Level</th>
+                              <th className="py-3 px-4 text-left font-bold text-ctp-text">Level</th>
                             )}
-                            <th className="py-3 px-4 text-left">Time</th>
-                            <th className="py-3 px-4 text-left">Date</th>
-                            <th className="py-3 px-4 text-left">Platform</th>
-                            <th className="py-3 px-4 text-left">Type</th>
+                            <th className="py-3 px-4 text-left font-bold text-ctp-text">Time</th>
+                            <th className="py-3 px-4 text-left font-bold text-ctp-text">Date</th>
+                            <th className="py-3 px-4 text-left font-bold text-ctp-text">Platform</th>
+                            <th className="py-3 px-4 text-left font-bold text-ctp-text">Type</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {filteredRuns.map((run) => {
+                          {filteredRuns.map((run, index) => {
                             const categoryName = categories.find(c => c.id === run.category)?.name || run.category;
                             const platformName = platforms.find(p => p.id === run.platform)?.name || run.platform;
                             
                             return (
                               <tr 
                                 key={run.id} 
-                                className="border-b border-[hsl(235,13%,30%)] hover:bg-[hsl(235,19%,13%)] cursor-pointer transition-colors"
+                                className="border-b border-ctp-surface1/30 hover:bg-gradient-to-r hover:from-ctp-mauve/5 hover:to-ctp-pink/5 cursor-pointer transition-all duration-300 group animate-fade-in"
+                                style={{ animationDelay: `${index * 0.03}s` }}
                                 onClick={() => navigate(`/run/${run.id}`)}
                               >
                                 <td className="py-3 px-4">

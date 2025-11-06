@@ -73,25 +73,26 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#1e1e2e] text-ctp-text overflow-x-hidden">
+    <div className="min-h-screen text-ctp-text overflow-x-hidden relative">
       <div className="py-20 px-4 sm:px-6 lg:px-8 animate-fade-in">
         <div className="max-w-[1920px] mx-auto w-full">
           {/* Top Row - Stats Cards and Title */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 lg:gap-8 mb-6 lg:mb-8">
             {/* Left Side - Verified Runs Card */}
             <div className="lg:col-span-3 lg:order-1 min-w-0">
-              <Card className="bg-gradient-to-br from-ctp-base via-ctp-mantle to-ctp-crust border-ctp-surface1 w-full transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-ctp-green/30 hover:border-ctp-green/50 group">
-                <CardHeader className="pb-2 pt-4 px-4">
+              <Card className="glass shadow-colored-green card-hover rounded-xl border-ctp-surface1/50 w-full group overflow-hidden relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-ctp-green/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <CardHeader className="pb-2 pt-4 px-4 relative z-10">
                   <CardTitle className="flex items-center gap-2 text-card-foreground text-base sm:text-lg lg:text-xl whitespace-nowrap">
-                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-ctp-green transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12 flex-shrink-0" />
-                    <span className="truncate">Verified Runs</span>
+                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-ctp-green transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12 flex-shrink-0 animate-pulse-glow" />
+                    <span className="truncate font-semibold">Verified Runs</span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="px-4 pb-4 pt-2">
+                <CardContent className="px-4 pb-4 pt-2 relative z-10">
                   {statsLoading ? (
-                    <Skeleton className="h-10 w-28 mb-1" />
+                    <Skeleton className="h-10 w-28 mb-1 bg-ctp-surface0/50" />
                   ) : (
-                    <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-ctp-green transition-all duration-300 truncate">
+                    <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-ctp-green transition-all duration-300 truncate text-glow">
                       {totalVerifiedRuns.toLocaleString()}
                     </div>
                   )}
@@ -104,17 +105,19 @@ const Index = () => {
 
             {/* Center Content - Title, Subtext, Buttons */}
             <div className="lg:col-span-6 text-center lg:order-2 min-w-0">
-              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 text-[#74c7ec] whitespace-nowrap truncate">
-                lsw1.dev
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 whitespace-nowrap truncate animate-fade-in-scale">
+                <span className="bg-gradient-to-r from-ctp-blue via-ctp-sapphire to-ctp-sky bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]">
+                  lsw1.dev
+                </span>
               </h1>
-              <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl mb-10 text-ctp-subtext1 max-w-3xl mx-auto animate-fade-in-delay px-2">
+              <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl mb-10 text-ctp-subtext1 max-w-3xl mx-auto animate-fade-in-delay px-2 leading-relaxed">
                 The official site for the LEGO Star Wars: The Video Game speedrunning community. Track your progress and try to earn a stud on the leaderboards!
               </p>
               <div className="flex flex-col sm:flex-row justify-center gap-4 lg:gap-6 animate-fade-in-delay-2 px-2">
-                <Button size="lg" className="bg-gradient-to-r from-ctp-mauve via-ctp-pink to-ctp-mauve hover:from-ctp-pink hover:via-ctp-mauve hover:to-ctp-pink text-ctp-crust font-bold transition-all duration-300 hover:scale-110 hover:shadow-xl hover:shadow-ctp-mauve/50 animate-gradient bg-[length:200%_auto] whitespace-nowrap text-base sm:text-lg lg:text-xl px-6 sm:px-8 lg:px-10 py-6 sm:py-7 lg:py-8" asChild>
+                <Button size="lg" className="bg-gradient-to-r from-ctp-mauve via-ctp-pink to-ctp-mauve hover:from-ctp-pink hover:via-ctp-mauve hover:to-ctp-pink text-ctp-crust font-bold transition-all duration-300 hover:scale-110 hover:shadow-xl hover:shadow-ctp-mauve/50 animate-gradient bg-[length:200%_auto] whitespace-nowrap text-base sm:text-lg lg:text-xl px-6 sm:px-8 lg:px-10 py-6 sm:py-7 lg:py-8 rounded-xl border-0 shadow-colored" asChild>
                   <Link to="/submit">Submit Run</Link>
                 </Button>
-                <Button size="lg" variant="outline" className="text-ctp-text hover:text-ctp-text border-ctp-surface1 bg-transparent hover:bg-ctp-blue/10 hover:border-ctp-blue transition-all duration-300 hover:scale-110 hover:shadow-xl whitespace-nowrap text-base sm:text-lg lg:text-xl px-6 sm:px-8 lg:px-10 py-6 sm:py-7 lg:py-8" asChild>
+                <Button size="lg" variant="outline" className="text-ctp-text hover:text-ctp-text border-ctp-surface1/50 bg-glass hover:bg-ctp-blue/10 hover:border-ctp-blue/50 transition-all duration-300 hover:scale-110 hover:shadow-xl hover:shadow-ctp-blue/30 whitespace-nowrap text-base sm:text-lg lg:text-xl px-6 sm:px-8 lg:px-10 py-6 sm:py-7 lg:py-8 rounded-xl backdrop-blur-sm" asChild>
                   <Link to="/leaderboards">View All Leaderboards</Link>
                 </Button>
               </div>
@@ -122,18 +125,19 @@ const Index = () => {
 
             {/* Right Side - Total Time Card */}
             <div className="lg:col-span-3 lg:order-3 min-w-0">
-              <Card className="bg-gradient-to-br from-ctp-base via-ctp-mantle to-ctp-crust border-ctp-surface1 w-full transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-ctp-mauve/30 hover:border-ctp-mauve/50 group">
-                <CardHeader className="pb-2 pt-4 px-4">
+              <Card className="glass shadow-colored card-hover rounded-xl border-ctp-surface1/50 w-full group overflow-hidden relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-ctp-mauve/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <CardHeader className="pb-2 pt-4 px-4 relative z-10">
                   <CardTitle className="flex items-center gap-2 text-card-foreground text-base sm:text-lg lg:text-xl whitespace-nowrap">
-                    <Clock className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-ctp-mauve transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12 flex-shrink-0" />
-                    <span className="truncate">Total Time</span>
+                    <Clock className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-ctp-mauve transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12 flex-shrink-0 animate-pulse-glow" />
+                    <span className="truncate font-semibold">Total Time</span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="px-4 pb-4 pt-2">
+                <CardContent className="px-4 pb-4 pt-2 relative z-10">
                   {statsLoading ? (
-                    <Skeleton className="h-10 w-36 mb-1" />
+                    <Skeleton className="h-10 w-36 mb-1 bg-ctp-surface0/50" />
                   ) : (
-                    <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-ctp-text transition-all duration-300 truncate">
+                    <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-ctp-text transition-all duration-300 truncate font-mono">
                       {totalTime}
                     </div>
                   )}
@@ -155,7 +159,10 @@ const Index = () => {
             {/* Right Side - Recent Runs */}
             <div className="lg:col-span-4 min-w-0 flex flex-col">
               <div className="mb-3 flex-shrink-0">
-                <h2 className="text-lg sm:text-xl lg:text-2xl font-bold mb-1.5 text-ctp-text">Recent Runs</h2>
+                <h2 className="text-lg sm:text-xl lg:text-2xl font-bold mb-1.5 text-ctp-text flex items-center gap-2">
+                  <Trophy className="h-5 w-5 text-ctp-yellow animate-float" />
+                  <span>Recent Runs</span>
+                </h2>
                 <p className="text-sm lg:text-base text-ctp-subtext1">
                   Latest submissions
                 </p>
@@ -189,7 +196,7 @@ const Index = () => {
               </div>
 
               <div className="mt-4 text-center flex-shrink-0">
-                <Button variant="outline" size="sm" className="text-sm lg:text-base text-ctp-text border-ctp-surface1 bg-transparent hover:bg-ctp-blue/10 hover:border-ctp-blue transition-all duration-300 hover:scale-105 hover:shadow-lg whitespace-nowrap px-4 lg:px-6 py-2 lg:py-3" asChild>
+                <Button variant="outline" size="sm" className="text-sm lg:text-base text-ctp-text border-ctp-surface1/50 bg-glass hover:bg-ctp-blue/10 hover:border-ctp-blue/50 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-ctp-blue/20 whitespace-nowrap px-4 lg:px-6 py-2 lg:py-3 rounded-lg backdrop-blur-sm" asChild>
                   <Link to="/leaderboards">View Full Leaderboards</Link>
                 </Button>
               </div>

@@ -24,17 +24,17 @@ export function LeaderboardTable({ data, platforms = [], categories = [] }: Lead
   }
 
   return (
-    <div className="overflow-x-auto -mx-2 sm:mx-0">
+    <div className="overflow-x-auto -mx-2 sm:mx-0 scrollbar-custom rounded-lg">
       <Table>
         <TableHeader>
-          <TableRow className="border-b-2 border-[hsl(235,13%,30%)] hover:bg-transparent">
-            <TableHead className="py-2 sm:py-3 px-2 sm:px-4 text-left text-xs sm:text-base font-semibold text-ctp-text">Rank</TableHead>
-            <TableHead className="py-2 sm:py-3 px-2 sm:px-4 text-left text-xs sm:text-base font-semibold text-ctp-text min-w-[200px] sm:min-w-[280px] w-[20%]">Player</TableHead>
-            <TableHead className="py-2 sm:py-3 px-2 sm:px-4 text-left text-xs sm:text-base font-semibold text-ctp-text hidden sm:table-cell">Time</TableHead>
-            <TableHead className="py-2 sm:py-3 px-2 sm:px-4 text-left text-xs sm:text-base font-semibold text-ctp-text hidden md:table-cell">Date</TableHead>
-            <TableHead className="py-2 sm:py-3 px-2 sm:px-4 text-left text-xs sm:text-base font-semibold text-ctp-text hidden lg:table-cell">Platform</TableHead>
-            <TableHead className="py-2 sm:py-3 px-2 sm:px-4 text-left text-xs sm:text-base font-semibold text-ctp-text hidden lg:table-cell">Type</TableHead>
-            <TableHead className="py-2 sm:py-3 px-2 sm:px-4 text-left text-xs sm:text-base font-semibold text-ctp-text">Video</TableHead>
+          <TableRow className="border-b-2 border-ctp-surface1/50 hover:bg-transparent bg-gradient-to-r from-ctp-surface0/30 to-ctp-surface1/20">
+            <TableHead className="py-3 sm:py-4 px-2 sm:px-4 text-left text-xs sm:text-base font-bold text-ctp-text">Rank</TableHead>
+            <TableHead className="py-3 sm:py-4 px-2 sm:px-4 text-left text-xs sm:text-base font-bold text-ctp-text min-w-[200px] sm:min-w-[280px] w-[20%]">Player</TableHead>
+            <TableHead className="py-3 sm:py-4 px-2 sm:px-4 text-left text-xs sm:text-base font-bold text-ctp-text hidden sm:table-cell">Time</TableHead>
+            <TableHead className="py-3 sm:py-4 px-2 sm:px-4 text-left text-xs sm:text-base font-bold text-ctp-text hidden md:table-cell">Date</TableHead>
+            <TableHead className="py-3 sm:py-4 px-2 sm:px-4 text-left text-xs sm:text-base font-bold text-ctp-text hidden lg:table-cell">Platform</TableHead>
+            <TableHead className="py-3 sm:py-4 px-2 sm:px-4 text-left text-xs sm:text-base font-bold text-ctp-text hidden lg:table-cell">Type</TableHead>
+            <TableHead className="py-3 sm:py-4 px-2 sm:px-4 text-left text-xs sm:text-base font-bold text-ctp-text">Video</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -49,32 +49,41 @@ export function LeaderboardTable({ data, platforms = [], categories = [] }: Lead
             return (
             <TableRow 
               key={entry.id} 
-              className={`group border-b border-[hsl(235,13%,30%)] hover:bg-gradient-to-r hover:from-[hsl(240,21%,18%)] hover:to-[hsl(235,19%,15%)] transition-all duration-300 cursor-pointer animate-fade-in ${entry.isObsolete ? 'opacity-60 italic' : ''}`}
+              className={`group border-b border-ctp-surface1/30 hover:bg-gradient-to-r hover:from-ctp-mauve/5 hover:to-ctp-pink/5 transition-all duration-300 cursor-pointer animate-fade-in relative ${entry.isObsolete ? 'opacity-60 italic' : ''}`}
               style={{ animationDelay: `${index * 0.03}s` }}
             >
-              <TableCell className="py-2 sm:py-3 px-2 sm:px-4">
-                <Link to={`/run/${entry.id}`} className="block">
+              <TableCell className="py-2 sm:py-3 px-2 sm:px-4 relative z-10">
+                <Link to={`/run/${entry.id}`} className="block group/link">
                   <div className="flex items-center gap-1 sm:gap-2">
                     {entry.rank === 1 ? (
-                      <LegoStudIcon size={28} className="sm:w-9 sm:h-9" color="#0055BF" />
+                      <div className="relative">
+                        <LegoStudIcon size={28} className="sm:w-9 sm:h-9 group-hover/link:scale-110 transition-transform duration-300" color="#0055BF" />
+                        <div className="absolute inset-0 blur-md opacity-50 group-hover/link:opacity-75 transition-opacity duration-300" style={{ filter: 'drop-shadow(0 0 8px #0055BF)' }} />
+                      </div>
                     ) : entry.rank === 2 ? (
-                      <LegoStudIcon size={28} className="sm:w-9 sm:h-9" color="#FFD700" />
+                      <div className="relative">
+                        <LegoStudIcon size={28} className="sm:w-9 sm:h-9 group-hover/link:scale-110 transition-transform duration-300" color="#FFD700" />
+                        <div className="absolute inset-0 blur-md opacity-50 group-hover/link:opacity-75 transition-opacity duration-300" style={{ filter: 'drop-shadow(0 0 8px #FFD700)' }} />
+                      </div>
                     ) : entry.rank === 3 ? (
-                      <LegoStudIcon size={28} className="sm:w-9 sm:h-9" color="#C0C0C0" />
+                      <div className="relative">
+                        <LegoStudIcon size={28} className="sm:w-9 sm:h-9 group-hover/link:scale-110 transition-transform duration-300" color="#C0C0C0" />
+                        <div className="absolute inset-0 blur-md opacity-50 group-hover/link:opacity-75 transition-opacity duration-300" style={{ filter: 'drop-shadow(0 0 8px #C0C0C0)' }} />
+                      </div>
                     ) : (
-                      <span className="font-bold text-sm sm:text-base text-ctp-text w-7 h-7 sm:w-9 sm:h-9 flex items-center justify-center">
+                      <span className="font-bold text-sm sm:text-base text-ctp-text w-7 h-7 sm:w-9 sm:h-9 flex items-center justify-center group-hover/link:scale-110 transition-transform duration-300">
                         #{entry.rank}
                       </span>
                     )}
                     {entry.isObsolete && (
-                      <Badge variant="destructive" className="bg-red-800/50 text-red-200 text-xs px-1.5 sm:px-2 py-0.5">
+                      <Badge variant="destructive" className="bg-red-800/50 text-red-200 text-xs px-1.5 sm:px-2 py-0.5 border border-red-700/30">
                         Obsolete
                       </Badge>
                     )}
                   </div>
                 </Link>
               </TableCell>
-              <TableCell className="py-2 sm:py-3 px-2 sm:px-4 min-w-[200px] sm:min-w-[280px]">
+              <TableCell className="py-2 sm:py-3 px-2 sm:px-4 min-w-[200px] sm:min-w-[280px] relative z-10">
                 <div className="flex flex-wrap items-center gap-x-1 sm:gap-x-2 gap-y-1">
                 {(() => {
                   // Check if run is unclaimed - simply check if playerId is empty/null
@@ -94,7 +103,7 @@ export function LeaderboardTable({ data, platforms = [], categories = [] }: Lead
                               </span>
                             </>
                           )}
-                          <Badge variant="outline" className="border-yellow-600/50 bg-yellow-600/10 text-yellow-400 text-xs px-1.5 py-0.5">
+                          <Badge variant="outline" className="border-yellow-600/50 bg-yellow-600/10 text-yellow-400 text-xs px-1.5 py-0.5 border">
                             Unclaimed
                           </Badge>
                         </div>
@@ -106,7 +115,7 @@ export function LeaderboardTable({ data, platforms = [], categories = [] }: Lead
                       <>
                         <Link 
                           to={`/player/${entry.playerId}`} 
-                          className="hover:opacity-80 transition-all group-hover:scale-105 inline-block"
+                          className="hover:opacity-80 transition-all group-hover:scale-105 inline-block link-glow"
                           style={{ color: entry.nameColor || '#cba6f7' }}
                           onClick={(e) => e.stopPropagation()}
                         >
@@ -117,7 +126,7 @@ export function LeaderboardTable({ data, platforms = [], categories = [] }: Lead
                             <span className="text-ctp-overlay0 text-xs sm:text-sm"> & </span>
                             <Link 
                               to={`/player/${entry.player2Id || entry.playerId}`} 
-                              className="hover:opacity-80 transition-all inline-block"
+                              className="hover:opacity-80 transition-all inline-block link-glow"
                               style={{ color: entry.player2Color || '#cba6f7' }}
                               onClick={(e) => e.stopPropagation()}
                             >
@@ -143,45 +152,45 @@ export function LeaderboardTable({ data, platforms = [], categories = [] }: Lead
                   </div>
                 </div>
               </TableCell>
-              <TableCell className="py-2 sm:py-3 px-2 sm:px-4 hidden sm:table-cell">
-                <Link to={`/run/${entry.id}`} className="hover:text-[#cba6f7] transition-colors">
-                  <p className="text-sm sm:text-base font-semibold text-ctp-text">
+              <TableCell className="py-2 sm:py-3 px-2 sm:px-4 hidden sm:table-cell relative z-10">
+                <Link to={`/run/${entry.id}`} className="hover:text-ctp-mauve transition-colors link-glow">
+                  <p className="text-sm sm:text-base font-semibold text-ctp-text font-mono">
                     {formatTime(entry.time)}
                   </p>
                 </Link>
               </TableCell>
-              <TableCell className="py-2 sm:py-3 px-2 sm:px-4 hidden md:table-cell">
-                <Link to={`/run/${entry.id}`} className="hover:text-[#cba6f7] transition-colors flex items-center gap-1.5">
+              <TableCell className="py-2 sm:py-3 px-2 sm:px-4 hidden md:table-cell relative z-10">
+                <Link to={`/run/${entry.id}`} className="hover:text-ctp-mauve transition-colors flex items-center gap-1.5 link-glow">
                   <Clock className="h-3.5 w-3.5 text-ctp-overlay0" />
                   <span className="text-xs sm:text-sm text-ctp-subtext1">{entry.date}</span>
                 </Link>
               </TableCell>
-              <TableCell className="py-2 sm:py-3 px-2 sm:px-4 hidden lg:table-cell">
+              <TableCell className="py-2 sm:py-3 px-2 sm:px-4 hidden lg:table-cell relative z-10">
                 <Link to={`/run/${entry.id}`} className="block">
-                  <Badge variant="outline" className="border-ctp-surface1 bg-ctp-surface0 text-ctp-text text-xs sm:text-sm px-2 py-1">
+                  <Badge variant="outline" className="border-ctp-surface1/50 bg-ctp-surface0/50 text-ctp-text text-xs sm:text-sm px-2 py-1 hover:border-ctp-mauve/50 transition-colors">
                     {platformName}
                   </Badge>
                 </Link>
               </TableCell>
-              <TableCell className="py-2 sm:py-3 px-2 sm:px-4 hidden lg:table-cell">
+              <TableCell className="py-2 sm:py-3 px-2 sm:px-4 hidden lg:table-cell relative z-10">
                 <Link to={`/run/${entry.id}`} className="block">
-                  <Badge variant="outline" className="border-ctp-surface1 bg-ctp-surface0 text-ctp-text flex items-center gap-1.5 w-fit text-xs sm:text-sm px-2 py-1">
+                  <Badge variant="outline" className="border-ctp-surface1/50 bg-ctp-surface0/50 text-ctp-text flex items-center gap-1.5 w-fit text-xs sm:text-sm px-2 py-1 hover:border-ctp-mauve/50 transition-colors">
                     {entry.runType === 'solo' ? <User className="h-3.5 w-3.5" /> : <Users className="h-3.5 w-3.5" />}
                     {entry.runType.charAt(0).toUpperCase() + entry.runType.slice(1)}
                   </Badge>
                 </Link>
               </TableCell>
-              <TableCell className="py-2 sm:py-3 px-2 sm:px-4">
+              <TableCell className="py-2 sm:py-3 px-2 sm:px-4 relative z-10">
                 {entry.videoUrl && (
                   <a 
                     href={entry.videoUrl} 
                     target="_blank" 
                     rel="noopener noreferrer" 
-                    className="text-[#cba6f7] hover:text-[#f5c2e7] transition-colors flex items-center gap-1 sm:gap-1.5 group/link"
+                    className="text-ctp-mauve hover:text-ctp-pink transition-colors flex items-center gap-1 sm:gap-1.5 group/link link-glow"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <ExternalLink className="h-3.5 w-3.5 sm:h-4 sm:w-4 group-hover/link:scale-110 transition-transform" />
-                    <span className="text-xs sm:text-sm">Watch</span>
+                    <span className="text-xs sm:text-sm font-medium">Watch</span>
                   </a>
                 )}
               </TableCell>

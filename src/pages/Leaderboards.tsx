@@ -226,23 +226,28 @@ const Leaderboards = () => {
     <div className="min-h-screen bg-[#1e1e2e] text-ctp-text py-4 sm:py-6 overflow-x-hidden">
       <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 w-full">
         <div className="text-center mb-8 animate-fade-in">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Trophy className="h-6 w-6 text-[#a6e3a1]" />
-            <h1 className="text-3xl md:text-4xl font-bold text-[#a6e3a1]">
-              Leaderboards
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <div className="relative">
+              <Trophy className="h-6 w-6 text-ctp-green animate-pulse-glow" />
+              <div className="absolute inset-0 blur-md opacity-50" style={{ filter: 'drop-shadow(0 0 8px #a6e3a1)' }} />
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold">
+              <span className="bg-gradient-to-r from-ctp-green via-ctp-teal to-ctp-sapphire bg-clip-text text-transparent">
+                Leaderboards
+              </span>
             </h1>
           </div>
-          <p className="text-base text-ctp-subtext1 max-w-3xl mx-auto animate-fade-in-delay">
+          <p className="text-base text-ctp-subtext1 max-w-3xl mx-auto animate-fade-in-delay leading-relaxed">
             Browse the fastest times across all categories and platforms
           </p>
         </div>
 
         {/* Tabs */}
         <Tabs value={leaderboardType} onValueChange={(value) => setLeaderboardType(value as 'regular' | 'individual-level' | 'community-golds')} className="mb-6">
-          <TabsList className="grid w-full grid-cols-3 mb-4 sm:mb-6 p-0.5 gap-1">
+          <TabsList className="grid w-full grid-cols-3 mb-4 sm:mb-6 p-0.5 gap-1 glass rounded-xl border-ctp-surface1/50 shadow-colored">
             <TabsTrigger 
               value="regular" 
-              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-ctp-yellow data-[state=active]:to-ctp-peach data-[state=active]:text-[#11111b] bg-ctp-surface0/50 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1/50 hover:border-ctp-yellow/50 data-[state=active]:shadow-colored-yellow text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap rounded-lg"
             >
               <Trophy className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
               <span className="hidden min-[375px]:inline">Full Game</span>
@@ -250,7 +255,7 @@ const Leaderboards = () => {
             </TabsTrigger>
             <TabsTrigger 
               value="individual-level" 
-              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-ctp-yellow data-[state=active]:to-ctp-peach data-[state=active]:text-[#11111b] bg-ctp-surface0/50 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1/50 hover:border-ctp-yellow/50 data-[state=active]:shadow-colored-yellow text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap rounded-lg"
             >
               <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
               <span className="hidden sm:inline">Individual Levels</span>
@@ -258,7 +263,7 @@ const Leaderboards = () => {
             </TabsTrigger>
             <TabsTrigger 
               value="community-golds" 
-              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-ctp-yellow data-[state=active]:to-ctp-peach data-[state=active]:text-[#11111b] bg-ctp-surface0/50 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1/50 hover:border-ctp-yellow/50 data-[state=active]:shadow-colored-yellow text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap rounded-lg"
             >
               <Gem className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
               <span className="hidden sm:inline">Community Golds</span>
@@ -290,12 +295,12 @@ const Leaderboards = () => {
                 <>
                   <div className="mb-6 animate-slide-up">
                     <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
-                      <TabsList className="flex w-full p-0.5 gap-1 overflow-x-auto overflow-y-hidden scrollbar-hide" style={{ minWidth: 'max-content' }}>
+                      <TabsList className="flex w-full p-0.5 gap-1 overflow-x-auto overflow-y-hidden scrollbar-hide glass rounded-xl border-ctp-surface1/50 shadow-colored" style={{ minWidth: 'max-content' }}>
                         {filteredCategories.map((category, index) => (
                           <TabsTrigger 
                             key={category.id} 
                             value={category.id} 
-                            className="data-[state=active]:bg-[#94e2d5] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#94e2d5]/50 py-1.5 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm whitespace-nowrap"
+                            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-ctp-teal data-[state=active]:to-ctp-sapphire data-[state=active]:text-[#11111b] bg-ctp-surface0/50 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1/50 hover:border-ctp-teal/50 data-[state=active]:shadow-colored-blue py-1.5 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm whitespace-nowrap rounded-lg"
                             style={{ animationDelay: `${index * 50}ms` }}
                           >
                             {category.name}
@@ -309,10 +314,10 @@ const Leaderboards = () => {
                   {leaderboardType === 'regular' && availableSubcategories.length > 0 && (
                     <div className="mb-6 animate-slide-up">
                       <Tabs value={selectedSubcategory} onValueChange={setSelectedSubcategory}>
-                        <TabsList className="flex w-full p-0.5 gap-1 overflow-x-auto overflow-y-hidden scrollbar-hide" style={{ minWidth: 'max-content' }}>
+                        <TabsList className="flex w-full p-0.5 gap-1 overflow-x-auto overflow-y-hidden scrollbar-hide glass rounded-xl border-ctp-surface1/50 shadow-colored" style={{ minWidth: 'max-content' }}>
                           <TabsTrigger 
                             value="all" 
-                            className="data-[state=active]:bg-[#cba6f7] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#cba6f7]/50 py-1.5 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm whitespace-nowrap"
+                            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-ctp-mauve data-[state=active]:to-ctp-pink data-[state=active]:text-[#11111b] bg-ctp-surface0/50 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1/50 hover:border-ctp-mauve/50 data-[state=active]:shadow-colored py-1.5 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm whitespace-nowrap rounded-lg"
                           >
                             All
                           </TabsTrigger>
@@ -320,7 +325,7 @@ const Leaderboards = () => {
                             <TabsTrigger 
                               key={subcategory.id} 
                               value={subcategory.id} 
-                              className="data-[state=active]:bg-[#cba6f7] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#cba6f7]/50 py-1.5 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm whitespace-nowrap"
+                              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-ctp-mauve data-[state=active]:to-ctp-pink data-[state=active]:text-[#11111b] bg-ctp-surface0/50 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1/50 hover:border-ctp-mauve/50 data-[state=active]:shadow-colored py-1.5 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm whitespace-nowrap rounded-lg"
                               style={{ animationDelay: `${(index + 1) * 50}ms` }}
                             >
                               {subcategory.name}
@@ -343,21 +348,22 @@ const Leaderboards = () => {
             })()}
 
         {/* Filters */}
-            <Card className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl mb-6 transition-all duration-300 hover:scale-[1.01] hover:shadow-2xl hover:shadow-ctp-mauve/20 hover:border-ctp-mauve/50 animate-slide-up-delay">
-          <CardHeader className="bg-gradient-to-r from-ctp-base to-ctp-mantle border-b border-ctp-surface1">
+            <Card className="glass shadow-colored card-hover-subtle rounded-xl border-ctp-surface1/50 mb-6 animate-slide-up-delay overflow-hidden relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-ctp-mauve/5 via-transparent to-ctp-pink/5 opacity-0 hover:opacity-100 transition-opacity duration-500" />
+          <CardHeader className="bg-gradient-to-r from-ctp-surface0/30 to-ctp-surface1/20 border-b border-ctp-surface1/50 relative z-10">
             <CardTitle className="flex items-center gap-2 text-xl">
               <div className="relative">
                 <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-ctp-mauve to-ctp-lavender opacity-30 blur-sm animate-pulse"></div>
-                <div className="relative p-1.5 rounded-lg bg-gradient-to-br from-ctp-mauve to-ctp-lavender transition-transform duration-300 hover:scale-110">
+                <div className="relative p-1.5 rounded-lg bg-gradient-to-br from-ctp-mauve to-ctp-lavender transition-transform duration-300 hover:scale-110 shadow-colored">
                   <Filter className="h-5 w-5 text-ctp-crust" />
                 </div>
               </div>
-              <span className="bg-gradient-to-r from-ctp-mauve to-ctp-pink bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-ctp-mauve to-ctp-pink bg-clip-text text-transparent font-bold">
                 Filter Results
               </span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-3 sm:p-5">
+          <CardContent className="p-3 sm:p-5 relative z-10">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {(leaderboardType === 'individual-level' || leaderboardType === 'community-golds') && (
                 <div className="animate-fade-in" style={{ animationDelay: '100ms' }}>
@@ -366,7 +372,7 @@ const Leaderboards = () => {
                     Levels
                   </label>
                   <Select value={selectedLevel} onValueChange={setSelectedLevel}>
-                    <SelectTrigger className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 h-10 text-sm hover:border-ctp-mauve hover:bg-gradient-to-br hover:from-ctp-surface0 hover:to-ctp-base transition-all duration-300 hover:shadow-lg hover:shadow-ctp-mauve/20">
+                    <SelectTrigger className="glass border-ctp-surface1/50 h-10 text-sm hover:border-ctp-mauve/50 hover:bg-ctp-surface0/50 transition-all duration-300 hover:shadow-lg hover:shadow-ctp-mauve/20 rounded-lg">
                       <SelectValue placeholder="Select level" />
                   </SelectTrigger>
                   <SelectContent>
@@ -385,7 +391,7 @@ const Leaderboards = () => {
                   Platform
                 </label>
                 <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
-                  <SelectTrigger className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 h-10 text-sm hover:border-ctp-mauve hover:bg-gradient-to-br hover:from-ctp-surface0 hover:to-ctp-base transition-all duration-300 hover:shadow-lg hover:shadow-ctp-mauve/20">
+                  <SelectTrigger className="glass border-ctp-surface1/50 h-10 text-sm hover:border-ctp-mauve/50 hover:bg-ctp-surface0/50 transition-all duration-300 hover:shadow-lg hover:shadow-ctp-mauve/20 rounded-lg">
                     <SelectValue placeholder="Select platform" />
                   </SelectTrigger>
                   <SelectContent>
@@ -407,7 +413,7 @@ const Leaderboards = () => {
                   Run Type
                 </label>
                 <Select value={selectedRunType} onValueChange={setSelectedRunType}>
-                  <SelectTrigger className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 h-10 text-sm hover:border-ctp-mauve hover:bg-gradient-to-br hover:from-ctp-surface0 hover:to-ctp-base transition-all duration-300 hover:shadow-lg hover:shadow-ctp-mauve/20">
+                  <SelectTrigger className="glass border-ctp-surface1/50 h-10 text-sm hover:border-ctp-mauve/50 hover:bg-ctp-surface0/50 transition-all duration-300 hover:shadow-lg hover:shadow-ctp-mauve/20 rounded-lg">
                     <SelectValue placeholder="Select run type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -428,7 +434,7 @@ const Leaderboards = () => {
                   Run Status
                 </label>
                 <Select value={showObsoleteRuns} onValueChange={setShowObsoleteRuns}>
-                  <SelectTrigger className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 h-10 text-sm hover:border-ctp-mauve hover:bg-gradient-to-br hover:from-ctp-surface0 hover:to-ctp-base transition-all duration-300 hover:shadow-lg hover:shadow-ctp-mauve/20">
+                  <SelectTrigger className="glass border-ctp-surface1/50 h-10 text-sm hover:border-ctp-mauve/50 hover:bg-ctp-surface0/50 transition-all duration-300 hover:shadow-lg hover:shadow-ctp-mauve/20 rounded-lg">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
