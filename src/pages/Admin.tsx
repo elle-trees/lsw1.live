@@ -3849,6 +3849,7 @@ const Admin = () => {
                                   <TableHead className="py-3 px-4 text-left">Time</TableHead>
                                   <TableHead className="py-3 px-4 text-left">Date</TableHead>
                                   <TableHead className="py-3 px-4 text-left">Type</TableHead>
+                                  <TableHead className="py-3 px-4 text-left">SRC Link</TableHead>
                                   <TableHead className="py-3 px-4 text-left">Issues</TableHead>
                                   <TableHead className="py-3 px-4 text-center">Actions</TableHead>
                                 </TableRow>
@@ -3913,6 +3914,20 @@ const Admin = () => {
                                       <TableCell className="py-3 px-4 font-mono">{formatTime(run.time || '00:00:00')}</TableCell>
                                       <TableCell className="py-3 px-4">{run.date}</TableCell>
                                       <TableCell className="py-3 px-4">{run.runType.charAt(0).toUpperCase() + run.runType.slice(1)}</TableCell>
+                                      <TableCell className="py-3 px-4">
+                                        {run.srcRunId ? (
+                                          <a 
+                                            href={`https://www.speedrun.com/run/${run.srcRunId}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-[#cba6f7] hover:underline flex items-center gap-1"
+                                          >
+                                            View on SRC <ExternalLink className="h-4 w-4" />
+                                          </a>
+                                        ) : (
+                                          <span className="text-muted-foreground text-xs">—</span>
+                                        )}
+                                      </TableCell>
                                       <TableCell className="py-3 px-4">
                                         {issues.length > 0 ? (
                                           <div className="flex flex-wrap gap-1">

@@ -97,10 +97,12 @@ export async function createSRCMappings(srcRuns: SRCRun[], gameId: string): Prom
   }
 
   // Fetch our local data and SRC game-specific data in parallel
+  // Note: getLevels() fetches ALL levels across the site (both individual-level and community-golds)
+  // to ensure level matching works for all leaderboard types
   const [ourCategories, ourPlatforms, ourLevels, srcCategories, srcLevels] = await Promise.all([
     getCategoriesFromFirestore(),
     getPlatformsFromFirestore(),
-    getLevels(),
+    getLevels(), // Fetches all levels - no filtering by leaderboard type
     fetchSRCCategories(gameId),
     fetchSRCLevels(gameId),
   ]);
@@ -223,7 +225,8 @@ export async function createSRCMappings(srcRuns: SRCRun[], gameId: string): Prom
     }
   }
 
-  // Map levels
+  // Map levels - check against ALL levels configured across the site
+  // (both individual-level and community-golds leaderboard types)
   for (const srcLevel of safeSrcLevels) {
     if (!srcLevel || !srcLevel.id) continue;
     
@@ -233,7 +236,7 @@ export async function createSRCMappings(srcRuns: SRCRun[], gameId: string): Prom
     // Store SRC ID -> name mapping
     srcLevelIdToName.set(srcLevel.id, levelName);
     
-    // Find matching local level
+    // Find matching local level - searches across ALL levels, not filtered by leaderboard type
     const ourLevel = safeOurLevels.find(l => l && normalize(l.name) === normalize(levelName));
     if (ourLevel) {
       levelMapping.set(srcLevel.id, ourLevel.id);
