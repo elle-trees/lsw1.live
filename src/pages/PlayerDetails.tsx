@@ -27,6 +27,7 @@ const PlayerDetails = () => {
   const [pendingRuns, setPendingRuns] = useState<LeaderboardEntry[]>([]);
   const [unclaimedRuns, setUnclaimedRuns] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingPendingRuns, setLoadingPendingRuns] = useState(false);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [platforms, setPlatforms] = useState<{ id: string; name: string }[]>([]);
   const [levels, setLevels] = useState<{ id: string; name: string }[]>([]);
@@ -53,19 +54,11 @@ const PlayerDetails = () => {
       
       setLoading(true);
       try {
-        // Fetch categories for all leaderboard types (regular, individual-level, community-golds)
-        const [fetchedPlayer, fetchedRuns, regularCategories, ilCategories, cgCategories, fetchedPlatforms, fetchedLevels] = await Promise.all([
+        // Fetch player and runs first (most important data)
+        const [fetchedPlayer, fetchedRuns] = await Promise.all([
           getPlayerByUid(playerId),
-          getPlayerRuns(playerId),
-          getCategoriesFromFirestore('regular'),
-          getCategoriesFromFirestore('individual-level'),
-          getCategoriesFromFirestore('community-golds'),
-          getPlatforms(),
-          getLevels()
+          getPlayerRuns(playerId)
         ]);
-        
-        // Combine all categories
-        const fetchedCategories = [...regularCategories, ...ilCategories, ...cgCategories];
         
         // Double-check: if player is still unclaimed, don't show profile
         if (!fetchedPlayer || !fetchedPlayer.uid || fetchedPlayer.uid.trim() === "") {
@@ -77,41 +70,59 @@ const PlayerDetails = () => {
         
         setPlayer(fetchedPlayer);
         setPlayerRuns(fetchedRuns);
-        setCategories(fetchedCategories);
-        setPlatforms(fetchedPlatforms);
-        setLevels(fetchedLevels);
         
-        // Initialize filter defaults
-        if (fetchedPlatforms.length > 0) {
-          setSelectedPlatform(fetchedPlatforms[0].id);
-        }
-        if (runTypes.length > 0) {
-          setSelectedRunType(runTypes[0].id);
-        }
-        if (fetchedLevels.length > 0) {
-          setSelectedLevel(fetchedLevels[0].id);
-        }
+        // Fetch static data (categories, platforms, levels) in parallel - these can load after main content
+        // This allows the page to render faster while these load
+        Promise.all([
+          getCategoriesFromFirestore('regular'),
+          getCategoriesFromFirestore('individual-level'),
+          getCategoriesFromFirestore('community-golds'),
+          getPlatforms(),
+          getLevels()
+        ]).then(([regularCategories, ilCategories, cgCategories, fetchedPlatforms, fetchedLevels]) => {
+          // Combine all categories
+          const fetchedCategories = [...regularCategories, ...ilCategories, ...cgCategories];
+          
+          setCategories(fetchedCategories);
+          setPlatforms(fetchedPlatforms);
+          setLevels(fetchedLevels);
+          
+          // Initialize filter defaults
+          if (fetchedPlatforms.length > 0) {
+            setSelectedPlatform(fetchedPlatforms[0].id);
+          }
+          if (runTypes.length > 0) {
+            setSelectedRunType(runTypes[0].id);
+          }
+          if (fetchedLevels.length > 0) {
+            setSelectedLevel(fetchedLevels[0].id);
+          }
+        }).catch(() => {
+          // Silent fail for static data - page can still function
+        });
+        
+        // Set loading to false early so main content can render
+        setLoading(false);
         
         // Only fetch pending runs and unclaimed runs if viewing own profile
-        // Check both currentUser exists and uid matches playerId
+        // Fetch these in parallel and after main content loads (non-blocking)
         if (currentUser && currentUser.uid && currentUser.uid === playerId) {
-          try {
-            const fetchedPending = await getPlayerPendingRuns(playerId);
-            setPendingRuns(fetchedPending || []);
-            
-            // Fetch unclaimed runs if player has SRC username
-            if (fetchedPlayer.srcUsername) {
-              try {
-                const fetchedUnclaimed = await getUnclaimedRunsBySRCUsername(fetchedPlayer.srcUsername, currentUser.uid);
-                setUnclaimedRuns(fetchedUnclaimed || []);
-              } catch (error) {
-                setUnclaimedRuns([]);
-              }
-            }
-          } catch (error) {
-            setPendingRuns([]);
-            setUnclaimedRuns([]);
-          }
+          setLoadingPendingRuns(true);
+          
+          // Fetch pending and unclaimed runs in parallel
+          const pendingRunsPromise = getPlayerPendingRuns(playerId).catch(() => []);
+          const unclaimedRunsPromise = fetchedPlayer.srcUsername 
+            ? getUnclaimedRunsBySRCUsername(fetchedPlayer.srcUsername, currentUser.uid).catch(() => [])
+            : Promise.resolve([]);
+          
+          const [fetchedPending, fetchedUnclaimed] = await Promise.all([
+            pendingRunsPromise,
+            unclaimedRunsPromise
+          ]);
+          
+          setPendingRuns(fetchedPending || []);
+          setUnclaimedRuns(fetchedUnclaimed || []);
+          setLoadingPendingRuns(false);
         } else {
           // Clear pending runs and unclaimed runs if not own profile
           setPendingRuns([]);
@@ -121,7 +132,6 @@ const PlayerDetails = () => {
         // Error handling - player data fetch failed
         setPlayer(null);
         setPlayerRuns([]);
-      } finally {
         setLoading(false);
       }
     };
