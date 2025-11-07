@@ -137,7 +137,7 @@ const Admin = () => {
   const [downloadCategories, setDownloadCategories] = useState<{ id: string; name: string }[]>([]);
   const { startUpload, isUploading } = useUploadThing("downloadFile");
   
-  const [firestoreCategories, setFirestoreCategories] = useState<{ id: string; name: string }[]>([]);
+  const [firestoreCategories, setFirestoreCategories] = useState<Category[]>([]);
   const [categoryLeaderboardType, setCategoryLeaderboardType] = useState<'regular' | 'individual-level' | 'community-golds'>('regular');
   const [levelLeaderboardType, setLevelLeaderboardType] = useState<'individual-level' | 'community-golds'>('individual-level');
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -291,7 +291,7 @@ const Admin = () => {
       try {
         // For community-golds, use community-golds categories (now configurable)
         // For individual-level, use individual-level categories
-        const categoriesData = await getCategories(levelLeaderboardType);
+        const categoriesData = await getCategoriesFromFirestore(levelLeaderboardType);
         setFirestoreCategories(categoriesData);
       } catch (error) {
         // Silent fail
@@ -4335,10 +4335,21 @@ const Admin = () => {
                           <TableHead className="py-3 px-4 text-left">Category ID</TableHead>
                           <TableHead className="py-3 px-4 text-left">Type</TableHead>
                           <TableHead className="py-3 px-4 text-left">Variables</TableHead>
+                          <TableHead className="py-3 px-4 text-left">Link to Category</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {srcCategoriesWithVars.map((category) => (
+                        {srcCategoriesWithVars.map((category) => {
+                          // Find if this SRC category is already linked to any local category
+                          const linkedCategory = firestoreCategories.find(c => (c as Category).srcCategoryId === category.id) as Category | undefined;
+                          const expectedLeaderboardType = category.type === 'per-game' ? 'regular' : 'individual-level';
+                          const matchingCategories = firestoreCategories.filter(c => {
+                            const cat = c as Category;
+                            const catType = cat.leaderboardType || 'regular';
+                            return catType === expectedLeaderboardType;
+                          }) as Category[];
+                          
+                          return (
                           <TableRow key={category.id} className="border-b border-[hsl(235,13%,30%)] hover:bg-[hsl(235,19%,13%)] transition-all duration-200">
                             <TableCell className="py-3 px-4 font-medium">{category.name}</TableCell>
                             <TableCell className="py-3 px-4">
@@ -4378,8 +4389,89 @@ const Admin = () => {
                                 <span className="text-muted-foreground text-sm">No variables</span>
                               )}
                             </TableCell>
+                            <TableCell className="py-3 px-4">
+                              {linkedCategory ? (
+                                <div className="flex flex-col gap-2">
+                                  <Badge variant="default" className="bg-green-600/20 text-green-400 border-green-600/50 text-xs w-fit">
+                                    Linked to: {linkedCategory.name}
+                                  </Badge>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={async () => {
+                                      if (!window.confirm(`Unlink "${linkedCategory.name}" from this SRC category?`)) return;
+                                      setUpdatingCategory(true);
+                                      try {
+                                        const currentCategory = firestoreCategories.find(c => c.id === linkedCategory.id) as Category | undefined;
+                                        const subcategories = currentCategory?.subcategories || [];
+                                        await updateCategory(linkedCategory.id, linkedCategory.name, subcategories, null);
+                                        toast({
+                                          title: "Unlinked",
+                                          description: `Category "${linkedCategory.name}" has been unlinked from SRC category.`,
+                                        });
+                                        await fetchCategories(categoryLeaderboardType);
+                                        await fetchSRCCategoriesWithVariables();
+                                      } catch (error: any) {
+                                        toast({
+                                          title: "Error",
+                                          description: error.message || "Failed to unlink category.",
+                                          variant: "destructive",
+                                        });
+                                      } finally {
+                                        setUpdatingCategory(false);
+                                      }
+                                    }}
+                                    disabled={updatingCategory}
+                                    className="text-red-500 hover:bg-red-900/20 text-xs h-6"
+                                  >
+                                    Unlink
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Select
+                                  value=""
+                                  onValueChange={async (categoryId) => {
+                                    if (!categoryId) return;
+                                    setUpdatingCategory(true);
+                                    try {
+                                      const targetCategory = firestoreCategories.find(c => c.id === categoryId) as Category | undefined;
+                                      if (!targetCategory) return;
+                                      const subcategories = targetCategory.subcategories || [];
+                                      await updateCategory(categoryId, targetCategory.name, subcategories, category.id);
+                                      toast({
+                                        title: "Linked",
+                                        description: `Category "${targetCategory.name}" has been linked to SRC category "${category.name}".`,
+                                      });
+                                      await fetchCategories(categoryLeaderboardType);
+                                      await fetchSRCCategoriesWithVariables();
+                                    } catch (error: any) {
+                                      toast({
+                                        title: "Error",
+                                        description: error.message || "Failed to link category.",
+                                        variant: "destructive",
+                                      });
+                                    } finally {
+                                      setUpdatingCategory(false);
+                                    }
+                                  }}
+                                  disabled={updatingCategory || matchingCategories.length === 0}
+                                >
+                                  <SelectTrigger className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] h-8 text-xs">
+                                    <SelectValue placeholder="Link to category..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {matchingCategories.map((cat) => (
+                                      <SelectItem key={cat.id} value={cat.id}>
+                                        {cat.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            </TableCell>
                           </TableRow>
-                        ))}
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>

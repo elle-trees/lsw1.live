@@ -288,10 +288,30 @@ export const getLeaderboardEntriesFirestore = async (
         
         // Additional validation: ensure required fields exist
         // All verified runs should have category and platform (verified runs must be complete)
+        // For imported runs, allow empty category/platform if SRC names exist
         if (!entry.time || !entry.runType) {
+          if (isILQuery) {
+            console.debug(`[getLeaderboardEntriesFirestore] Filtering out IL run ${entry.id}: missing time or runType`);
+          }
           return false;
         }
-        if (!entry.category || !entry.platform) {
+        // For imported runs, allow empty category/platform if SRC names exist
+        const isImported = entry.importedFromSRC === true || entry.importedFromSRC === Boolean(true);
+        const hasCategory = entry.category && entry.category.trim() !== '';
+        const hasPlatform = entry.platform && entry.platform.trim() !== '';
+        const hasSRCCategory = entry.srcCategoryName && entry.srcCategoryName.trim() !== '';
+        const hasSRCPlatform = entry.srcPlatformName && entry.srcPlatformName.trim() !== '';
+        
+        if (!hasCategory && !hasSRCCategory) {
+          if (isILQuery) {
+            console.debug(`[getLeaderboardEntriesFirestore] Filtering out IL run ${entry.id}: missing category (hasCategory=${hasCategory}, hasSRCCategory=${hasSRCCategory})`);
+          }
+          return false;
+        }
+        if (!hasPlatform && !hasSRCPlatform) {
+          if (isILQuery) {
+            console.debug(`[getLeaderboardEntriesFirestore] Filtering out IL run ${entry.id}: missing platform (hasPlatform=${hasPlatform}, hasSRCPlatform=${hasSRCPlatform})`);
+          }
           return false;
         }
         
@@ -447,10 +467,45 @@ export const getLeaderboardEntriesFirestore = async (
     // Get the level data if we're filtering by level (for checking disabled categories)
     const selectedLevelData = normalizedLevelId ? levels.find(l => l.id === normalizedLevelId) : undefined;
 
-    // Enrich entries with player data and mark unclaimed runs
+    // Import helper functions for name resolution
+    const { getCategoryName, getPlatformName, getLevelName } = await import("@/lib/dataValidation");
+    
+    // Enrich entries with player data, category/platform/level names, and mark unclaimed runs
     const enrichedEntries = entries.map(entry => {
       // Check if run is unclaimed - simply check if playerId is empty/null
       const isUnclaimed = !entry.playerId || entry.playerId.trim() === "";
+      
+      // Enrich category name (for display on leaderboards)
+      if (entry.category) {
+        const categoryObj = categories.find(c => c.id === entry.category);
+        if (categoryObj) {
+          // Category name will be resolved by getCategoryName helper on frontend
+          // But we can also store it here if needed - for now, the ID is sufficient
+        } else if (entry.srcCategoryName) {
+          // Use SRC fallback name if category not found
+          // The frontend will use getCategoryName which handles this
+        }
+      }
+      
+      // Enrich platform name
+      if (entry.platform) {
+        const platformObj = platforms.find(p => p.id === entry.platform);
+        if (platformObj) {
+          // Platform name will be resolved by getPlatformName helper on frontend
+        } else if (entry.srcPlatformName) {
+          // Use SRC fallback name if platform not found
+        }
+      }
+      
+      // Enrich level name (for IL runs)
+      if (entry.level) {
+        const levelObj = levels.find(l => l.id === entry.level);
+        if (levelObj) {
+          // Level name will be resolved by getLevelName helper on frontend
+        } else if (entry.srcLevelName) {
+          // Use SRC fallback name if level not found
+        }
+      }
       
       // Only enrich player data for claimed runs
       if (!isUnclaimed) {
@@ -497,6 +552,22 @@ export const getLeaderboardEntriesFirestore = async (
       
       return entry;
     });
+
+    // Debug: Log final count for IL queries
+    if (leaderboardType === 'individual-level') {
+      console.debug(`[getLeaderboardEntriesFirestore] Returning ${enrichedEntries.length} IL entries after enrichment`);
+      if (enrichedEntries.length > 0) {
+        console.debug(`[getLeaderboardEntriesFirestore] Sample IL entry:`, {
+          id: enrichedEntries[0].id,
+          leaderboardType: enrichedEntries[0].leaderboardType,
+          level: enrichedEntries[0].level,
+          category: enrichedEntries[0].category,
+          platform: enrichedEntries[0].platform,
+          playerName: enrichedEntries[0].playerName,
+          verified: enrichedEntries[0].verified,
+        });
+      }
+    }
 
     return enrichedEntries;
   } catch (error) {

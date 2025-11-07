@@ -178,31 +178,40 @@ export async function createSRCMappings(srcRuns: SRCRun[], gameId: string): Prom
     return (longer.length - distance) / longer.length;
   };
 
-  // Map categories - match by name, considering leaderboardType with improved fuzzy matching
-  for (const srcCat of safeSrcCategories) {
-    if (!srcCat || !srcCat.name || !srcCat.id) continue;
-    
-    // Store SRC ID -> name mapping
-    srcCategoryIdToName.set(srcCat.id, srcCat.name);
-    
-    // Determine leaderboardType for this SRC category
-    // SRC categories have type: "per-game" or "per-level"
-    const srcCategoryType = srcCat.type || 'per-game';
-    const expectedLeaderboardType: 'regular' | 'individual-level' = srcCategoryType === 'per-level' ? 'individual-level' : 'regular';
-    
-    const normalizedSrcName = normalize(srcCat.name);
-    const fuzzySrcName = fuzzyNormalize(srcCat.name);
-    
-    // Find matching local category - try exact match first, then fuzzy match
-    let ourCat = safeOurCategories.find(c => {
-      if (!c) return false;
-      const nameMatch = normalize(c.name) === normalizedSrcName;
-      if (!nameMatch) return false;
+    // Map categories - match by srcCategoryId first, then by name with improved fuzzy matching
+    for (const srcCat of safeSrcCategories) {
+      if (!srcCat || !srcCat.name || !srcCat.id) continue;
       
-      // Prefer match with same leaderboardType, but allow fallback
-      const catType = c.leaderboardType || 'regular';
-      return catType === expectedLeaderboardType;
-    });
+      // Store SRC ID -> name mapping
+      srcCategoryIdToName.set(srcCat.id, srcCat.name);
+      
+      // Determine leaderboardType for this SRC category
+      // SRC categories have type: "per-game" or "per-level"
+      const srcCategoryType = srcCat.type || 'per-game';
+      const expectedLeaderboardType: 'regular' | 'individual-level' = srcCategoryType === 'per-level' ? 'individual-level' : 'regular';
+      
+      const normalizedSrcName = normalize(srcCat.name);
+      const fuzzySrcName = fuzzyNormalize(srcCat.name);
+      
+      // FIRST: Try to find category by srcCategoryId (most reliable)
+      let ourCat = safeOurCategories.find(c => {
+        if (!c) return false;
+        return (c as any).srcCategoryId === srcCat.id;
+      });
+      
+      // SECOND: If no srcCategoryId match, try name matching with improved fuzzy matching
+      if (!ourCat) {
+        // Find matching local category - try exact match first, then fuzzy match
+        ourCat = safeOurCategories.find(c => {
+          if (!c) return false;
+          const nameMatch = normalize(c.name) === normalizedSrcName;
+          if (!nameMatch) return false;
+          
+          // Prefer match with same leaderboardType, but allow fallback
+          const catType = c.leaderboardType || 'regular';
+          return catType === expectedLeaderboardType;
+        });
+      }
     
     // Fallback 1: if no match with correct type, try any category with exact matching name
     if (!ourCat) {

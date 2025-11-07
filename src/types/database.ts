@@ -68,6 +68,7 @@ export interface Category {
   order?: number; // Order for displaying categories (lower numbers appear first)
   leaderboardType?: 'regular' | 'individual-level' | 'community-golds'; // Type of leaderboard this category belongs to
   subcategories?: Subcategory[]; // Subcategories for this category (only for regular leaderboard type)
+  srcCategoryId?: string | null; // Speedrun.com category ID if linked to SRC (null to unlink)
 }
 
 export interface Level {
