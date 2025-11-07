@@ -66,9 +66,18 @@ export function LeaderboardTable({ data, platforms = [], categories = [], levels
             >
               <TableCell className="py-2 sm:py-3 px-2 sm:px-4 relative z-10">
                 <Link to={`/run/${entry.id}`} className="block group/link">
-                  <div className="flex items-center gap-1 sm:gap-2">
+                  <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
                     {entry.rank === 1 ? (
-                      <LegoStudIcon size={28} className="sm:w-9 sm:h-9" color="#0055BF" />
+                      <>
+                        <LegoStudIcon size={28} className="sm:w-9 sm:h-9" color="#0055BF" />
+                        {!entry.isObsolete && (
+                          <Badge className="bg-gradient-to-r from-[#0055BF] to-[#0070f3] text-white text-xs px-1.5 sm:px-2 py-0.5 border border-[#0055BF]/50 flex items-center gap-1 font-semibold">
+                            <Trophy className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                            <span className="hidden sm:inline">World Record</span>
+                            <span className="sm:hidden">WR</span>
+                          </Badge>
+                        )}
+                      </>
                     ) : entry.rank === 2 ? (
                       <LegoStudIcon size={28} className="sm:w-9 sm:h-9" color="#FFD700" />
                     ) : entry.rank === 3 ? (
