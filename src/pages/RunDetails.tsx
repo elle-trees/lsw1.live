@@ -448,23 +448,14 @@ const RunDetails = () => {
     }
 
     const calculateDisplayPoints = async () => {
-      // Always use stored points if available (most reliable)
-      if (run.points !== undefined && run.points !== null && run.points >= 0) {
-        setDisplayPoints(run.points);
-        return;
-      }
-
-      // Obsolete runs still get base points (10), but not bonus points
       // Only calculate if points not stored and run is verified
       if (!run.verified) {
         setDisplayPoints(0);
         return;
       }
-      
-      // Obsolete runs get base points (10) but no rank bonus
 
-      // Calculate points using stored rank (split for co-op runs, reduced for ILs/community golds)
-      // CRITICAL: Obsolete runs only receive base points (no rank bonuses)
+      // Always recalculate using current points configuration to ensure accuracy
+      // This ensures points always reflect the current configuration system
       const category = categories.find((c) => c.id === run.category);
       const platform = platforms.find((p) => p.id === run.platform);
       
