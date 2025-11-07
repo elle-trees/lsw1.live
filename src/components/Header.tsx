@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Upload, User, Settings, ShieldAlert, Download, Radio, Trophy, Github, Menu, Plus, Bell } from "lucide-react";
+import { Upload, User, Settings, ShieldAlert, Download, Radio, Trophy, Github, Menu, Plus, Bell, BarChart3 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import LegoStudIcon from "@/components/icons/LegoStudIcon";
@@ -156,6 +156,17 @@ export function Header() {
         <span className="relative">
           Downloads
           <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#cba6f7] via-ctp-sky to-[#cba6f7] transition-all duration-300 group-hover:w-full"></span>
+        </span>
+      </Link>
+      <Link 
+        to="/stats" 
+        className="text-[#89b4fa] hover:text-[#89b4fa] flex items-center gap-1 transition-all duration-300 relative group"
+        onClick={() => setIsMobileMenuOpen(false)}
+      >
+        <BarChart3 className="h-4 w-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12" />
+        <span className="relative">
+          Stats
+          <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#89b4fa] via-ctp-blue to-[#89b4fa] transition-all duration-300 group-hover:w-full"></span>
         </span>
       </Link>
       {currentUser?.isAdmin && (
