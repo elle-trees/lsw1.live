@@ -74,6 +74,7 @@ const Stats = () => {
   const [wrProgressionRunType, setWrProgressionRunType] = useState("");
   const [wrProgressionLevel, setWrProgressionLevel] = useState("");
   const [availableWrCategories, setAvailableWrCategories] = useState<Array<{ id: string; name: string }>>([]);
+  const [activeTab, setActiveTab] = useState("overview");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -618,7 +619,7 @@ const Stats = () => {
         </Card>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="progression">World Record Progression</TabsTrigger>
@@ -728,128 +729,127 @@ const Stats = () => {
               <CardDescription>World record times improving over time (lower is better)</CardDescription>
             </CardHeader>
             <CardContent>
-              {filteredWRTimeProgression.length > 0 ? (
-                <>
-                  {/* Filters */}
-                  <div className="mb-6 space-y-4">
-                    {/* Leaderboard Type Tabs */}
-                    <Tabs value={wrProgressionLeaderboardType} onValueChange={(value) => setWrProgressionLeaderboardType(value as 'regular' | 'individual-level' | 'community-golds')}>
-                      <TabsList className="grid w-full grid-cols-3 mb-4">
-                        <TabsTrigger value="regular" className="flex items-center gap-2">
-                          <Trophy className="h-4 w-4" />
-                          <span>Full Game</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="individual-level" className="flex items-center gap-2">
-                          <Star className="h-4 w-4" />
-                          <span>Individual Levels</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="community-golds" className="flex items-center gap-2">
-                          <Gem className="h-4 w-4" />
-                          <span>Community Golds</span>
-                        </TabsTrigger>
+              {/* Filters - Always show so users can switch leaderboard types even when no data */}
+              <div className="mb-6 space-y-4">
+                {/* Leaderboard Type Tabs */}
+                <Tabs value={wrProgressionLeaderboardType} onValueChange={(value) => setWrProgressionLeaderboardType(value as 'regular' | 'individual-level' | 'community-golds')}>
+                  <TabsList className="grid w-full grid-cols-3 mb-4">
+                    <TabsTrigger value="regular" className="flex items-center gap-2">
+                      <Trophy className="h-4 w-4" />
+                      <span>Full Game</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="individual-level" className="flex items-center gap-2">
+                      <Star className="h-4 w-4" />
+                      <span>Individual Levels</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="community-golds" className="flex items-center gap-2">
+                      <Gem className="h-4 w-4" />
+                      <span>Community Golds</span>
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+
+                {/* Category Tabs */}
+                {availableWrCategories.length > 0 && (
+                  <div className="mb-4">
+                    <Tabs value={wrProgressionCategory} onValueChange={setWrProgressionCategory}>
+                      <TabsList className="flex w-full p-0.5 gap-1 overflow-x-auto overflow-y-hidden scrollbar-hide" style={{ minWidth: 'max-content' }}>
+                        {availableWrCategories.map((category) => (
+                          <TabsTrigger 
+                            key={category.id} 
+                            value={category.id} 
+                            className="data-[state=active]:bg-[#94e2d5] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-colors font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#94e2d5]/50 py-1.5 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm whitespace-nowrap rounded-none flex items-center gap-1.5"
+                          >
+                            {getCategoryNameWithOverride(category.id, categories)}
+                          </TabsTrigger>
+                        ))}
                       </TabsList>
                     </Tabs>
-
-                    {/* Category Tabs */}
-                    {availableWrCategories.length > 0 && (
-                      <div className="mb-4">
-                        <Tabs value={wrProgressionCategory} onValueChange={setWrProgressionCategory}>
-                          <TabsList className="flex w-full p-0.5 gap-1 overflow-x-auto overflow-y-hidden scrollbar-hide" style={{ minWidth: 'max-content' }}>
-                            {availableWrCategories.map((category) => (
-                              <TabsTrigger 
-                                key={category.id} 
-                                value={category.id} 
-                                className="data-[state=active]:bg-[#94e2d5] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-colors font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#94e2d5]/50 py-1.5 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm whitespace-nowrap rounded-none flex items-center gap-1.5"
-                              >
-                                {getCategoryNameWithOverride(category.id, categories)}
-                              </TabsTrigger>
-                            ))}
-                          </TabsList>
-                        </Tabs>
-                      </div>
-                    )}
-
-                    {/* Filter Card */}
-                    <Card className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl rounded-none">
-                      <CardHeader className="bg-gradient-to-r from-ctp-base to-ctp-mantle border-b border-ctp-surface1 py-3">
-                        <CardTitle className="flex items-center gap-2 text-lg">
-                          <Filter className="h-4 w-4 text-ctp-mauve" />
-                          <span className="text-ctp-text">Filter Results</span>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-3 sm:p-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                          {(wrProgressionLeaderboardType === 'individual-level' || wrProgressionLeaderboardType === 'community-golds') && (
-                            <div>
-                              <label className="block text-sm font-semibold mb-1.5 text-ctp-text flex items-center gap-2">
-                                <Star className="h-3.5 w-3.5 text-ctp-mauve" />
-                                Levels
-                              </label>
-                              <Select value={wrProgressionLevel} onValueChange={setWrProgressionLevel}>
-                                <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-9 text-sm rounded-none">
-                                  <SelectValue placeholder="Select level" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {levels.map((level) => (
-                                    <SelectItem key={level.id} value={level.id} className="text-sm">
-                                      {level.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          )}
-                          <div>
-                            <label className="block text-sm font-semibold mb-1.5 text-ctp-text flex items-center gap-2">
-                              <Gamepad2 className="h-3.5 w-3.5 text-ctp-mauve" />
-                              Platform
-                            </label>
-                            <Select value={wrProgressionPlatform} onValueChange={setWrProgressionPlatform}>
-                              <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-9 text-sm rounded-none">
-                                <SelectValue placeholder="Select platform" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {platforms.map((platform) => (
-                                  <SelectItem key={platform.id} value={platform.id} className="text-sm">
-                                    {platform.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-semibold mb-1.5 text-ctp-text flex items-center gap-2">
-                              {wrProgressionRunType === 'solo' ? (
-                                <Users className="h-3.5 w-3.5 text-ctp-mauve" />
-                              ) : (
-                                <Users className="h-3.5 w-3.5 text-ctp-mauve" />
-                              )}
-                              Run Type
-                            </label>
-                            <Select value={wrProgressionRunType} onValueChange={setWrProgressionRunType}>
-                              <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-9 text-sm rounded-none">
-                                <SelectValue placeholder="Select run type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {runTypes.map((type) => (
-                                  <SelectItem key={type.id} value={type.id} className="text-sm">
-                                    <div className="flex items-center gap-2">
-                                      {type.id === 'solo' ? <Users className="h-4 w-4" /> : <Users className="h-4 w-4" />}
-                                      {type.name}
-                                    </div>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
                   </div>
+                )}
 
+                {/* Filter Card */}
+                <Card className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl rounded-none">
+                  <CardHeader className="bg-gradient-to-r from-ctp-base to-ctp-mantle border-b border-ctp-surface1 py-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Filter className="h-4 w-4 text-ctp-mauve" />
+                      <span className="text-ctp-text">Filter Results</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-3 sm:p-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                      {(wrProgressionLeaderboardType === 'individual-level' || wrProgressionLeaderboardType === 'community-golds') && (
+                        <div>
+                          <label className="block text-sm font-semibold mb-1.5 text-ctp-text flex items-center gap-2">
+                            <Star className="h-3.5 w-3.5 text-ctp-mauve" />
+                            Levels
+                          </label>
+                          <Select value={wrProgressionLevel} onValueChange={setWrProgressionLevel}>
+                            <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-9 text-sm rounded-none">
+                              <SelectValue placeholder="Select level" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {levels.map((level) => (
+                                <SelectItem key={level.id} value={level.id} className="text-sm">
+                                  {level.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                      <div>
+                        <label className="block text-sm font-semibold mb-1.5 text-ctp-text flex items-center gap-2">
+                          <Gamepad2 className="h-3.5 w-3.5 text-ctp-mauve" />
+                          Platform
+                        </label>
+                        <Select value={wrProgressionPlatform} onValueChange={setWrProgressionPlatform}>
+                          <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-9 text-sm rounded-none">
+                            <SelectValue placeholder="Select platform" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {platforms.map((platform) => (
+                              <SelectItem key={platform.id} value={platform.id} className="text-sm">
+                                {platform.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold mb-1.5 text-ctp-text flex items-center gap-2">
+                          {wrProgressionRunType === 'solo' ? (
+                            <Users className="h-3.5 w-3.5 text-ctp-mauve" />
+                          ) : (
+                            <Users className="h-3.5 w-3.5 text-ctp-mauve" />
+                          )}
+                          Run Type
+                        </label>
+                        <Select value={wrProgressionRunType} onValueChange={setWrProgressionRunType}>
+                          <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-9 text-sm rounded-none">
+                            <SelectValue placeholder="Select run type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {runTypes.map((type) => (
+                              <SelectItem key={type.id} value={type.id} className="text-sm">
+                                <div className="flex items-center gap-2">
+                                  {type.id === 'solo' ? <Users className="h-4 w-4" /> : <Users className="h-4 w-4" />}
+                                  {type.name}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {filteredWRTimeProgression.length > 0 ? (
+                <>
                   {/* WR Statistics */}
-                  {filteredWRTimeProgression.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                       <div className="p-4 border rounded-lg bg-muted/50">
                         <div className="text-sm text-muted-foreground mb-1">First WR</div>
                         <div className="text-lg font-semibold">
