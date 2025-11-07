@@ -36,6 +36,7 @@ const SubmitRun = () => {
     date: new Date().toISOString().split('T')[0], // Default to today's date
     videoUrl: "",
     comment: "",
+    srcLink: "", // SRC link to link the run to Speedrun.com
   });
   
   const [loading, setLoading] = useState(false);
@@ -267,6 +268,21 @@ const SubmitRun = () => {
       
       if (formData.comment && formData.comment.trim()) {
         entry.comment = formData.comment.trim();
+      }
+      
+      // Extract SRC run ID from link if provided
+      if (formData.srcLink && formData.srcLink.trim()) {
+        const srcLink = formData.srcLink.trim();
+        // Extract run ID from SRC link format: https://www.speedrun.com/runs/{runId}
+        // Also handle format: https://speedrun.com/runs/{runId}
+        const runIdMatch = srcLink.match(/speedrun\.com\/runs\/([a-zA-Z0-9]+)/);
+        if (runIdMatch && runIdMatch[1]) {
+          entry.srcRunId = runIdMatch[1];
+        } else {
+          // If it doesn't match the expected format, treat the whole input as the run ID
+          // (in case user just pastes the run ID directly)
+          entry.srcRunId = srcLink;
+        }
       }
       
       const result = await addLeaderboardEntry(entry);
@@ -623,6 +639,21 @@ const SubmitRun = () => {
                   />
                   <p className="text-xs text-[hsl(222,15%,70%)] mt-1">
                     Share any details about your run, strategies, or highlights
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="srcLink" className="text-sm font-semibold mb-1.5">Speedrun.com Link (Optional)</Label>
+                  <Input
+                    id="srcLink"
+                    name="srcLink"
+                    value={formData.srcLink}
+                    onChange={handleChange}
+                    placeholder="https://www.speedrun.com/runs/abc123xyz"
+                    className="bg-gradient-to-br from-[hsl(240,21%,18%)] to-[hsl(240,21%,16%)] border-[hsl(235,13%,30%)] h-10 text-sm hover:border-[#cba6f7] hover:bg-gradient-to-br hover:from-[hsl(240,21%,20%)] hover:to-[hsl(240,21%,18%)] transition-all duration-300"
+                  />
+                  <p className="text-xs text-[hsl(222,15%,70%)] mt-1">
+                    If this run is also on Speedrun.com, paste the link here to link it to your submission
                   </p>
                 </div>
 
