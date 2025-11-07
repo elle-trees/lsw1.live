@@ -32,16 +32,16 @@ export function LeaderboardTable({ data, platforms = [], categories = [], levels
       <Table>
         <TableHeader>
           <TableRow className="border-b border-ctp-surface1/50 hover:bg-transparent bg-ctp-surface0/50">
-            <TableHead className="py-2 pl-3 pr-1 text-left text-xs font-semibold text-ctp-text whitespace-nowrap w-16">Rank</TableHead>
-            <TableHead className="py-2 pl-1 pr-2 text-left text-xs font-semibold text-ctp-text min-w-[200px]">Player</TableHead>
+            <TableHead className="py-3 pl-3 pr-1 text-left text-sm font-semibold text-ctp-text whitespace-nowrap w-16">Rank</TableHead>
+            <TableHead className="py-3 pl-1 pr-2 text-left text-sm font-semibold text-ctp-text min-w-[200px]">Player</TableHead>
             {showLevelColumn && (
-              <TableHead className="py-2 px-2 text-left text-xs font-semibold text-ctp-text hidden md:table-cell whitespace-nowrap w-32">Level</TableHead>
+              <TableHead className="py-3 px-2 text-left text-sm font-semibold text-ctp-text hidden md:table-cell whitespace-nowrap w-32">Level</TableHead>
             )}
-            <TableHead className="py-2 px-2 text-left text-xs font-semibold text-ctp-text hidden sm:table-cell whitespace-nowrap w-24">Time</TableHead>
-            <TableHead className="py-2 px-2 text-left text-xs font-semibold text-ctp-text hidden md:table-cell whitespace-nowrap w-28">Date</TableHead>
-            <TableHead className="py-2 px-2 text-left text-xs font-semibold text-ctp-text hidden lg:table-cell whitespace-nowrap w-32">Platform</TableHead>
-            <TableHead className="py-2 px-2 text-left text-xs font-semibold text-ctp-text hidden lg:table-cell whitespace-nowrap w-24">Type</TableHead>
-            <TableHead className="py-2 px-2 text-left text-xs font-semibold text-ctp-text whitespace-nowrap w-20">Video</TableHead>
+            <TableHead className="py-3 px-2 text-left text-sm font-semibold text-ctp-text hidden sm:table-cell whitespace-nowrap w-24">Time</TableHead>
+            <TableHead className="py-3 px-2 text-left text-sm font-semibold text-ctp-text hidden md:table-cell whitespace-nowrap w-28">Date</TableHead>
+            <TableHead className="py-3 px-2 text-left text-sm font-semibold text-ctp-text hidden lg:table-cell whitespace-nowrap w-32">Platform</TableHead>
+            <TableHead className="py-3 px-2 text-left text-sm font-semibold text-ctp-text hidden lg:table-cell whitespace-nowrap w-24">Type</TableHead>
+            <TableHead className="py-3 px-2 text-left text-sm font-semibold text-ctp-text whitespace-nowrap w-20">Video</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -61,19 +61,19 @@ export function LeaderboardTable({ data, platforms = [], categories = [], levels
             return (
             <TableRow 
               key={entry.id} 
-              className={`border-b border-ctp-surface1/20 hover:bg-ctp-surface0/50 cursor-pointer ${entry.isObsolete ? 'opacity-60 italic' : ''}`}
+              className={`border-b border-ctp-surface1/20 hover:bg-ctp-surface0/80 hover:brightness-110 transition-all duration-150 cursor-pointer ${entry.isObsolete ? 'opacity-60 italic' : ''}`}
             >
-              <TableCell className="py-1.5 pl-3 pr-1">
+              <TableCell className="py-2.5 pl-3 pr-1">
                 <Link to={`/run/${entry.id}`} className="block">
                   <div className="flex items-center gap-1.5">
                     {entry.rank === 1 ? (
-                      <LegoStudIcon size={24} color="#0055BF" />
+                      <LegoStudIcon size={28} color="#0055BF" />
                     ) : entry.rank === 2 ? (
-                      <LegoStudIcon size={24} color="#FFD700" />
+                      <LegoStudIcon size={28} color="#FFD700" />
                     ) : entry.rank === 3 ? (
-                      <LegoStudIcon size={24} color="#C0C0C0" />
+                      <LegoStudIcon size={28} color="#C0C0C0" />
                     ) : (
-                      <span className="font-semibold text-xs text-ctp-text w-6 h-6 flex items-center justify-center">
+                      <span className="font-semibold text-sm text-ctp-text w-7 h-7 flex items-center justify-center">
                         #{entry.rank}
                       </span>
                     )}
@@ -85,7 +85,7 @@ export function LeaderboardTable({ data, platforms = [], categories = [], levels
                   </div>
                 </Link>
               </TableCell>
-              <TableCell className="py-1.5 pl-1 pr-2 min-w-[200px]">
+              <TableCell className="py-2.5 pl-1 pr-2 min-w-[200px]">
                 <div className="flex items-center gap-1.5 flex-wrap">
                 {(() => {
                   // Check if run is unclaimed - simply check if playerId is empty/null
@@ -95,11 +95,11 @@ export function LeaderboardTable({ data, platforms = [], categories = [], levels
                     // For unclaimed runs, show name without link
                     return (
                       <>
-                        <span className="font-medium text-xs whitespace-nowrap text-ctp-text">{entry.playerName}</span>
+                        <span className="font-semibold text-sm whitespace-nowrap text-ctp-text">{entry.playerName}</span>
                         {entry.player2Name && (
                           <>
-                            <span className="text-ctp-overlay0 text-xs"> & </span>
-                            <span className="font-medium text-xs whitespace-nowrap text-ctp-text">
+                            <span className="text-ctp-overlay0 text-sm"> & </span>
+                            <span className="font-semibold text-sm whitespace-nowrap text-ctp-text">
                               {entry.player2Name}
                             </span>
                           </>
@@ -123,22 +123,22 @@ export function LeaderboardTable({ data, platforms = [], categories = [], levels
                           style={{ color: entry.nameColor || '#cba6f7' }}
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <span className="font-medium text-xs whitespace-nowrap">{entry.playerName}</span>
+                          <span className="font-semibold text-sm whitespace-nowrap">{entry.playerName}</span>
                         </Link>
                         {entry.player2Name && (
                           <>
-                            <span className="text-ctp-overlay0 text-xs"> & </span>
+                            <span className="text-ctp-overlay0 text-sm"> & </span>
                             <Link 
                               to={`/player/${entry.player2Id || entry.playerId}`} 
                               className="hover:opacity-80 inline-block"
                               style={{ color: entry.player2Color || '#cba6f7' }}
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <span className="font-medium text-xs whitespace-nowrap">{entry.player2Name}</span>
+                              <span className="font-semibold text-sm whitespace-nowrap">{entry.player2Name}</span>
                             </Link>
                           </>
                         )}
-                        <Check className="h-3 w-3 text-green-500 flex-shrink-0" />
+                        <Check className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
                         {entry.rank === 1 && !entry.isObsolete && (
                           <Badge className="bg-gradient-to-r from-[#0055BF] to-[#0070f3] text-white text-xs px-1.5 py-0.5 border border-[#0055BF]/50 flex items-center gap-1 font-semibold">
                             <Trophy className="h-2.5 w-2.5" />
@@ -153,7 +153,7 @@ export function LeaderboardTable({ data, platforms = [], categories = [], levels
                 </div>
                 <div className="sm:hidden mt-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-medium text-ctp-text">{formatTime(entry.time)}</span>
+                    <span className="text-sm font-semibold text-ctp-text">{formatTime(entry.time)}</span>
                     <Badge variant="outline" className="border-ctp-surface1 bg-ctp-surface0 text-ctp-text text-xs px-1.5 py-0.5">
                       {platformName}
                     </Badge>
@@ -165,36 +165,36 @@ export function LeaderboardTable({ data, platforms = [], categories = [], levels
                 </div>
               </TableCell>
               {showLevelColumn && (
-                <TableCell className="py-1.5 px-2 hidden md:table-cell">
+                <TableCell className="py-2.5 px-2 hidden md:table-cell">
                   <Link to={`/run/${entry.id}`} className="hover:text-[#cba6f7] flex items-center gap-1">
-                    <MapPin className="h-3 w-3 text-ctp-overlay0" />
-                    <span className="text-xs text-ctp-subtext1">
+                    <MapPin className="h-3.5 w-3.5 text-ctp-overlay0" />
+                    <span className="text-sm text-ctp-subtext1">
                       {levelName || entry.srcLevelName || 'Unknown Level'}
                     </span>
                   </Link>
                 </TableCell>
               )}
-              <TableCell className="py-1.5 px-2 hidden sm:table-cell">
+              <TableCell className="py-2.5 px-2 hidden sm:table-cell">
                 <Link to={`/run/${entry.id}`} className="hover:text-[#cba6f7]">
-                  <span className="text-xs font-mono font-medium text-ctp-text">
+                  <span className="text-sm font-semibold text-ctp-text">
                     {formatTime(entry.time)}
                   </span>
                 </Link>
               </TableCell>
-              <TableCell className="py-1.5 px-2 hidden md:table-cell">
+              <TableCell className="py-2.5 px-2 hidden md:table-cell">
                 <Link to={`/run/${entry.id}`} className="hover:text-[#cba6f7] flex items-center gap-1">
-                  <Clock className="h-3 w-3 text-ctp-overlay0" />
-                  <span className="text-xs text-ctp-subtext1">{entry.date}</span>
+                  <Clock className="h-3.5 w-3.5 text-ctp-overlay0" />
+                  <span className="text-sm text-ctp-subtext1">{entry.date}</span>
                 </Link>
               </TableCell>
-              <TableCell className="py-1.5 px-2 hidden lg:table-cell">
+              <TableCell className="py-2.5 px-2 hidden lg:table-cell">
                 <Link to={`/run/${entry.id}`} className="block">
                   <Badge variant="outline" className="border-ctp-surface1/50 bg-ctp-surface0/50 text-ctp-text text-xs px-1.5 py-0.5">
                     {platformName}
                   </Badge>
                 </Link>
               </TableCell>
-              <TableCell className="py-1.5 px-2 hidden lg:table-cell">
+              <TableCell className="py-2.5 px-2 hidden lg:table-cell">
                 <Link to={`/run/${entry.id}`} className="block">
                   <Badge variant="outline" className="border-ctp-surface1/50 bg-ctp-surface0/50 text-ctp-text flex items-center gap-1 w-fit text-xs px-1.5 py-0.5">
                     {entry.runType === 'solo' ? <User className="h-3 w-3" /> : <Users className="h-3 w-3" />}
@@ -202,7 +202,7 @@ export function LeaderboardTable({ data, platforms = [], categories = [], levels
                   </Badge>
                 </Link>
               </TableCell>
-              <TableCell className="py-1.5 px-2">
+              <TableCell className="py-2.5 px-2">
                 {entry.videoUrl && (
                   <a 
                     href={entry.videoUrl} 
