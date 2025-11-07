@@ -65,6 +65,7 @@ import {
   updatePlayer,
   deletePlayer,
   getIlRunsToFix,
+  wipeAllImportedSRCRuns,
 } from "@/lib/db";
 import { importSRCRuns, type ImportResult } from "@/lib/speedruncom/importService";
 import { fetchCategoryVariables, getLSWGameId, fetchCategories as fetchSRCCategories, type SRCCategory } from "@/lib/speedruncom";
@@ -110,6 +111,8 @@ const Admin = () => {
   const [recentRuns, setRecentRuns] = useState<LeaderboardEntry[]>([]);
   const [loadingRecentRuns, setLoadingRecentRuns] = useState(false);
   const [deletingRunId, setDeletingRunId] = useState<string | null>(null);
+  const [wipingImportedRuns, setWipingImportedRuns] = useState(false);
+  const [wipingProgress, setWipingProgress] = useState(0);
   const itemsPerPage = 25;
   // SRC categories with variables
   const [srcCategoriesWithVars, setSrcCategoriesWithVars] = useState<Array<SRCCategory & { variablesData?: Array<{ id: string; name: string; values: { values: Record<string, { label: string }> } }> }>>([]);
@@ -3314,19 +3317,100 @@ const Admin = () => {
                     <Play className="h-5 w-5" />
                     <span>Recent Runs</span>
                   </CardTitle>
-                  <Button
-                    onClick={fetchRecentRuns}
-                    disabled={loadingRecentRuns}
-                    variant="outline"
-                    size="sm"
-                    className="border-[hsl(235,13%,30%)] bg-gradient-to-r from-transparent via-[hsl(237,16%,24%)]/50 to-transparent hover:from-[hsl(237,16%,24%)] hover:via-[hsl(237,16%,28%)] hover:to-[hsl(237,16%,24%)] hover:border-[#cba6f7]/50"
-                  >
-                    <RefreshCw className={`h-4 w-4 mr-2 ${loadingRecentRuns ? 'animate-spin' : ''}`} />
-                    Refresh
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      onClick={fetchRecentRuns}
+                      disabled={loadingRecentRuns || wipingImportedRuns}
+                      variant="outline"
+                      size="sm"
+                      className="border-[hsl(235,13%,30%)] bg-gradient-to-r from-transparent via-[hsl(237,16%,24%)]/50 to-transparent hover:from-[hsl(237,16%,24%)] hover:via-[hsl(237,16%,28%)] hover:to-[hsl(237,16%,24%)] hover:border-[#cba6f7]/50"
+                    >
+                      <RefreshCw className={`h-4 w-4 mr-2 ${loadingRecentRuns ? 'animate-spin' : ''}`} />
+                      Refresh
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="pt-6">
+                {/* Wipe All Imported Runs Tool */}
+                <div className="mb-6 p-4 bg-[hsl(240,21%,12%)] rounded-lg border border-[hsl(235,13%,30%)]">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <h4 className="text-sm font-semibold text-[#f2cdcd] mb-1">Wipe All Imported SRC Runs</h4>
+                      <p className="text-xs text-[hsl(222,15%,60%)]">
+                        Delete all runs imported from Speedrun.com (both verified and unverified). This action cannot be undone.
+                      </p>
+                    </div>
+                  </div>
+                  {wipingImportedRuns && (
+                    <div className="mt-3 mb-3">
+                      <div className="flex items-center gap-2 text-sm text-[hsl(222,15%,60%)]">
+                        <LoadingSpinner size="sm" />
+                        <span>Deleting imported runs... {wipingProgress > 0 && `${wipingProgress} deleted so far`}</span>
+                      </div>
+                    </div>
+                  )}
+                  <Button
+                    onClick={async () => {
+                      if (!window.confirm(
+                        "WARNING: This will delete ALL runs imported from Speedrun.com, including verified runs.\n\n" +
+                        "This action cannot be undone. Are you absolutely sure you want to continue?"
+                      )) {
+                        return;
+                      }
+                      
+                      setWipingImportedRuns(true);
+                      setWipingProgress(0);
+                      try {
+                        const result = await wipeAllImportedSRCRuns((deleted) => {
+                          setWipingProgress(deleted);
+                        });
+                        
+                        if (result.errors.length > 0) {
+                          toast({
+                            title: "Wipe Complete with Errors",
+                            description: `Deleted ${result.deleted} imported run(s). ${result.errors.length} error(s) occurred.`,
+                            variant: "destructive",
+                          });
+                        } else {
+                          toast({
+                            title: "All Imported Runs Deleted",
+                            description: `Successfully deleted ${result.deleted} imported run(s) from the leaderboards.`,
+                          });
+                        }
+                        
+                        // Refresh recent runs and all data
+                        await fetchRecentRuns();
+                        await refreshAllRunData();
+                      } catch (error: any) {
+                        toast({
+                          title: "Error",
+                          description: error.message || "Failed to wipe imported runs.",
+                          variant: "destructive",
+                        });
+                      } finally {
+                        setWipingImportedRuns(false);
+                        setWipingProgress(0);
+                      }
+                    }}
+                    disabled={wipingImportedRuns}
+                    variant="destructive"
+                    size="sm"
+                    className="bg-red-600/20 hover:bg-red-600/30 text-red-400 border-red-600/50 font-semibold transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-red-600/50"
+                  >
+                    {wipingImportedRuns ? (
+                      <>
+                        <LoadingSpinner size="sm" className="mr-2" />
+                        Wiping...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Wipe All Imported Runs
+                      </>
+                    )}
+                  </Button>
+                </div>
                 {loadingRecentRuns ? (
                   <div className="flex items-center justify-center py-8">
                     <LoadingSpinner size="md" />

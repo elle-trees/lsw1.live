@@ -15,6 +15,7 @@ import LegoGoldBrickIcon from "@/components/icons/LegoGoldBrickIcon";
 const Leaderboards = () => {
   const [leaderboardType, setLeaderboardType] = useState<'regular' | 'individual-level' | 'community-golds'>('regular');
   const [availableCategories, setAvailableCategories] = useState<{ id: string; name: string }[]>([]);
+  const [categoriesWithSRC, setCategoriesWithSRC] = useState<{ id: string; srcCategoryId?: string | null }[]>([]);
   const [availableLevels, setAvailableLevels] = useState<{ id: string; name: string }[]>([]);
   const [availablePlatforms, setAvailablePlatforms] = useState<{ id: string; name: string }[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("");

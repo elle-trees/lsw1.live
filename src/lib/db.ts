@@ -67,6 +67,7 @@ import {
   getPlayersWithSRCUsernamesFirestore,
   runAutoclaimingForAllUsersFirestore,
   getIlRunsToFixFirestore,
+  wipeAllImportedSRCRunsFirestore,
 } from "./data/firestore";
 
 const defaultCategories = [
@@ -236,6 +237,7 @@ export const checkSRCRunExists = checkSRCRunExistsFirestore;
 export const getImportedSRCRuns = getImportedSRCRunsFirestore;
 export const getAllRunsForDuplicateCheck = getAllRunsForDuplicateCheckFirestore;
 export const deleteAllImportedSRCRuns = deleteAllImportedSRCRunsFirestore;
+export const wipeAllImportedSRCRuns = wipeAllImportedSRCRunsFirestore;
 export const getVerifiedRunsWithInvalidData = getVerifiedRunsWithInvalidDataFirestore;
 export const getIlRunsToFix = getIlRunsToFixFirestore;
 export const getExistingSRCRunIds = getExistingSRCRunIdsFirestore;

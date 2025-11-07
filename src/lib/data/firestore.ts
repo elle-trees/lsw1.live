@@ -4912,3 +4912,73 @@ export const deleteAllImportedSRCRunsFirestore = async (): Promise<{ deleted: nu
     return result;
   }
 };
+
+/**
+ * Delete ALL imported runs from speedrun.com (both verified and unverified)
+ * This will delete all runs with importedFromSRC === true from the leaderboards
+ */
+export const wipeAllImportedSRCRunsFirestore = async (onProgress?: (deleted: number) => void): Promise<{ deleted: number; errors: string[] }> => {
+  if (!db) return { deleted: 0, errors: ["Firestore not initialized"] };
+  
+  const result = { deleted: 0, errors: [] as string[] };
+  
+  try {
+    // Query: get ALL imported runs (both verified and unverified)
+    // Note: We can't use both verified and importedFromSRC in a single query efficiently,
+    // so we'll query for importedFromSRC and filter client-side if needed
+    const q = query(
+      collection(db, "leaderboardEntries"),
+      where("importedFromSRC", "==", true),
+      firestoreLimit(500)
+    );
+    
+    let hasMore = true;
+    let totalDeleted = 0;
+    
+    // Delete in batches until no more runs
+    while (hasMore) {
+      const querySnapshot = await getDocs(q);
+      
+      if (querySnapshot.empty) {
+        hasMore = false;
+        break;
+      }
+      
+      // Delete in batches (Firestore limit is 500 per batch)
+      const batch = writeBatch(db);
+      let batchSize = 0;
+      
+      querySnapshot.docs.forEach((docSnapshot) => {
+        if (batchSize < 500) {
+          batch.delete(docSnapshot.ref);
+          batchSize++;
+        }
+      });
+      
+      if (batchSize > 0) {
+        try {
+          await batch.commit();
+          totalDeleted += batchSize;
+          result.deleted += batchSize;
+          onProgress?.(totalDeleted);
+        } catch (batchError) {
+          const errorMsg = batchError instanceof Error ? batchError.message : String(batchError);
+          result.errors.push(`Failed to delete batch: ${errorMsg}`);
+        }
+        
+        // Check if we've processed all documents
+        if (querySnapshot.docs.length < 500) {
+          hasMore = false;
+        }
+      } else {
+        hasMore = false;
+      }
+    }
+    
+    return result;
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    result.errors.push(`Delete error: ${errorMsg}`);
+    return result;
+  }
+};
