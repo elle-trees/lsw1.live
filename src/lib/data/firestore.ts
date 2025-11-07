@@ -139,11 +139,9 @@ export const getLeaderboardEntriesFirestore = async (
 
     // Helper function to add shared filters to a constraint list
     const addSharedFilters = (constraintList: QueryConstraint[]) => {
-      // For individual-level queries, we need special handling:
-      // - Some IL runs have leaderboardType === 'individual-level'
-      // - Some older IL runs have a level field but no leaderboardType set
-      // We'll query for both cases separately and merge results
-      if (leaderboardType && leaderboardType !== 'regular' && leaderboardType !== 'individual-level') {
+      // Add leaderboardType filter for all types (regular, individual-level, community-golds)
+      // All IL runs now have leaderboardType === 'individual-level', so we can query directly
+      if (leaderboardType) {
         constraintList.push(where("leaderboardType", "==", leaderboardType));
       }
 
@@ -172,102 +170,29 @@ export const getLeaderboardEntriesFirestore = async (
       // Firestore queries don't support OR conditions easily, so we'll filter after fetching
     };
 
-    // For individual-level queries, we need to handle two cases:
-    // 1. Runs with leaderboardType === 'individual-level'
-    // 2. Runs with a level field but no leaderboardType set (backward compatibility)
-    // We'll make two queries and merge the results
+    // All leaderboard types now work the same way - query directly by leaderboardType
+    // IL runs all have leaderboardType === 'individual-level' set correctly
     const fetchLimit = 500;
-    let querySnapshot;
-    if (leaderboardType === 'individual-level') {
-      // Query 1: Runs with leaderboardType === 'individual-level'
-      const constraints1: QueryConstraint[] = [
-        where("verified", "==", true),
-        where("leaderboardType", "==", "individual-level"),
-      ];
-      addSharedFilters(constraints1);
-      constraints1.push(firestoreLimit(fetchLimit));
-      
-      // Query 2: Runs with level field but leaderboardType is NOT 'individual-level'
-      // This catches older IL runs that have a level but leaderboardType is undefined/null/regular
-      // We need to exclude runs that explicitly have leaderboardType === 'individual-level' (already in query 1)
-      // and runs that explicitly have leaderboardType === 'regular' (those are regular runs, not IL)
-      // Since Firestore doesn't support != queries easily, we'll fetch runs with level field
-      // and filter client-side to exclude regular runs
-      const constraints2: QueryConstraint[] = [
-        where("verified", "==", true),
-      ];
-      // Always filter by level field - IL runs must have a level
-      // If a specific level is selected, filter by that level
-      if (normalizedLevelId) {
-        constraints2.push(where("level", "==", normalizedLevelId));
-      }
-      // Note: When no level is selected, we can't filter by level in the query
-      // We'll fetch all verified runs and filter client-side for runs with a level field
-      // This is less efficient but necessary for backward compatibility
-      
-      // Add other filters (category, platform, runType) - these help narrow down results
-      if (normalizedCategoryId) {
-        constraints2.push(where("category", "==", normalizedCategoryId));
-      }
-      if (normalizedPlatformId) {
-        constraints2.push(where("platform", "==", normalizedPlatformId));
-      }
-      if (runType && (runType === "solo" || runType === "co-op")) {
-        constraints2.push(where("runType", "==", runType));
-      }
-      constraints2.push(firestoreLimit(fetchLimit));
-      
-      // Execute both queries
-      const [snapshot1, snapshot2] = await Promise.all([
-        getDocs(query(collection(db, "leaderboardEntries"), ...constraints1)),
-        getDocs(query(collection(db, "leaderboardEntries"), ...constraints2))
-      ]);
-      
-      // Merge results, avoiding duplicates
-      const docMap = new Map();
-      snapshot1.docs.forEach(doc => docMap.set(doc.id, doc));
-      snapshot2.docs.forEach(doc => {
-        if (!docMap.has(doc.id)) {
-          docMap.set(doc.id, doc);
-        }
-      });
-      
-      // Create a merged query snapshot-like object
-      querySnapshot = {
-        docs: Array.from(docMap.values()),
-        empty: docMap.size === 0,
-        size: docMap.size,
-        metadata: snapshot1.metadata,
-        query: snapshot1.query,
-      } as any;
-    } else {
-      // For regular and community-golds, use the standard query
-      addSharedFilters(constraints);
-      constraints.push(firestoreLimit(fetchLimit));
-      querySnapshot = await getDocs(query(collection(db, "leaderboardEntries"), ...constraints));
-    }
+    addSharedFilters(constraints);
+    constraints.push(firestoreLimit(fetchLimit));
+    const querySnapshot = await getDocs(query(collection(db, "leaderboardEntries"), ...constraints));
     
     // Normalize and validate entries
     let entries: LeaderboardEntry[] = querySnapshot.docs
       .map(doc => {
         const data = doc.data();
-        // Store original leaderboardType before normalization (for IL run detection)
-        const originalLeaderboardType = data.leaderboardType;
-        const originalLevel = data.level;
         
         // Normalize the entry data
         const normalized = normalizeLeaderboardEntry({ 
           id: doc.id, 
           ...data 
         } as LeaderboardEntry);
-        // Ensure id is always present and preserve original data for filtering
+        
+        // Ensure id is always present
         return {
           ...normalized,
           id: doc.id,
-          // Store original values for filtering logic
-          _originalLeaderboardType: originalLeaderboardType,
-          _originalLevel: originalLevel,
-        } as LeaderboardEntry & { _originalLeaderboardType?: string; _originalLevel?: string };
+        } as LeaderboardEntry;
       })
       .filter(entry => {
         // Validate entry
@@ -293,32 +218,10 @@ export const getLeaderboardEntriesFirestore = async (
         }
         
         // For individual-level queries: ensure entry is actually an IL run
-        // A run is an IL run if:
-        // 1. It has leaderboardType === 'individual-level' (after normalization), OR
-        // 2. It has a level field but leaderboardType was undefined/null/'regular' (before normalization)
-        // This handles backward compatibility and fixes runs that were incorrectly saved with leaderboardType='regular'
+        // All IL runs now have leaderboardType === 'individual-level' set correctly
         if (leaderboardType === 'individual-level') {
-          // Check original leaderboardType before normalization
-          const originalLeaderboardType = (entry as any)._originalLeaderboardType;
-          const originalLevel = (entry as any)._originalLevel;
-          
-          // IL run if:
-          // - leaderboardType is 'individual-level' (normalized or original), OR
-          // - has a level field and (leaderboardType was undefined/null/not set OR was incorrectly set to 'regular')
-          // The second condition handles:
-          //   - Old runs without leaderboardType set
-          //   - Runs incorrectly saved with leaderboardType='regular' but have a level (bug fix)
-          const hasLevel = (originalLevel && originalLevel.trim() !== '') || (entry.level && entry.level.trim() !== '');
-          const isILRun = 
-            entry.leaderboardType === 'individual-level' ||
-            (hasLevel && (
-              originalLeaderboardType === undefined || 
-              originalLeaderboardType === null || 
-              originalLeaderboardType === '' ||
-              originalLeaderboardType === 'regular' // Handle incorrectly saved IL runs
-            ));
-          
-          if (!isILRun) {
+          // Must have leaderboardType === 'individual-level'
+          if (entry.leaderboardType !== 'individual-level') {
             return false;
           }
           
