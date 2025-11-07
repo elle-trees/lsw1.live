@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Link } from "react-router-dom";
-import { TrendingUp, Sparkles, Plus } from "lucide-react";
+import { Sparkles, Plus, Info } from "lucide-react";
 import { Player } from "@/types/database";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Pagination } from "@/components/Pagination";
@@ -109,7 +110,7 @@ const PointsLeaderboard = () => {
             </h1>
           </div>
           <p className="text-base text-ctp-subtext1 max-w-3xl mx-auto animate-fade-in-delay">
-            Top players ranked by their total points. Points are awarded for all verified runs (Full Game, Individual Levels, and Community Golds) across all platforms and categories. Solo runs: 10 base points + top 3 bonus (60 for 1st, 40 for 2nd, 30 for 3rd). Co-op runs: Points are split equally between both players (5 base + top 3 bonus: 30 for 1st, 20 for 2nd, 15 for 3rd per player).
+            Top players ranked by their total points earned from verified runs.
           </p>
         </div>
 
@@ -238,6 +239,88 @@ const PointsLeaderboard = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Points System Explanation Accordion */}
+        <div className="mt-8 animate-fade-in">
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="points-system" className="border-[hsl(235,13%,30%)]">
+              <AccordionTrigger className="text-[#fab387] hover:text-[#fab387]/80 px-4 py-6">
+                <div className="flex items-center gap-2">
+                  <Info className="h-5 w-5" />
+                  <span className="text-lg font-semibold">How Points Work</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-4 pb-6 text-ctp-text">
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-[#fab387] mb-3">Overview</h3>
+                    <p className="text-ctp-text leading-relaxed">
+                      Points are awarded for all verified runs across Full Game, Individual Levels, and Community Golds leaderboards. 
+                      All platforms and categories are eligible for points.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold text-[#fab387] mb-3">Full Game Runs</h3>
+                    <div className="space-y-2 text-ctp-text">
+                      <p className="font-medium">Solo Runs:</p>
+                      <ul className="list-disc list-inside space-y-1 ml-2 text-ctp-subtext1">
+                        <li>Rank 1: 60 points (10 base + 50 bonus)</li>
+                        <li>Rank 2: 40 points (10 base + 30 bonus)</li>
+                        <li>Rank 3: 30 points (10 base + 20 bonus)</li>
+                        <li>All others: 10 base points</li>
+                      </ul>
+                      <p className="font-medium mt-3">Co-op Runs:</p>
+                      <ul className="list-disc list-inside space-y-1 ml-2 text-ctp-subtext1">
+                        <li>Rank 1: 30 points per player (60 total ÷ 2)</li>
+                        <li>Rank 2: 20 points per player (40 total ÷ 2)</li>
+                        <li>Rank 3: 15 points per player (30 total ÷ 2)</li>
+                        <li>All others: 5 points per player (10 total ÷ 2)</li>
+                      </ul>
+                      <p className="text-sm text-ctp-overlay0 mt-2 italic">
+                        Co-op runs split points equally between both players.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold text-[#fab387] mb-3">Individual Levels & Community Golds</h3>
+                    <p className="text-ctp-text leading-relaxed mb-2">
+                      ILs and Community Golds award <strong>half the points</strong> of Full Game runs:
+                    </p>
+                    <div className="space-y-2 text-ctp-text">
+                      <p className="font-medium">Solo Runs:</p>
+                      <ul className="list-disc list-inside space-y-1 ml-2 text-ctp-subtext1">
+                        <li>Rank 1: 30 points (60 × 0.5)</li>
+                        <li>Rank 2: 20 points (40 × 0.5)</li>
+                        <li>Rank 3: 15 points (30 × 0.5)</li>
+                        <li>All others: 5 base points (10 × 0.5)</li>
+                      </ul>
+                      <p className="font-medium mt-3">Co-op Runs:</p>
+                      <ul className="list-disc list-inside space-y-1 ml-2 text-ctp-subtext1">
+                        <li>Rank 1: 15 points per player (30 × 0.5)</li>
+                        <li>Rank 2: 10 points per player (20 × 0.5)</li>
+                        <li>Rank 3: 8 points per player (15 × 0.5, rounded)</li>
+                        <li>All others: 3 points per player (5 × 0.5, rounded)</li>
+                      </ul>
+                      <p className="text-sm text-ctp-overlay0 mt-2 italic">
+                        Points are halved for ILs/Community Golds, then split for co-op runs.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-[hsl(240,21%,18%)] border border-[hsl(235,13%,30%)] p-4 rounded">
+                    <p className="text-sm text-ctp-text leading-relaxed">
+                      <strong className="text-[#fab387]">Note:</strong> Only verified runs count toward points. 
+                      Obsolete runs receive base points only (no rank bonus). Points are automatically calculated 
+                      and updated when runs are verified.
+                    </p>
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
       </div>
       
       <style>{`
