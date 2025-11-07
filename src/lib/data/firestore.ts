@@ -2601,7 +2601,7 @@ export const addCategoryFirestore = async (name: string, leaderboardType?: 'regu
   }
 };
 
-export const updateCategoryFirestore = async (id: string, name: string, subcategories?: Array<{ id: string; name: string; order?: number; srcVariableId?: string; srcValueId?: string }>, srcCategoryId?: string | null): Promise<boolean> => {
+export const updateCategoryFirestore = async (id: string, name: string, subcategories?: Array<{ id: string; name: string; order?: number; srcVariableId?: string; srcValueId?: string }>, srcCategoryId?: string | null, srcSubcategoryVariableName?: string | null): Promise<boolean> => {
   if (!db) return false;
   try {
     const trimmedName = name.trim();
@@ -2653,6 +2653,16 @@ export const updateCategoryFirestore = async (id: string, name: string, subcateg
       const trimmedSrcCategoryId = srcCategoryId?.trim() || null;
       if (currentSrcCategoryId !== trimmedSrcCategoryId) {
         updateData.srcCategoryId = trimmedSrcCategoryId;
+        needsUpdate = true;
+      }
+    }
+    
+    // Update srcSubcategoryVariableName if provided
+    if (srcSubcategoryVariableName !== undefined) {
+      const currentVariableName = currentData?.srcSubcategoryVariableName || null;
+      const trimmedVariableName = srcSubcategoryVariableName?.trim() || null;
+      if (currentVariableName !== trimmedVariableName) {
+        updateData.srcSubcategoryVariableName = trimmedVariableName;
         needsUpdate = true;
       }
     }

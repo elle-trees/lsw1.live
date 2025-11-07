@@ -614,7 +614,8 @@ export async function mapSRCRunToLeaderboardEntry(
   srcCategoryIdToName?: Map<string, string>,
   srcLevelIdToName?: Map<string, string>,
   playerIdToNameCache?: Map<string, string>,
-  platformIdToNameCache?: Map<string, string>
+  platformIdToNameCache?: Map<string, string>,
+  localCategories?: import("@/types/database").Category[] // Local categories with subcategories for matching
 ): Promise<Partial<import("@/types/database").LeaderboardEntry> & {
   srcRunId: string;
   importedFromSRC: boolean;
@@ -804,28 +805,61 @@ export async function mapSRCRunToLeaderboardEntry(
   let srcSubcategory: string | undefined;
   
   if (leaderboardType === 'regular' && run.values && Object.keys(run.values).length > 0) {
-    // Get the first variable value (most categories have one main variable like "Glitchless", "No Major Glitches", etc.)
-    // The values object maps variable ID -> value ID
+    // Get all variables from the run
     const variableEntries = Object.entries(run.values);
+    
     if (variableEntries.length > 0) {
-      const [variableId, valueId] = variableEntries[0];
+      // Get category data to access variable definitions
+      let categoryData: SRCCategory | undefined;
+      if (typeof run.category === 'object' && run.category?.data) {
+        categoryData = run.category.data as SRCCategory;
+      } else if (embeddedData?.category) {
+        categoryData = embeddedData.category;
+      }
       
-      // Try to get the variable name from embedded category data
+      // Determine which variable to use for subcategories
+      let selectedVariableId: string | undefined;
+      let selectedValueId: string | undefined;
+      
+      // Get local category to check for preferred variable name
+      const localCategory = ourCategoryId && localCategories 
+        ? localCategories.find(c => c.id === ourCategoryId)
+        : undefined;
+      
+      const preferredVariableName = localCategory?.srcSubcategoryVariableName;
+      
+      if (preferredVariableName && categoryData?.variables?.data) {
+        // Find the variable that matches the preferred name
+        const preferredVariable = categoryData.variables.data.find(
+          v => v.name.toLowerCase().trim() === preferredVariableName.toLowerCase().trim()
+        );
+        
+        if (preferredVariable) {
+          // Use the preferred variable if it exists in the run's values
+          const preferredValueId = run.values[preferredVariable.id];
+          if (preferredValueId) {
+            selectedVariableId = preferredVariable.id;
+            selectedValueId = preferredValueId;
+          }
+        }
+      }
+      
+      // Fallback: use the first variable if no preferred variable is set or found
+      if (!selectedVariableId || !selectedValueId) {
+        const [firstVariableId, firstValueId] = variableEntries[0];
+        selectedVariableId = firstVariableId;
+        selectedValueId = firstValueId;
+      }
+      
+      // Get the variable name and value label
       let variableName: string | undefined;
       let valueLabel: string | undefined;
       
-      if (typeof run.category === 'object' && run.category?.data) {
-        const categoryData = run.category.data as SRCCategory;
-        const variable = categoryData.variables?.data?.find(v => v.id === variableId);
+      if (categoryData?.variables?.data) {
+        const variable = categoryData.variables.data.find(v => v.id === selectedVariableId);
         if (variable) {
           variableName = variable.name;
-          valueLabel = variable.values?.values?.[valueId]?.label;
-        }
-      } else if (embeddedData?.category) {
-        const variable = embeddedData.category.variables?.data?.find(v => v.id === variableId);
-        if (variable) {
-          variableName = variable.name;
-          valueLabel = variable.values?.values?.[valueId]?.label;
+          valueLabel = variable.values?.values?.[selectedValueId]?.label;
         }
       }
       
@@ -836,8 +870,29 @@ export async function mapSRCRunToLeaderboardEntry(
         srcSubcategory = variableName;
       }
       
-      // Note: subcategoryId will be set later during import when we create/map subcategories
-      // For now, we just store the SRC value for reference
+      // Map to local subcategory ID if we have the category and subcategories
+      if (ourCategoryId && localCategories && selectedVariableId && selectedValueId) {
+        if (localCategory && localCategory.subcategories && localCategory.subcategories.length > 0) {
+          // Try to find subcategory by SRC variable ID and value ID (most reliable)
+          const matchedSubcategory = localCategory.subcategories.find(
+            sub => sub.srcVariableId === selectedVariableId && sub.srcValueId === selectedValueId
+          );
+          
+          if (matchedSubcategory) {
+            subcategoryId = matchedSubcategory.id;
+          } else if (valueLabel) {
+            // Fallback: try to match by name (case-insensitive)
+            const normalizedValueLabel = valueLabel.toLowerCase().trim();
+            const nameMatchedSubcategory = localCategory.subcategories.find(
+              sub => sub.name.toLowerCase().trim() === normalizedValueLabel
+            );
+            
+            if (nameMatchedSubcategory) {
+              subcategoryId = nameMatchedSubcategory.id;
+            }
+          }
+        }
+      }
     }
   }
   

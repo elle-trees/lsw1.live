@@ -197,8 +197,8 @@ export const getCategoriesFromFirestore = async (leaderboardType?: 'regular' | '
 export const addCategory = async (name: string, leaderboardType?: 'regular' | 'individual-level' | 'community-golds'): Promise<string | null> => {
   return addCategoryFirestore(name, leaderboardType);
 };
-export const updateCategory = async (id: string, name: string, subcategories?: Array<{ id: string; name: string; order?: number; srcVariableId?: string; srcValueId?: string }>, srcCategoryId?: string | null): Promise<boolean> => {
-  return updateCategoryFirestore(id, name, subcategories, srcCategoryId);
+export const updateCategory = async (id: string, name: string, subcategories?: Array<{ id: string; name: string; order?: number; srcVariableId?: string; srcValueId?: string }>, srcCategoryId?: string | null, srcSubcategoryVariableName?: string | null): Promise<boolean> => {
+  return updateCategoryFirestore(id, name, subcategories, srcCategoryId, srcSubcategoryVariableName);
 };
 export const deleteCategory = deleteCategoryFirestore;
 export const moveCategoryUp = moveCategoryUpFirestore;

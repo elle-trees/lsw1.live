@@ -69,6 +69,7 @@ export interface Category {
   leaderboardType?: 'regular' | 'individual-level' | 'community-golds'; // Type of leaderboard this category belongs to
   subcategories?: Subcategory[]; // Subcategories for this category (only for regular leaderboard type)
   srcCategoryId?: string | null; // Speedrun.com category ID if linked to SRC (null to unlink)
+  srcSubcategoryVariableName?: string | null; // SRC variable name to use for subcategories when multiple variables exist (null to use first variable)
 }
 
 export interface Level {

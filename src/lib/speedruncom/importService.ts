@@ -21,7 +21,7 @@ import {
   getPlayerByDisplayName,
   runAutoclaimingForAllUsers,
 } from "../db";
-import { LeaderboardEntry } from "@/types/database";
+import { LeaderboardEntry, Category } from "@/types/database";
 
 export interface ImportResult {
   imported: number;
@@ -519,6 +519,16 @@ export async function importSRCRuns(
       return result;
     }
 
+    // Step 4.5: Fetch local categories with subcategories for subcategory mapping
+    // This ensures we can map SRC variable values to local subcategory IDs
+    let localCategories: Category[] = [];
+    try {
+      localCategories = await getCategoriesFromFirestore();
+    } catch (error) {
+      console.warn(`[Import] Failed to fetch local categories for subcategory mapping:`, error);
+      // Continue without subcategory mapping - runs will still import with srcSubcategory
+    }
+
     onProgress?.({ total: srcRuns.length, imported: 0, skipped: 0 });
 
     // Step 5: Pre-fetch all unique player names to batch lookups
@@ -578,7 +588,8 @@ export async function importSRCRuns(
             mappings.srcCategoryIdToName,
             mappings.srcLevelIdToName,
             playerIdToNameCache,
-            platformIdToNameCache
+            platformIdToNameCache,
+            localCategories // Pass local categories with subcategories for mapping
           );
         } catch (mapError: any) {
           result.skipped++;

@@ -165,7 +165,7 @@ const Admin = () => {
   // Subcategory management state
   const [categoryManagementTab, setCategoryManagementTab] = useState<'categories' | 'subcategories'>('categories');
   const [selectedCategoryForSubcategories, setSelectedCategoryForSubcategories] = useState<Category | null>(null);
-  const [srcVariables, setSrcVariables] = useState<Array<{ id: string; name: string; values: Record<string, { label: string }> }>>([]);
+  const [srcVariables, setSrcVariables] = useState<Array<{ id: string; name: string; values: { values: Record<string, { label: string }> } }>>([]);
   const [loadingSRCVariables, setLoadingSRCVariables] = useState(false);
   const [editingSubcategory, setEditingSubcategory] = useState<Subcategory | null>(null);
   const [newSubcategoryName, setNewSubcategoryName] = useState("");
@@ -2104,6 +2104,45 @@ const Admin = () => {
     }
   };
 
+  const handleSetSubcategoryVariable = async (variableName: string | null) => {
+    if (!selectedCategoryForSubcategories) return;
+    
+    setUpdatingSubcategory(true);
+    try {
+      const success = await updateCategory(
+        selectedCategoryForSubcategories.id,
+        selectedCategoryForSubcategories.name,
+        selectedCategoryForSubcategories.subcategories,
+        selectedCategoryForSubcategories.srcCategoryId,
+        variableName
+      );
+      
+      if (success) {
+        toast({
+          title: "Variable Selected",
+          description: variableName ? `Using "${variableName}" for subcategories.` : "Using first variable for subcategories.",
+        });
+        await fetchCategories(categoryLeaderboardType);
+        // Refresh selected category
+        const updated = await getCategoriesFromFirestore(categoryLeaderboardType);
+        const refreshed = updated.find(c => c.id === selectedCategoryForSubcategories.id) as Category | undefined;
+        if (refreshed) {
+          setSelectedCategoryForSubcategories(refreshed);
+        }
+      } else {
+        throw new Error("Failed to update category.");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to set subcategory variable.",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingSubcategory(false);
+    }
+  };
+
   const handleImportSubcategoriesFromSRC = async () => {
     if (!selectedCategoryForSubcategories || !srcVariables.length) {
       toast({
@@ -2120,8 +2159,17 @@ const Admin = () => {
       const existingSubcategories = currentCategory?.subcategories || [];
       const existingNames = new Set(existingSubcategories.map(s => s.name.toLowerCase().trim()));
       
-      // Import from the first variable (most categories have one main variable)
-      const variable = srcVariables[0];
+      // Determine which variable to use: prefer the one set in srcSubcategoryVariableName, otherwise use first
+      let variable = srcVariables[0];
+      const preferredVariableName = currentCategory?.srcSubcategoryVariableName;
+      if (preferredVariableName && srcVariables.length > 1) {
+        const preferredVariable = srcVariables.find(v => 
+          v.name.toLowerCase().trim() === preferredVariableName.toLowerCase().trim()
+        );
+        if (preferredVariable) {
+          variable = preferredVariable;
+        }
+      }
       const newSubcategories: Subcategory[] = [];
       let maxOrder = existingSubcategories.reduce((max, s) => Math.max(max, s.order || 0), 0);
       
@@ -5598,22 +5646,78 @@ const Admin = () => {
                                 {loadingSRCVariables ? (
                                   <p className="text-xs text-[hsl(222,15%,60%)]">Loading SRC variables...</p>
                                 ) : srcVariables.length > 0 ? (
-                                  <div className="space-y-2">
-                                    {srcVariables.map((variable) => (
-                                      <div key={variable.id} className="text-xs">
-                                        <div className="font-medium text-[#cba6f7] mb-1">{variable.name}</div>
-                                        <div className="text-[hsl(222,15%,60%)] space-y-1">
-                                          {Object.entries(variable.values.values).slice(0, 5).map(([valueId, valueData]) => (
-                                            <div key={valueId}>• {valueData.label}</div>
-                                          ))}
-                                          {Object.keys(variable.values.values).length > 5 && (
-                                            <div className="text-[hsl(222,15%,50%)]">
-                                              ... and {Object.keys(variable.values.values).length - 5} more
-                                            </div>
-                                          )}
-                                        </div>
+                                  <div className="space-y-3">
+                                    {/* Variable Selection Dropdown (only show if multiple variables) */}
+                                    {srcVariables.length > 1 && (
+                                      <div>
+                                        <Label htmlFor="subcategory-variable-select" className="text-xs mb-2 block text-[#f2cdcd]">
+                                          Select Variable for Subcategories
+                                        </Label>
+                                        <Select
+                                          value={selectedCategoryForSubcategories.srcSubcategoryVariableName || ""}
+                                          onValueChange={(value) => handleSetSubcategoryVariable(value || null)}
+                                          disabled={updatingSubcategory}
+                                        >
+                                          <SelectTrigger 
+                                            id="subcategory-variable-select"
+                                            className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] h-9 text-sm"
+                                          >
+                                            <SelectValue placeholder="Select variable (defaults to first)" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="">Use First Variable (Default)</SelectItem>
+                                            {srcVariables.map((variable) => (
+                                              <SelectItem key={variable.id} value={variable.name}>
+                                                {variable.name}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                        <p className="text-xs text-[hsl(222,15%,60%)] mt-1">
+                                          {selectedCategoryForSubcategories.srcSubcategoryVariableName 
+                                            ? `Using "${selectedCategoryForSubcategories.srcSubcategoryVariableName}" for subcategories.`
+                                            : "Using first variable for subcategories."}
+                                        </p>
                                       </div>
-                                    ))}
+                                    )}
+                                    <div className="space-y-2">
+                                      {srcVariables.map((variable) => {
+                                        const isSelected = selectedCategoryForSubcategories.srcSubcategoryVariableName 
+                                          ? variable.name.toLowerCase().trim() === selectedCategoryForSubcategories.srcSubcategoryVariableName.toLowerCase().trim()
+                                          : srcVariables.indexOf(variable) === 0;
+                                        return (
+                                          <div 
+                                            key={variable.id} 
+                                            className={`text-xs p-2 rounded border ${
+                                              isSelected 
+                                                ? 'bg-[hsl(240,21%,18%)] border-[#94e2d5]' 
+                                                : 'bg-[hsl(240,21%,12%)] border-[hsl(235,13%,30%)]'
+                                            }`}
+                                          >
+                                            <div className="flex items-center gap-2 mb-1">
+                                              <div className={`font-medium ${isSelected ? 'text-[#94e2d5]' : 'text-[#cba6f7]'}`}>
+                                                {variable.name}
+                                              </div>
+                                              {isSelected && (
+                                                <Badge variant="outline" className="text-xs border-[#94e2d5] text-[#94e2d5]">
+                                                  Selected
+                                                </Badge>
+                                              )}
+                                            </div>
+                                            <div className="text-[hsl(222,15%,60%)] space-y-1">
+                                              {Object.entries(variable.values.values).slice(0, 5).map(([valueId, valueData]) => (
+                                                <div key={valueId}>• {valueData.label}</div>
+                                              ))}
+                                              {Object.keys(variable.values.values).length > 5 && (
+                                                <div className="text-[hsl(222,15%,50%)]">
+                                                  ... and {Object.keys(variable.values.values).length - 5} more
+                                                </div>
+                                              )}
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
                                   </div>
                                 ) : (
                                   <p className="text-xs text-[hsl(222,15%,60%)]">No variables found for this category on Speedrun.com.</p>
