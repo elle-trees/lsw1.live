@@ -500,10 +500,26 @@ const Admin = () => {
       let initialPlatform = verifyingRun.platform || "";
       let initialLevel = verifyingRun.level || "";
       
-      // Try to match category by SRC name if we don't have a category ID
+      // Validate that the category ID matches the correct leaderboard type
+      // If the category ID exists but belongs to the wrong leaderboard type, clear it
+      const runLeaderboardType = verifyingRun.leaderboardType || 'regular';
+      if (initialCategory) {
+        const categoryObj = firestoreCategories.find(cat => cat.id === initialCategory);
+        if (categoryObj) {
+          const catType = (categoryObj as Category).leaderboardType || 'regular';
+          if (catType !== runLeaderboardType) {
+            // Category ID doesn't match the run's leaderboard type - clear it
+            initialCategory = "";
+          }
+        } else {
+          // Category ID not found - clear it
+          initialCategory = "";
+        }
+      }
+      
+      // Try to match category by SRC name if we don't have a valid category ID
       if (!initialCategory && verifyingRun.srcCategoryName) {
         const matchingCategory = firestoreCategories.find(cat => {
-          const runLeaderboardType = verifyingRun.leaderboardType || 'regular';
           const catType = (cat as Category).leaderboardType || 'regular';
           return catType === runLeaderboardType && 
                  cat.name.toLowerCase().trim() === verifyingRun.srcCategoryName!.toLowerCase().trim();
