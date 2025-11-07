@@ -5654,8 +5654,8 @@ const Admin = () => {
                                           Select Variable for Subcategories
                                         </Label>
                                         <Select
-                                          value={selectedCategoryForSubcategories.srcSubcategoryVariableName || ""}
-                                          onValueChange={(value) => handleSetSubcategoryVariable(value || null)}
+                                          value={selectedCategoryForSubcategories.srcSubcategoryVariableName || "__default__"}
+                                          onValueChange={(value) => handleSetSubcategoryVariable(value === "__default__" ? null : value)}
                                           disabled={updatingSubcategory}
                                         >
                                           <SelectTrigger 
@@ -5665,7 +5665,7 @@ const Admin = () => {
                                             <SelectValue placeholder="Select variable (defaults to first)" />
                                           </SelectTrigger>
                                           <SelectContent>
-                                            <SelectItem value="">Use First Variable (Default)</SelectItem>
+                                            <SelectItem value="__default__">Use First Variable (Default)</SelectItem>
                                             {srcVariables.map((variable) => (
                                               <SelectItem key={variable.id} value={variable.name}>
                                                 {variable.name}
