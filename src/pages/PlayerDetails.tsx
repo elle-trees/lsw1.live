@@ -7,12 +7,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlayerProfile } from "@/components/PlayerProfile";
 import { ArrowLeft, Trophy, User, Users, Clock, Star, Gem } from "lucide-react";
 import { Link } from "react-router-dom";
-import { getPlayerRuns, getPlayerByUid, getCategories, getPlatforms, getPlayerPendingRuns, getLevels } from "@/lib/db";
+import { getPlayerRuns, getPlayerByUid, getCategories, getPlatforms, getPlayerPendingRuns, getLevels, getCategoriesFromFirestore } from "@/lib/db";
 import LegoStudIcon from "@/components/icons/LegoStudIcon";
 import { Player, LeaderboardEntry } from "@/types/database";
 import { formatDate, formatTime } from "@/lib/utils";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useAuth } from "@/components/AuthProvider";
+import { getCategoryName, getPlatformName, getLevelName } from "@/lib/dataValidation";
 
 const PlayerDetails = () => {
   const { playerId } = useParams<{ playerId: string }>();
@@ -42,13 +43,19 @@ const PlayerDetails = () => {
       
       setLoading(true);
       try {
-        const [fetchedPlayer, fetchedRuns, fetchedCategories, fetchedPlatforms, fetchedLevels] = await Promise.all([
+        // Fetch categories for all leaderboard types (regular, individual-level, community-golds)
+        const [fetchedPlayer, fetchedRuns, regularCategories, ilCategories, cgCategories, fetchedPlatforms, fetchedLevels] = await Promise.all([
           getPlayerByUid(playerId),
           getPlayerRuns(playerId),
-          getCategories(),
+          getCategoriesFromFirestore('regular'),
+          getCategoriesFromFirestore('individual-level'),
+          getCategoriesFromFirestore('community-golds'),
           getPlatforms(),
           getLevels()
         ]);
+        
+        // Combine all categories
+        const fetchedCategories = [...regularCategories, ...ilCategories, ...cgCategories];
         
         // Double-check: if player is still unclaimed, don't show profile
         if (!fetchedPlayer || !fetchedPlayer.uid || fetchedPlayer.uid.trim() === "") {
@@ -279,8 +286,20 @@ const PlayerDetails = () => {
                         </thead>
                         <tbody>
                           {filteredRuns.map((run) => {
-                            const categoryName = categories.find(c => c.id === run.category)?.name || run.category;
-                            const platformName = platforms.find(p => p.id === run.platform)?.name || run.platform;
+                            // Use data validation utilities for proper name resolution with SRC fallbacks
+                            const categoryName = getCategoryName(
+                              run.category,
+                              categories,
+                              run.srcCategoryName
+                            );
+                            const platformName = getPlatformName(
+                              run.platform,
+                              platforms,
+                              run.srcPlatformName
+                            );
+                            const levelName = leaderboardType !== 'regular' && run.level
+                              ? getLevelName(run.level, levels, run.srcLevelName)
+                              : undefined;
                             
                             return (
                               <tr 
@@ -323,7 +342,7 @@ const PlayerDetails = () => {
                                 <td className="py-3 px-4 font-medium">{categoryName}</td>
                                 {leaderboardType !== 'regular' && (
                                   <td className="py-3 px-4 text-ctp-overlay0">
-                                    {run.level ? (levels.find(l => l.id === run.level)?.name || run.level) : '—'}
+                                    {levelName || run.srcLevelName || '—'}
                                   </td>
                                 )}
                                 <td className="py-3 px-4 text-base font-semibold">{formatTime(run.time)}</td>
