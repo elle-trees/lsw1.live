@@ -15,6 +15,7 @@ import UserSettings from "./pages/UserSettings";
 import Admin from "./pages/Admin";
 import Live from "./pages/Live";
 import Downloads from "./pages/Downloads";
+import Stats from "./pages/Stats";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -56,6 +57,7 @@ const App = () => (
                   <Route path="/admin" element={<Admin />} />
                   <Route path="/live" element={<Live />} />
                   <Route path="/downloads" element={<Downloads />} />
+                  <Route path="/stats" element={<Stats />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </main>
