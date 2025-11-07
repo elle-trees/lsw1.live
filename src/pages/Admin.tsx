@@ -66,7 +66,7 @@ import {
   deletePlayer,
 } from "@/lib/db";
 import { importSRCRuns, type ImportResult } from "@/lib/speedruncom/importService";
-import { fetchCategoryVariables, getLSWGameId } from "@/lib/speedruncom";
+import { fetchCategoryVariables, getLSWGameId, fetchCategories as fetchSRCCategories, type SRCCategory } from "@/lib/speedruncom";
 import { useUploadThing } from "@/lib/uploadthing";
 import { LeaderboardEntry, DownloadEntry, Category, Level, Subcategory } from "@/types/database";
 import { useNavigate } from "react-router-dom";
@@ -85,9 +85,6 @@ const Admin = () => {
   const [unverifiedRuns, setUnverifiedRuns] = useState<LeaderboardEntry[]>([]);
   const [importedSRCRuns, setImportedSRCRuns] = useState<LeaderboardEntry[]>([]);
   const [verifiedRunsWithInvalidData, setVerifiedRunsWithInvalidData] = useState<LeaderboardEntry[]>([]);
-  const [unassignedRuns, setUnassignedRuns] = useState<LeaderboardEntry[]>([]);
-  const [loadingUnassignedRuns, setLoadingUnassignedRuns] = useState(false);
-  const [unassignedPage, setUnassignedPage] = useState(1);
   const [importingRuns, setImportingRuns] = useState(false);
   const [importProgress, setImportProgress] = useState({ total: 0, imported: 0, skipped: 0 });
   const [editingImportedRun, setEditingImportedRun] = useState<LeaderboardEntry | null>(null);
@@ -108,6 +105,9 @@ const Admin = () => {
   const [loadingRecentRuns, setLoadingRecentRuns] = useState(false);
   const [deletingRunId, setDeletingRunId] = useState<string | null>(null);
   const itemsPerPage = 25;
+  // SRC categories with variables
+  const [srcCategoriesWithVars, setSrcCategoriesWithVars] = useState<Array<SRCCategory & { variablesData?: Array<{ id: string; name: string; values: { values: Record<string, { label: string }> } }> }>>([]);
+  const [loadingSRCCategories, setLoadingSRCCategories] = useState(false);
   // Filters for imported runs
   const [importedRunsLeaderboardType, setImportedRunsLeaderboardType] = useState<'regular' | 'individual-level'>('regular');
   const [importedRunsCategory, setImportedRunsCategory] = useState("__all__"); // "__all__" = All Categories
@@ -515,18 +515,16 @@ const Admin = () => {
     if (hasFetchedData) return;
     setLoading(true);
     try {
-      const [unverifiedData, importedData, downloadData, categoriesData, invalidVerifiedData, unassignedData] = await Promise.all([
+      const [unverifiedData, importedData, downloadData, categoriesData, invalidVerifiedData] = await Promise.all([
         getUnverifiedLeaderboardEntries(),
         getImportedSRCRuns(),
         getDownloadEntries(),
         getCategoriesFromFirestore('regular'),
-        getVerifiedRunsWithInvalidData(),
-        getUnassignedRuns()
+        getVerifiedRunsWithInvalidData()
       ]);
       setUnverifiedRuns(unverifiedData.filter(run => !run.importedFromSRC));
       setImportedSRCRuns(importedData);
       setVerifiedRunsWithInvalidData(invalidVerifiedData);
-      setUnassignedRuns(unassignedData);
       setDownloadEntries(downloadData);
       setFirestoreCategories(categoriesData);
       setHasFetchedData(true);
@@ -545,40 +543,20 @@ const Admin = () => {
   // Helper function to refresh all run data
   const refreshAllRunData = async () => {
     try {
-      const [unverifiedData, importedData, invalidVerifiedData, unassignedData] = await Promise.all([
+      const [unverifiedData, importedData, invalidVerifiedData] = await Promise.all([
         getUnverifiedLeaderboardEntries(),
         getImportedSRCRuns(),
-        getVerifiedRunsWithInvalidData(),
-        getUnassignedRuns()
+        getVerifiedRunsWithInvalidData()
       ]);
       // Only include manually submitted runs in unverified runs tab
       // Imported runs stay in their own tab unless they're edited and ready for verification
       setUnverifiedRuns(unverifiedData.filter(run => !run.importedFromSRC));
       setImportedSRCRuns(importedData);
       setVerifiedRunsWithInvalidData(invalidVerifiedData);
-      setUnassignedRuns(unassignedData);
       // Also refresh recent runs
       await fetchRecentRuns();
     } catch (error) {
       console.error("Error refreshing run data:", error);
-    }
-  };
-
-  const fetchUnassignedRuns = async () => {
-    setLoadingUnassignedRuns(true);
-    try {
-      const data = await getUnassignedRuns();
-      setUnassignedRuns(data);
-      setUnassignedPage(1);
-    } catch (error) {
-      console.error("Error fetching unassigned runs:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load unassigned runs.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingUnassignedRuns(false);
     }
   };
 
@@ -986,6 +964,43 @@ const Admin = () => {
       });
     } finally {
       setImportingRuns(false);
+    }
+  };
+
+  const fetchSRCCategoriesWithVariables = async () => {
+    setLoadingSRCCategories(true);
+    try {
+      const gameId = await getLSWGameId();
+      if (!gameId) {
+        toast({
+          title: "Error",
+          description: "Could not find LEGO Star Wars game on speedrun.com",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const categories = await fetchSRCCategories(gameId);
+      const categoriesWithVars = await Promise.all(
+        categories.map(async (category) => {
+          const variables = await fetchCategoryVariables(category.id);
+          return {
+            ...category,
+            variablesData: variables?.data || undefined,
+          };
+        })
+      );
+
+      setSrcCategoriesWithVars(categoriesWithVars);
+    } catch (error: any) {
+      console.error("Error fetching SRC categories:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to fetch SRC categories.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingSRCCategories(false);
     }
   };
 
@@ -4002,6 +4017,99 @@ const Admin = () => {
                 })()}
               </CardContent>
             </Card>
+
+            {/* SRC Categories Reference Card */}
+            <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
+              <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-xl text-[#f2cdcd]">
+                    <FolderTree className="h-5 w-5" />
+                    <span>SRC Categories Reference</span>
+                  </CardTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={fetchSRCCategoriesWithVariables}
+                    disabled={loadingSRCCategories}
+                    className="border-[hsl(235,13%,30%)] hover:bg-[hsl(235,19%,13%)]"
+                  >
+                    <RefreshCw className={`h-4 w-4 mr-2 ${loadingSRCCategories ? 'animate-spin' : ''}`} />
+                    {loadingSRCCategories ? 'Loading...' : 'Load Categories'}
+                  </Button>
+                </div>
+                <p className="text-sm text-[hsl(222,15%,60%)] mt-2">
+                  View all Speedrun.com categories with their IDs and variables for reference.
+                </p>
+              </CardHeader>
+              <CardContent className="pt-6">
+                {loadingSRCCategories ? (
+                  <div className="text-center py-8">
+                    <LoadingSpinner />
+                  </div>
+                ) : srcCategoriesWithVars.length === 0 ? (
+                  <p className="text-[hsl(222,15%,60%)] text-center py-8">
+                    Click "Load Categories" to fetch SRC categories and their variables.
+                  </p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-b border-[hsl(235,13%,30%)] hover:bg-transparent">
+                          <TableHead className="py-3 px-4 text-left">Category Name</TableHead>
+                          <TableHead className="py-3 px-4 text-left">Category ID</TableHead>
+                          <TableHead className="py-3 px-4 text-left">Type</TableHead>
+                          <TableHead className="py-3 px-4 text-left">Variables</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {srcCategoriesWithVars.map((category) => (
+                          <TableRow key={category.id} className="border-b border-[hsl(235,13%,30%)] hover:bg-[hsl(235,19%,13%)] transition-all duration-200">
+                            <TableCell className="py-3 px-4 font-medium">{category.name}</TableCell>
+                            <TableCell className="py-3 px-4">
+                              <code className="text-[#cba6f7] text-sm">{category.id}</code>
+                            </TableCell>
+                            <TableCell className="py-3 px-4">
+                              <Badge variant="outline" className="text-xs">
+                                {category.type === 'per-game' ? 'Full Game' : 'Per Level'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="py-3 px-4">
+                              {category.variablesData && category.variablesData.length > 0 ? (
+                                <div className="space-y-2">
+                                  {category.variablesData.map((variable) => (
+                                    <div key={variable.id} className="bg-[hsl(240,21%,15%)] rounded p-2 border border-[hsl(235,13%,30%)]">
+                                      <div className="font-medium text-sm mb-1">{variable.name}</div>
+                                      <div className="text-xs text-[hsl(222,15%,60%)] mb-1">
+                                        Variable ID: <code className="text-[#cba6f7]">{variable.id}</code>
+                                      </div>
+                                      {variable.values?.values && Object.keys(variable.values.values).length > 0 && (
+                                        <div className="mt-2">
+                                          <div className="text-xs font-medium text-[hsl(222,15%,60%)] mb-1">Values:</div>
+                                          <div className="flex flex-wrap gap-1">
+                                            {Object.entries(variable.values.values).map(([valueId, valueData]) => (
+                                              <Badge key={valueId} variant="secondary" className="text-xs">
+                                                <span className="font-medium">{valueData.label}</span>
+                                                <span className="ml-1 text-[hsl(222,15%,60%)]">({valueId})</span>
+                                              </Badge>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground text-sm">No variables</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
         {/* Unverified Runs Section */}
@@ -4300,258 +4408,6 @@ const Admin = () => {
           </CardContent>
         </Card>
 
-            {/* Unassigned Runs Section */}
-            <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
-              <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2 text-xl text-[#f2cdcd]">
-                    <AlertTriangle className="h-5 w-5" />
-                    <span>Unassigned Runs</span>
-                    {unassignedRuns.length > 0 && (
-                      <Badge variant="secondary" className="ml-2">
-                        {unassignedRuns.length}
-                      </Badge>
-                    )}
-                  </CardTitle>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={fetchUnassignedRuns}
-                      disabled={loadingUnassignedRuns}
-                      className="border-[hsl(235,13%,30%)] hover:bg-[hsl(235,19%,13%)]"
-                    >
-                      <RefreshCw className={`h-4 w-4 mr-2 ${loadingUnassignedRuns ? 'animate-spin' : ''}`} />
-                      Refresh
-                    </Button>
-                    {unassignedRuns.length > 0 && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={async () => {
-                          if (!window.confirm(`Are you sure you want to delete all ${unassignedRuns.length} unassigned runs? This action cannot be undone.`)) {
-                            return;
-                          }
-                          try {
-                            let deleted = 0;
-                            let errors = 0;
-                            const errorMessages: string[] = [];
-                            
-                            for (const run of unassignedRuns) {
-                              try {
-                                const success = await deleteLeaderboardEntry(run.id);
-                                if (success) {
-                                  deleted++;
-                                } else {
-                                  errors++;
-                                  errorMessages.push(`Failed to delete run ${run.id}`);
-                                }
-                              } catch (error: any) {
-                                errors++;
-                                const errorMsg = error?.message || String(error);
-                                errorMessages.push(`Run ${run.id}: ${errorMsg}`);
-                                console.error(`Error deleting run ${run.id}:`, error);
-                              }
-                            }
-                            
-                            if (errors > 0 && errorMessages.length > 0) {
-                              // Show first few error messages
-                              const preview = errorMessages.slice(0, 3).join('; ');
-                              const remaining = errorMessages.length - 3;
-                              toast({
-                                title: "Unassigned Runs Deleted (with errors)",
-                                description: `Deleted ${deleted} runs, ${errors} error(s) occurred.${remaining > 0 ? ` (Showing first 3, check console for all)` : ''} ${preview}`,
-                                variant: errors === unassignedRuns.length ? "destructive" : "default",
-                              });
-                            } else {
-                              toast({
-                                title: "Unassigned Runs Deleted",
-                                description: `Successfully deleted ${deleted} runs.`,
-                              });
-                            }
-                            
-                            await fetchUnassignedRuns();
-                          } catch (error: any) {
-                            console.error("Error in delete all:", error);
-                            toast({
-                              title: "Error",
-                              description: error.message || "Failed to delete unassigned runs. Ensure your admin account has isAdmin: true set in your player document.",
-                              variant: "destructive",
-                            });
-                          }
-                        }}
-                        className="bg-red-900/20 border-red-700/50 text-red-400 hover:bg-red-900/30 hover:border-red-600"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete All
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {loadingUnassignedRuns ? (
-                  <div className="text-center py-8">
-                    <LoadingSpinner />
-                  </div>
-                ) : unassignedRuns.length === 0 ? (
-                  <p className="text-[hsl(222,15%,60%)] text-center py-8">No unassigned runs found. All runs are linked to user accounts.</p>
-                ) : (
-                  <>
-                    <p className="text-[hsl(222,15%,60%)] mb-4 text-sm">
-                      These runs haven't been assigned to any user account. They can be claimed by users in their settings, or deleted if they're duplicates or invalid.
-                    </p>
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="border-b border-[hsl(235,13%,30%)] hover:bg-transparent">
-                            <TableHead className="py-3 px-4 text-left">Player(s)</TableHead>
-                            <TableHead className="py-3 px-4 text-left">Category</TableHead>
-                            <TableHead className="py-3 px-4 text-left">Time</TableHead>
-                            <TableHead className="py-3 px-4 text-left">Platform</TableHead>
-                            <TableHead className="py-3 px-4 text-left">Type</TableHead>
-                            <TableHead className="py-3 px-4 text-left">Date</TableHead>
-                            <TableHead className="py-3 px-4 text-left">Status</TableHead>
-                            <TableHead className="py-3 px-4 text-center">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {unassignedRuns.slice((unassignedPage - 1) * itemsPerPage, unassignedPage * itemsPerPage).map((run) => (
-                            <TableRow key={run.id} className="border-b border-[hsl(235,13%,30%)] hover:bg-[hsl(235,19%,13%)] transition-all duration-200 hover:shadow-md">
-                              <TableCell className="py-3 px-4 font-medium">
-                                <div className="flex flex-col gap-1">
-                                  <span style={{ color: run.nameColor || 'inherit' }}>{run.playerName || "Unknown"}</span>
-                                  {run.player2Name && (
-                                    <span className="text-muted-foreground text-sm" style={{ color: run.player2Color || 'inherit' }}>
-                                      & {run.player2Name}
-                                    </span>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell className="py-3 px-4">
-                                {getCategoryName(run.category, firestoreCategories, run.srcCategoryName)}
-                              </TableCell>
-                              <TableCell className="py-3 px-4">{formatTime(run.time || '00:00:00')}</TableCell>
-                              <TableCell className="py-3 px-4">
-                                {getPlatformName(run.platform, firestorePlatforms, run.srcPlatformName)}
-                              </TableCell>
-                              <TableCell className="py-3 px-4">{run.runType?.charAt(0).toUpperCase() + run.runType?.slice(1) || 'Solo'}</TableCell>
-                              <TableCell className="py-3 px-4">{run.date || 'N/A'}</TableCell>
-                              <TableCell className="py-3 px-4">
-                                <div className="flex flex-col gap-1">
-                                  <Badge variant={run.verified ? "default" : "secondary"} className="w-fit">
-                                    {run.verified ? "Verified" : "Unverified"}
-                                  </Badge>
-                                  <Badge variant="outline" className="w-fit border-yellow-600/50 bg-yellow-600/10 text-yellow-400 text-xs">
-                                    Unclaimed
-                                  </Badge>
-                                  {run.importedFromSRC && (
-                                    <Badge variant="outline" className="w-fit text-xs">
-                                      From SRC
-                                    </Badge>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell className="py-3 px-4 text-center">
-                                <div className="flex items-center justify-center gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={async () => {
-                                      const playerName = prompt(`Enter the display name or UID of the player to assign this run to:\n\nRun: ${run.playerName}${run.player2Name ? ` & ${run.player2Name}` : ''}\nTime: ${formatTime(run.time)}\nCategory: ${getCategoryName(run.category, firestoreCategories, run.srcCategoryName)}`);
-                                      if (!playerName || !playerName.trim()) return;
-                                      
-                                      try {
-                                        // Try to find player by display name or UID
-                                        let player = await getPlayerByDisplayName(playerName.trim());
-                                        if (!player) {
-                                          // Try by UID
-                                          player = await getPlayerByUid(playerName.trim());
-                                        }
-                                        
-                                        if (!player) {
-                                          toast({
-                                            title: "Player Not Found",
-                                            description: `Could not find a player with name or UID "${playerName.trim()}".`,
-                                            variant: "destructive",
-                                          });
-                                          return;
-                                        }
-                                        
-                                        // Use claimRun to assign the run (it will handle validation and points recalculation)
-                                        const success = await claimRun(run.id, player.uid);
-                                        if (success) {
-                                          toast({
-                                            title: "Run Assigned",
-                                            description: `Run has been assigned to ${player.displayName}.`,
-                                          });
-                                          await fetchUnassignedRuns();
-                                        } else {
-                                          throw new Error("Failed to assign run");
-                                        }
-                                      } catch (error: any) {
-                                        toast({
-                                          title: "Error",
-                                          description: error.message || "Failed to assign run to player.",
-                                          variant: "destructive",
-                                        });
-                                      }
-                                    }}
-                                    className="text-blue-400 border-blue-400 hover:bg-blue-400/10"
-                                  >
-                                    <UserPlus className="h-4 w-4 mr-1" />
-                                    Assign
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={async () => {
-                                      if (!window.confirm(`Delete this unassigned run permanently? This action cannot be undone.`)) return;
-                                      try {
-                                        const success = await deleteLeaderboardEntry(run.id);
-                                        if (success) {
-                                          toast({
-                                            title: "Run Deleted",
-                                            description: "The unassigned run has been deleted.",
-                                          });
-                                          await fetchUnassignedRuns();
-                                        } else {
-                                          throw new Error("Failed to delete run. Check console for details.");
-                                        }
-                                      } catch (error: any) {
-                                        console.error("Delete error:", error);
-                                        toast({
-                                          title: "Error Deleting Run",
-                                          description: error.message || "Failed to delete run. Ensure your admin account has isAdmin: true set in your player document.",
-                                          variant: "destructive",
-                                        });
-                                      }
-                                    }}
-                                    className="text-red-400 border-red-400 hover:bg-red-400/10"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-1" />
-                                    Delete
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                    {unassignedRuns.length > itemsPerPage && (
-                      <Pagination
-                        currentPage={unassignedPage}
-                        totalPages={Math.ceil(unassignedRuns.length / itemsPerPage)}
-                        onPageChange={setUnassignedPage}
-                        itemsPerPage={itemsPerPage}
-                        totalItems={unassignedRuns.length}
-                      />
-                    )}
-                  </>
-                )}
-              </CardContent>
-            </Card>
           </TabsContent>
 
         {/* Confirm Clear Unverified Runs Dialog */}

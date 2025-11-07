@@ -165,8 +165,20 @@ export async function createSRCMappings(srcRuns: SRCRun[], gameId: string): Prom
 
   // Helper: normalize for comparison
   const normalize = (str: string) => str.toLowerCase().trim();
+  
+  // Helper: fuzzy match - removes special chars and spaces for better matching
+  const fuzzyNormalize = (str: string) => normalize(str).replace(/[^a-z0-9]/g, '');
+  
+  // Helper: calculate similarity between two strings (simple Levenshtein-like)
+  const calculateSimilarity = (str1: string, str2: string): number => {
+    const longer = str1.length > str2.length ? str1 : str2;
+    const shorter = str1.length > str2.length ? str2 : str1;
+    if (longer.length === 0) return 1.0;
+    const distance = longer.split('').filter((char, i) => char !== shorter[i]).length;
+    return (longer.length - distance) / longer.length;
+  };
 
-  // Map categories - match by name, considering leaderboardType
+  // Map categories - match by name, considering leaderboardType with improved fuzzy matching
   for (const srcCat of safeSrcCategories) {
     if (!srcCat || !srcCat.name || !srcCat.id) continue;
     
@@ -178,10 +190,13 @@ export async function createSRCMappings(srcRuns: SRCRun[], gameId: string): Prom
     const srcCategoryType = srcCat.type || 'per-game';
     const expectedLeaderboardType: 'regular' | 'individual-level' = srcCategoryType === 'per-level' ? 'individual-level' : 'regular';
     
-    // Find matching local category - try exact match first, then fallback to any match
+    const normalizedSrcName = normalize(srcCat.name);
+    const fuzzySrcName = fuzzyNormalize(srcCat.name);
+    
+    // Find matching local category - try exact match first, then fuzzy match
     let ourCat = safeOurCategories.find(c => {
       if (!c) return false;
-      const nameMatch = normalize(c.name) === normalize(srcCat.name);
+      const nameMatch = normalize(c.name) === normalizedSrcName;
       if (!nameMatch) return false;
       
       // Prefer match with same leaderboardType, but allow fallback
@@ -189,21 +204,43 @@ export async function createSRCMappings(srcRuns: SRCRun[], gameId: string): Prom
       return catType === expectedLeaderboardType;
     });
     
-    // Fallback: if no match with correct type, try any category with matching name
+    // Fallback 1: if no match with correct type, try any category with exact matching name
     if (!ourCat) {
-      ourCat = safeOurCategories.find(c => c && normalize(c.name) === normalize(srcCat.name));
+      ourCat = safeOurCategories.find(c => c && normalize(c.name) === normalizedSrcName);
+    }
+    
+    // Fallback 2: try fuzzy match (without special chars)
+    if (!ourCat) {
+      ourCat = safeOurCategories.find(c => {
+        if (!c) return false;
+        return fuzzyNormalize(c.name) === fuzzySrcName;
+      });
+    }
+    
+    // Fallback 3: try similarity-based matching (for typos/variations)
+    if (!ourCat && fuzzySrcName.length > 3) {
+      let bestMatch: typeof safeOurCategories[0] | undefined;
+      let bestSimilarity = 0.8; // Minimum 80% similarity
+      
+      for (const c of safeOurCategories) {
+        if (!c) continue;
+        const similarity = calculateSimilarity(fuzzyNormalize(c.name), fuzzySrcName);
+        if (similarity > bestSimilarity) {
+          bestSimilarity = similarity;
+          bestMatch = c;
+        }
+      }
+      ourCat = bestMatch;
     }
     
     if (ourCat) {
       categoryMapping.set(srcCat.id, ourCat.id);
       // Store name mapping with normalized name (for all name variations)
-      const normalizedSrcName = normalize(srcCat.name);
       categoryNameMapping.set(normalizedSrcName, ourCat.id);
       
-      // Also store variations (without special chars) for fuzzy matching
-      const simplifiedName = normalizedSrcName.replace(/[^a-z0-9]/g, '');
-      if (simplifiedName !== normalizedSrcName) {
-        categoryNameMapping.set(simplifiedName, ourCat.id);
+      // Also store fuzzy variations for better matching
+      if (fuzzySrcName !== normalizedSrcName) {
+        categoryNameMapping.set(fuzzySrcName, ourCat.id);
       }
     } else {
       // Log unmatched categories for debugging
@@ -211,22 +248,56 @@ export async function createSRCMappings(srcRuns: SRCRun[], gameId: string): Prom
     }
   }
 
-  // Map platforms (only those used in LSW1 runs)
+  // Map platforms (only those used in LSW1 runs) with improved fuzzy matching
   for (const [platformId, platformData] of uniquePlatforms) {
     const platformName = platformData?.name;
     if (!platformName) continue;
     
     srcPlatformIdToName.set(platformId, platformName);
     
-    const ourPlatform = safeOurPlatforms.find(p => p && normalize(p.name) === normalize(platformName));
+    const normalizedPlatformName = normalize(platformName);
+    const fuzzyPlatformName = fuzzyNormalize(platformName);
+    
+    // Try exact match first
+    let ourPlatform = safeOurPlatforms.find(p => p && normalize(p.name) === normalizedPlatformName);
+    
+    // Fallback to fuzzy match
+    if (!ourPlatform) {
+      ourPlatform = safeOurPlatforms.find(p => {
+        if (!p) return false;
+        return fuzzyNormalize(p.name) === fuzzyPlatformName;
+      });
+    }
+    
+    // Fallback to similarity-based matching
+    if (!ourPlatform && fuzzyPlatformName.length > 2) {
+      let bestMatch: typeof safeOurPlatforms[0] | undefined;
+      let bestSimilarity = 0.85; // Minimum 85% similarity for platforms
+      
+      for (const p of safeOurPlatforms) {
+        if (!p) continue;
+        const similarity = calculateSimilarity(fuzzyNormalize(p.name), fuzzyPlatformName);
+        if (similarity > bestSimilarity) {
+          bestSimilarity = similarity;
+          bestMatch = p;
+        }
+      }
+      ourPlatform = bestMatch;
+    }
+    
     if (ourPlatform) {
       platformMapping.set(platformId, ourPlatform.id);
-      platformNameMapping.set(normalize(platformName), ourPlatform.id);
+      platformNameMapping.set(normalizedPlatformName, ourPlatform.id);
+      if (fuzzyPlatformName !== normalizedPlatformName) {
+        platformNameMapping.set(fuzzyPlatformName, ourPlatform.id);
+      }
+    } else {
+      console.warn(`[SRC Mapping] Platform "${platformName}" not found in local platforms`);
     }
   }
 
   // Map levels - check against ALL levels configured across the site
-  // (both individual-level and community-golds leaderboard types)
+  // (both individual-level and community-golds leaderboard types) with improved fuzzy matching
   for (const srcLevel of safeSrcLevels) {
     if (!srcLevel || !srcLevel.id) continue;
     
@@ -236,10 +307,40 @@ export async function createSRCMappings(srcRuns: SRCRun[], gameId: string): Prom
     // Store SRC ID -> name mapping
     srcLevelIdToName.set(srcLevel.id, levelName);
     
-    // Find matching local level - searches across ALL levels, not filtered by leaderboard type
-    const ourLevel = safeOurLevels.find(l => l && normalize(l.name) === normalize(levelName));
+    const normalizedLevelName = normalize(levelName);
+    const fuzzyLevelName = fuzzyNormalize(levelName);
+    
+    // Find matching local level - try exact match first
+    let ourLevel = safeOurLevels.find(l => l && normalize(l.name) === normalizedLevelName);
+    
+    // Fallback to fuzzy match
+    if (!ourLevel) {
+      ourLevel = safeOurLevels.find(l => {
+        if (!l) return false;
+        return fuzzyNormalize(l.name) === fuzzyLevelName;
+      });
+    }
+    
+    // Fallback to similarity-based matching
+    if (!ourLevel && fuzzyLevelName.length > 3) {
+      let bestMatch: typeof safeOurLevels[0] | undefined;
+      let bestSimilarity = 0.8; // Minimum 80% similarity for levels
+      
+      for (const l of safeOurLevels) {
+        if (!l) continue;
+        const similarity = calculateSimilarity(fuzzyNormalize(l.name), fuzzyLevelName);
+        if (similarity > bestSimilarity) {
+          bestSimilarity = similarity;
+          bestMatch = l;
+        }
+      }
+      ourLevel = bestMatch;
+    }
+    
     if (ourLevel) {
       levelMapping.set(srcLevel.id, ourLevel.id);
+    } else {
+      console.warn(`[SRC Mapping] Level "${levelName}" not found in local levels`);
     }
   }
 
