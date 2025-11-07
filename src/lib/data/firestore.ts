@@ -618,6 +618,19 @@ export const addLeaderboardEntryFirestore = async (entry: Omit<LeaderboardEntry,
     }
     
     await setDoc(newDocRef, newEntry);
+    
+    // NEW: Try to auto-assign the run if it's imported from SRC and unclaimed
+    // This happens immediately when the run is added, before any manual claiming
+    if (isImportedRun && (!newEntry.playerId || newEntry.playerId.trim() === "")) {
+      // Try to auto-assign based on SRC username matching
+      try {
+        await tryAutoAssignRunFirestore(newDocRef.id, newEntry as LeaderboardEntry);
+      } catch (error) {
+        // Don't fail run creation if auto-assignment fails - it can be claimed later
+        console.error(`Failed to auto-assign run ${newDocRef.id}:`, error);
+      }
+    }
+    
     return newDocRef.id;
   } catch (error) {
     // Re-throw the error so the caller can see what went wrong
@@ -830,6 +843,93 @@ export const createPlayerFirestore = async (player: Omit<Player, 'id'>): Promise
 };
 
 /**
+ * NEW: Centralized function to try auto-assigning a single run when it's added
+ * Checks all users with SRC usernames to see if any match this run
+ * This runs immediately when a run is imported, before manual claiming
+ */
+async function tryAutoAssignRunFirestore(runId: string, runData: LeaderboardEntry): Promise<boolean> {
+  if (!db || !runData.importedFromSRC) return false;
+  
+  // Must be unclaimed
+  if (runData.playerId && runData.playerId.trim() !== "") return false;
+  
+  try {
+    // Get the SRC player names from the run (with fallback to playerName)
+    const runSRC1 = runData.srcPlayerName ? runData.srcPlayerName.trim().toLowerCase() : 
+                   (runData.playerName ? runData.playerName.trim().toLowerCase() : "");
+    const runSRC2 = runData.srcPlayer2Name ? runData.srcPlayer2Name.trim().toLowerCase() : 
+                   (runData.player2Name ? runData.player2Name.trim().toLowerCase() : "");
+    
+    if (!runSRC1 && !runSRC2) return false;
+    
+    // Get all players with SRC usernames
+    const playersQuery = query(collection(db, "players"), firestoreLimit(1000));
+    const playersSnapshot = await getDocs(playersQuery);
+    
+    const runDocRef = doc(db, "leaderboardEntries", runId);
+    const updateData: Partial<LeaderboardEntry> = {};
+    let assigned = false;
+    
+    // Check each player's SRC username against the run
+    for (const playerDoc of playersSnapshot.docs) {
+      const player = playerDoc.data() as Player;
+      if (!player.srcUsername || !player.srcUsername.trim()) continue;
+      
+      const playerSRC = player.srcUsername.trim().toLowerCase();
+      const isCoOp = runData.runType === 'co-op';
+      
+      // Check if player1 matches
+      if (runSRC1 && runSRC1 === playerSRC) {
+        updateData.playerId = player.uid;
+        updateData.playerName = player.displayName;
+        assigned = true;
+      }
+      
+      // Check if player2 matches (for co-op runs)
+      if (runSRC2 && runSRC2 === playerSRC && isCoOp) {
+        updateData.player2Id = player.uid;
+        updateData.player2Name = player.displayName;
+        assigned = true;
+      }
+    }
+    
+    // Update the run if we found matches
+    if (assigned) {
+      await updateDoc(runDocRef, updateData);
+      
+      // If run is verified, calculate points
+      if (runData.verified) {
+        const updatedRunDoc = await getDoc(runDocRef);
+        if (updatedRunDoc.exists()) {
+          const updatedRunData = updatedRunDoc.data() as LeaderboardEntry;
+          if (updatedRunData.verified && (updatedRunData.points === undefined || updatedRunData.points === null)) {
+            const verifiedBy = "auto-assigned";
+            await updateRunVerificationStatusFirestore(runId, true, verifiedBy);
+          }
+        }
+      }
+      
+      // Recalculate points for assigned players
+      const playerIds: string[] = [];
+      if (updateData.playerId) playerIds.push(updateData.playerId);
+      if (updateData.player2Id && updateData.player2Id !== updateData.playerId) {
+        playerIds.push(updateData.player2Id);
+      }
+      if (playerIds.length > 0) {
+        await recalculatePointsForPlayers(playerIds, runData);
+      }
+      
+      return true;
+    }
+    
+    return false;
+  } catch (error) {
+    console.error(`Error in tryAutoAssignRunFirestore for run ${runId}:`, error);
+    return false;
+  }
+}
+
+/**
  * Ultra-simplified auto-claim: Just match SRC usernames directly from all leaderboard entries
  * No complex normalization, just simple case-insensitive string matching
  */
@@ -881,7 +981,10 @@ export const autoClaimRunsBySRCUsernameFirestore = async (userId: string, srcUse
       // Continue - non-admin users might not have permission
     }
     
+    console.log(`[AutoClaim] Searching ${allRuns.length} total runs for SRC username: ${searchUsername}`);
+    
     // Find runs where srcPlayerName or srcPlayer2Name matches (case-insensitive)
+    // Also check playerName/player2Name as fallback for older runs that might not have srcPlayerName set
     const runsToClaim = allRuns.filter(run => {
       // Must be imported from SRC
       if (!run.importedFromSRC) return false;
@@ -889,12 +992,16 @@ export const autoClaimRunsBySRCUsernameFirestore = async (userId: string, srcUse
       // Must be unclaimed
       if (run.playerId && run.playerId.trim() !== "") return false;
       
-      // Simple direct string matching (case-insensitive)
-      const srcPlayer1 = run.srcPlayerName ? run.srcPlayerName.trim().toLowerCase() : "";
-      const srcPlayer2 = run.srcPlayer2Name ? run.srcPlayer2Name.trim().toLowerCase() : "";
+      // Try srcPlayerName first, fallback to playerName if srcPlayerName doesn't exist
+      const srcPlayer1 = run.srcPlayerName ? run.srcPlayerName.trim().toLowerCase() : 
+                        (run.playerName ? run.playerName.trim().toLowerCase() : "");
+      const srcPlayer2 = run.srcPlayer2Name ? run.srcPlayer2Name.trim().toLowerCase() : 
+                        (run.player2Name ? run.player2Name.trim().toLowerCase() : "");
       
       return srcPlayer1 === searchUsername || srcPlayer2 === searchUsername;
     });
+    
+    console.log(`[AutoClaim] Found ${runsToClaim.length} matching unclaimed runs`);
     
     if (runsToClaim.length === 0) {
       return result;
@@ -910,8 +1017,11 @@ export const autoClaimRunsBySRCUsernameFirestore = async (userId: string, srcUse
       const updateData: Partial<LeaderboardEntry> = {};
       
       // Determine which player slot to assign
-      const srcPlayer1 = run.srcPlayerName ? run.srcPlayerName.trim().toLowerCase() : "";
-      const srcPlayer2 = run.srcPlayer2Name ? run.srcPlayer2Name.trim().toLowerCase() : "";
+      // Use srcPlayerName if available, fallback to playerName
+      const srcPlayer1 = run.srcPlayerName ? run.srcPlayerName.trim().toLowerCase() : 
+                        (run.playerName ? run.playerName.trim().toLowerCase() : "");
+      const srcPlayer2 = run.srcPlayer2Name ? run.srcPlayer2Name.trim().toLowerCase() : 
+                        (run.player2Name ? run.player2Name.trim().toLowerCase() : "");
       const isCoOp = run.runType === 'co-op';
       
       if (srcPlayer1 === searchUsername) {
@@ -1035,24 +1145,19 @@ export const updatePlayerProfileFirestore = async (uid: string, data: Partial<Pl
     const srcUsernameChanged = newSRCUsername && newSRCUsername !== oldSRCUsername;
     
     // Automatically claim runs when SRC username is set or changed
-    if (srcUsernameChanged && newSRCUsername) {
-      // Run auto-claiming asynchronously (don't block the profile update)
-      autoClaimRunsBySRCUsernameFirestore(uid, newSRCUsername).then(result => {
-        if (result.claimed > 0) {
-          
+    // Run synchronously to ensure it completes and we can see any errors
+    if ((srcUsernameChanged && newSRCUsername) || (!docSnap.exists() && newSRCUsername)) {
+      try {
+        const claimResult = await autoClaimRunsBySRCUsernameFirestore(uid, newSRCUsername);
+        if (claimResult.claimed > 0) {
+          console.log(`[RunAssignment] Auto-claimed ${claimResult.claimed} runs for user ${uid} with SRC username ${newSRCUsername}`);
         }
-      }).catch(error => {
-        
-      });
-    } else if (!docSnap.exists() && newSRCUsername) {
-      // If creating a new profile with SRC username, also auto-claim runs
-      autoClaimRunsBySRCUsernameFirestore(uid, newSRCUsername).then(result => {
-        if (result.claimed > 0) {
-          
+        if (claimResult.errors.length > 0) {
+          console.error(`[RunAssignment] Auto-claim errors for user ${uid}:`, claimResult.errors);
         }
-      }).catch(error => {
-        
-      });
+      } catch (error) {
+        console.error(`[RunAssignment] Failed to auto-claim runs for user ${uid}:`, error);
+      }
     }
     
     return true;
@@ -3010,6 +3115,7 @@ export const getUnclaimedRunsBySRCUsernameFirestore = async (srcUsername: string
     }
     
     // Simple direct string matching (case-insensitive)
+    // Also check playerName/player2Name as fallback for older runs
     const matchingRuns = allRuns.filter(run => {
       // Must be imported from SRC
       if (!run.importedFromSRC) return false;
@@ -3019,9 +3125,11 @@ export const getUnclaimedRunsBySRCUsernameFirestore = async (srcUsername: string
       if (playerId && playerId.trim() !== "") return false;
       if (currentUserId && playerId === currentUserId) return false;
       
-      // Direct case-insensitive string matching
-      const srcPlayer1 = run.srcPlayerName ? run.srcPlayerName.trim().toLowerCase() : "";
-      const srcPlayer2 = run.srcPlayer2Name ? run.srcPlayer2Name.trim().toLowerCase() : "";
+      // Try srcPlayerName first, fallback to playerName if srcPlayerName doesn't exist
+      const srcPlayer1 = run.srcPlayerName ? run.srcPlayerName.trim().toLowerCase() : 
+                        (run.playerName ? run.playerName.trim().toLowerCase() : "");
+      const srcPlayer2 = run.srcPlayer2Name ? run.srcPlayer2Name.trim().toLowerCase() : 
+                        (run.player2Name ? run.player2Name.trim().toLowerCase() : "");
       
       return srcPlayer1 === searchUsername || srcPlayer2 === searchUsername;
     });
@@ -3070,9 +3178,12 @@ export const claimRunFirestore = async (runId: string, userId: string): Promise<
     }
     
     // Simple case-insensitive string matching
+    // Try srcPlayerName first, fallback to playerName if srcPlayerName doesn't exist
     const userSRC = player.srcUsername.trim().toLowerCase();
-    const runSRC1 = runData.srcPlayerName ? runData.srcPlayerName.trim().toLowerCase() : "";
-    const runSRC2 = runData.srcPlayer2Name ? runData.srcPlayer2Name.trim().toLowerCase() : "";
+    const runSRC1 = runData.srcPlayerName ? runData.srcPlayerName.trim().toLowerCase() : 
+                    (runData.playerName ? runData.playerName.trim().toLowerCase() : "");
+    const runSRC2 = runData.srcPlayer2Name ? runData.srcPlayer2Name.trim().toLowerCase() : 
+                    (runData.player2Name ? runData.player2Name.trim().toLowerCase() : "");
     
     const matchesPlayer1 = runSRC1 === userSRC;
     const matchesPlayer2 = runSRC2 === userSRC;
