@@ -5726,6 +5726,7 @@ const Admin = () => {
                             <TableHeader>
                               <TableRow className="border-b border-[hsl(235,13%,30%)] hover:bg-transparent">
                                 <TableHead className="py-2 px-3 text-left text-xs">Name</TableHead>
+                                <TableHead className="py-2 px-3 text-left text-xs">SRC Category ID</TableHead>
                                 <TableHead className="py-2 px-3 text-center text-xs">Actions</TableHead>
                               </TableRow>
                             </TableHeader>
@@ -5742,6 +5743,20 @@ const Admin = () => {
                                       />
                                     ) : (
                                       category.name
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="py-2 px-3 text-sm">
+                                    {editingCategory?.id === category.id ? (
+                                      <Input
+                                        value={editingCategorySrcId}
+                                        onChange={(e) => setEditingCategorySrcId(e.target.value)}
+                                        placeholder="e.g., 9kj3k0x8"
+                                        className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] h-8 text-sm"
+                                      />
+                                    ) : (
+                                      <span className="text-[hsl(222,15%,60%)]">
+                                        {(category as Category).srcCategoryId || "—"}
+                                      </span>
                                     )}
                                   </TableCell>
                                   <TableCell className="py-2 px-3 text-center space-x-1">
