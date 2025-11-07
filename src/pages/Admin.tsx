@@ -80,7 +80,7 @@ import { getCategoryName, getPlatformName, getLevelName, normalizeCategoryId, no
 import { db } from "@/lib/firebase";
 import { collection, query, getDocs, limit as firestoreLimit } from "firebase/firestore";
 import { Player } from "@/types/database";
-import { prepareRunForVerification } from "@/lib/data/runFieldService";
+import { prepareRunForVerification, batchVerifyRuns } from "@/lib/data/runFieldService";
 import { getLeaderboardEntryById } from "@/lib/db";
 
 const Admin = () => {
@@ -1226,51 +1226,33 @@ const Admin = () => {
 
     setBatchVerifying(true);
     const verifiedBy = currentUser.displayName || currentUser.email || currentUser.uid;
-    let successCount = 0;
-    let errorCount = 0;
-    const errors: string[] = [];
 
     try {
-      for (const run of unverifiedImported) {
-        try {
-          if (!run.id) {
-            errors.push(`Run missing ID: ${run.playerName || 'Unknown'}`);
-            errorCount++;
-            continue;
-          }
-
-          // Autofill category, platform, and level before verifying using centralized service
-          const autofillResult = await autofillRunFields(run);
-          
-          // Update run data if needed before verifying
-          if (Object.keys(autofillResult.updates).length > 0) {
-            await updateLeaderboardEntry(run.id, autofillResult.updates);
-          }
-
-          // Verify the run
-          const success = await updateRunVerificationStatus(run.id, true, verifiedBy);
-          if (success) {
-            successCount++;
-          } else {
-            errors.push(`Failed to verify run: ${run.playerName || 'Unknown'}`);
-            errorCount++;
-          }
-        } catch (error: any) {
-          errors.push(`Error verifying ${run.playerName || 'Unknown'}: ${error.message || String(error)}`);
-          errorCount++;
+      // Use optimized batch verification service
+      const result = await batchVerifyRuns(
+        unverifiedImported,
+        verifiedBy,
+        updateRunVerificationStatus,
+        updateLeaderboardEntry,
+        getCategoriesFromFirestore,
+        getPlatformsFromFirestore,
+        getLevels,
+        20, // Process 20 runs in parallel
+        (processed, total) => {
+          // Optional: Could show progress here if needed
         }
-      }
+      );
 
       // Show summary toast
-      if (successCount > 0 && errorCount === 0) {
+      if (result.successCount > 0 && result.errorCount === 0) {
         toast({
           title: "Batch Verification Complete",
-          description: `Successfully verified ${successCount} run(s).`,
+          description: `Successfully verified ${result.successCount} run(s).`,
         });
-      } else if (successCount > 0 && errorCount > 0) {
+      } else if (result.successCount > 0 && result.errorCount > 0) {
         toast({
           title: "Batch Verification Partial Success",
-          description: `Verified ${successCount} run(s), ${errorCount} error(s).`,
+          description: `Verified ${result.successCount} run(s), ${result.errorCount} error(s).`,
           variant: "default",
         });
       } else {
@@ -1357,51 +1339,33 @@ const Admin = () => {
 
     setBatchVerifyingAll(true);
     const verifiedBy = currentUser.displayName || currentUser.email || currentUser.uid;
-    let successCount = 0;
-    let errorCount = 0;
-    const errors: string[] = [];
 
     try {
-      for (const run of unverifiedImported) {
-        try {
-          if (!run.id) {
-            errors.push(`Run missing ID: ${run.playerName || 'Unknown'}`);
-            errorCount++;
-            continue;
-          }
-
-          // Autofill category, platform, and level before verifying using centralized service
-          const autofillResult = await autofillRunFields(run);
-          
-          // Update run data if needed before verifying
-          if (Object.keys(autofillResult.updates).length > 0) {
-            await updateLeaderboardEntry(run.id, autofillResult.updates);
-          }
-
-          // Verify the run
-          const success = await updateRunVerificationStatus(run.id, true, verifiedBy);
-          if (success) {
-            successCount++;
-          } else {
-            errors.push(`Failed to verify run: ${run.playerName || 'Unknown'}`);
-            errorCount++;
-          }
-        } catch (error: any) {
-          errors.push(`Error verifying ${run.playerName || 'Unknown'}: ${error.message || String(error)}`);
-          errorCount++;
+      // Use optimized batch verification service
+      const result = await batchVerifyRuns(
+        unverifiedImported,
+        verifiedBy,
+        updateRunVerificationStatus,
+        updateLeaderboardEntry,
+        getCategoriesFromFirestore,
+        getPlatformsFromFirestore,
+        getLevels,
+        20, // Process 20 runs in parallel
+        (processed, total) => {
+          // Optional: Could show progress here if needed
         }
-      }
+      );
 
       // Show summary toast
-      if (successCount > 0 && errorCount === 0) {
+      if (result.successCount > 0 && result.errorCount === 0) {
         toast({
           title: "Batch Verification Complete",
-          description: `Successfully verified ${successCount} run(s).`,
+          description: `Successfully verified ${result.successCount} run(s).`,
         });
-      } else if (successCount > 0 && errorCount > 0) {
+      } else if (result.successCount > 0 && result.errorCount > 0) {
         toast({
           title: "Batch Verification Partial Success",
-          description: `Verified ${successCount} run(s), ${errorCount} error(s).`,
+          description: `Verified ${result.successCount} run(s), ${result.errorCount} error(s).`,
           variant: "default",
         });
       } else {

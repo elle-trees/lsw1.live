@@ -220,3 +220,115 @@ export async function verifyRunWithAutofill(
   }
 }
 
+/**
+ * Batch verify multiple runs efficiently
+ * Fetches all required data once and processes runs in parallel batches
+ * 
+ * @param runs - Array of runs to verify
+ * @param verifiedBy - User who is verifying the runs
+ * @param updateRunVerificationStatus - Function to update verification status
+ * @param updateLeaderboardEntry - Function to update run data
+ * @param getCategories - Function to get categories
+ * @param getPlatforms - Function to get platforms
+ * @param getLevels - Function to get levels
+ * @param batchSize - Number of runs to process in parallel (default: 20)
+ * @param onProgress - Optional progress callback
+ * @returns Summary of the batch verification
+ */
+export async function batchVerifyRuns(
+  runs: Array<{ id: string; [key: string]: any }>,
+  verifiedBy: string,
+  updateRunVerificationStatus: (runId: string, verified: boolean, verifiedBy?: string) => Promise<boolean>,
+  updateLeaderboardEntry: (runId: string, data: Partial<LeaderboardEntry>) => Promise<boolean>,
+  getCategories: (type?: 'regular' | 'individual-level' | 'community-golds') => Promise<Category[]>,
+  getPlatforms: () => Promise<Platform[]>,
+  getLevels: () => Promise<Level[]>,
+  batchSize: number = 20,
+  onProgress?: (processed: number, total: number) => void
+): Promise<{
+  successCount: number;
+  errorCount: number;
+  errors: string[];
+}> {
+  const result = {
+    successCount: 0,
+    errorCount: 0,
+    errors: [] as string[],
+  };
+
+  if (runs.length === 0) {
+    return result;
+  }
+
+  // Fetch all required data ONCE at the start
+  const [regularCats, ilCats, communityGoldsCats, platforms, levels] = await Promise.all([
+    getCategories('regular'),
+    getCategories('individual-level'),
+    getCategories('community-golds'),
+    getPlatforms(),
+    getLevels(),
+  ]);
+  
+  const allCategories = [...regularCats, ...ilCats, ...communityGoldsCats];
+
+  // Process runs in parallel batches
+  const batches: Array<{ id: string; [key: string]: any }[]> = [];
+  for (let i = 0; i < runs.length; i += batchSize) {
+    batches.push(runs.slice(i, i + batchSize));
+  }
+
+  let totalProcessed = 0;
+
+  // Process each batch in parallel
+  for (const batch of batches) {
+    await Promise.all(batch.map(async (run) => {
+      try {
+        if (!run.id) {
+          result.errorCount++;
+          result.errors.push(`Run missing ID: ${run.playerName || 'Unknown'}`);
+          totalProcessed++;
+          onProgress?.(totalProcessed, runs.length);
+          return;
+        }
+
+        // Autofill fields using pre-fetched data (no additional API calls)
+        const autofillResult = autofillRunFields(
+          run as LeaderboardEntry,
+          allCategories,
+          platforms,
+          levels
+        );
+
+        // Apply autofill updates if needed
+        if (Object.keys(autofillResult.updates).length > 0) {
+          const updateSuccess = await updateLeaderboardEntry(run.id, autofillResult.updates);
+          if (!updateSuccess) {
+            result.errorCount++;
+            result.errors.push(`Failed to update run: ${run.playerName || 'Unknown'}`);
+            totalProcessed++;
+            onProgress?.(totalProcessed, runs.length);
+            return;
+          }
+        }
+
+        // Verify the run
+        const verifySuccess = await updateRunVerificationStatus(run.id, true, verifiedBy);
+        if (verifySuccess) {
+          result.successCount++;
+        } else {
+          result.errorCount++;
+          result.errors.push(`Failed to verify run: ${run.playerName || 'Unknown'}`);
+        }
+      } catch (error: any) {
+        result.errorCount++;
+        result.errors.push(`Error verifying ${run.playerName || 'Unknown'}: ${error.message || String(error)}`);
+      } finally {
+        totalProcessed++;
+        onProgress?.(totalProcessed, runs.length);
+      }
+    }));
+  }
+
+  return result;
+}
+

@@ -106,7 +106,7 @@ const Index = () => {
             {/* Center Content - Title, Subtext, Buttons */}
             <div className="lg:col-span-6 text-center lg:order-2 min-w-0">
               <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 whitespace-nowrap truncate animate-fade-in-scale">
-                <span className="bg-gradient-to-r from-ctp-blue via-ctp-sapphire to-ctp-sky bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]">
+                <span className="text-[#74c7ec]">
                   lsw1.dev
                 </span>
               </h1>
