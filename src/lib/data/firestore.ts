@@ -595,6 +595,27 @@ export const addLeaderboardEntryFirestore = async (entry: Omit<LeaderboardEntry,
     if (normalized.srcLevelName) {
       newEntry.srcLevelName = normalized.srcLevelName;
     }
+    // Save SRC player IDs and names for claiming - CRITICAL for matching runs to users
+    // Use normalized values to ensure consistency
+    if (normalized.srcPlayerId) {
+      newEntry.srcPlayerId = normalized.srcPlayerId;
+    }
+    if (normalized.srcPlayer2Id) {
+      newEntry.srcPlayer2Id = normalized.srcPlayer2Id;
+    }
+    if (normalized.srcPlayerName) {
+      newEntry.srcPlayerName = normalized.srcPlayerName;
+    }
+    if (normalized.srcPlayer2Name) {
+      newEntry.srcPlayer2Name = normalized.srcPlayer2Name;
+    }
+    // Save subcategory info if present
+    if (normalized.subcategory) {
+      newEntry.subcategory = normalized.subcategory;
+    }
+    if (normalized.srcSubcategory) {
+      newEntry.srcSubcategory = normalized.srcSubcategory;
+    }
     
     await setDoc(newDocRef, newEntry);
     return newDocRef.id;
@@ -871,11 +892,19 @@ export const autoClaimRunsBySRCUsernameFirestore = async (userId: string, srcUse
     const runsToClaim = allRuns.filter(run => {
       if (!run.importedFromSRC) return false;
       
-      const runSRCPlayerName = normalizeSRCUsername(run.srcPlayerName);
-      const runSRCPlayer2Name = normalizeSRCUsername(run.srcPlayer2Name);
+      // Check if srcPlayerName or srcPlayer2Name exist and are not empty
+      const hasSrcPlayerName = run.srcPlayerName && run.srcPlayerName.trim() !== "";
+      const hasSrcPlayer2Name = run.srcPlayer2Name && run.srcPlayer2Name.trim() !== "";
+      
+      // If neither field exists, skip this run
+      if (!hasSrcPlayerName && !hasSrcPlayer2Name) return false;
+      
+      // Use the same normalization function as import and claiming for consistency
+      const runSRCPlayerName = hasSrcPlayerName ? normalizeSRCUsername(run.srcPlayerName) : "";
+      const runSRCPlayer2Name = hasSrcPlayer2Name ? normalizeSRCUsername(run.srcPlayer2Name) : "";
       
       // Match if either SRC player name matches (case-insensitive)
-      const matches = runSRCPlayerName === normalizedSrcUsername || 
+      const matches = (runSRCPlayerName && runSRCPlayerName === normalizedSrcUsername) || 
                      (runSRCPlayer2Name && runSRCPlayer2Name === normalizedSrcUsername);
       
       if (!matches) return false;
@@ -3034,12 +3063,19 @@ export const getUnclaimedRunsBySRCUsernameFirestore = async (srcUsername: string
       // Only process imported runs
       if (!run.importedFromSRC) return false;
       
-      // Use the same normalization function as import and claiming for consistency
-      const runSRCPlayerName = normalizeSRCUsername(run.srcPlayerName);
-      const runSRCPlayer2Name = normalizeSRCUsername(run.srcPlayer2Name);
+      // Check if srcPlayerName or srcPlayer2Name exist and are not empty
+      const hasSrcPlayerName = run.srcPlayerName && run.srcPlayerName.trim() !== "";
+      const hasSrcPlayer2Name = run.srcPlayer2Name && run.srcPlayer2Name.trim() !== "";
       
-      // Match by SRC username only
-      const nameMatches = runSRCPlayerName === normalizedSrcUsername ||
+      // If neither field exists, skip this run
+      if (!hasSrcPlayerName && !hasSrcPlayer2Name) return false;
+      
+      // Use the same normalization function as import and claiming for consistency
+      const runSRCPlayerName = hasSrcPlayerName ? normalizeSRCUsername(run.srcPlayerName) : "";
+      const runSRCPlayer2Name = hasSrcPlayer2Name ? normalizeSRCUsername(run.srcPlayer2Name) : "";
+      
+      // Match by SRC username only (case-insensitive comparison)
+      const nameMatches = (runSRCPlayerName && runSRCPlayerName === normalizedSrcUsername) ||
                         (runSRCPlayer2Name && runSRCPlayer2Name === normalizedSrcUsername);
       
       if (!nameMatches) return false;

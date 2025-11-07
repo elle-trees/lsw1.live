@@ -138,6 +138,14 @@ export function normalizeLeaderboardEntry(entry: Partial<LeaderboardEntry>): Par
     srcPlatformName: entry.srcPlatformName ? String(entry.srcPlatformName).trim() : undefined,
     srcLevelName: entry.srcLevelName ? String(entry.srcLevelName).trim() : undefined,
     srcRunId: entry.srcRunId ? String(entry.srcRunId).trim() : undefined,
+    // Preserve SRC player IDs and names for claiming (don't normalize, just trim)
+    srcPlayerId: entry.srcPlayerId ? String(entry.srcPlayerId).trim() : undefined,
+    srcPlayer2Id: entry.srcPlayer2Id ? String(entry.srcPlayer2Id).trim() : undefined,
+    srcPlayerName: entry.srcPlayerName ? String(entry.srcPlayerName).trim() : undefined,
+    srcPlayer2Name: entry.srcPlayer2Name ? String(entry.srcPlayer2Name).trim() : undefined,
+    // Preserve subcategory info
+    subcategory: entry.subcategory ? String(entry.subcategory).trim() : undefined,
+    srcSubcategory: entry.srcSubcategory ? String(entry.srcSubcategory).trim() : undefined,
   };
 }
 
