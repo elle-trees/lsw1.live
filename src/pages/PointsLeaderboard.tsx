@@ -349,49 +349,45 @@ const PointsLeaderboard = () => {
                     <h3 className="text-lg font-semibold text-[#fab387] mb-3">Overview</h3>
                     <p className="text-ctp-text leading-relaxed">
                       Studs are awarded for all verified runs across Full Game, Individual Levels, and Community Golds leaderboards. 
-                      All platforms and categories are eligible for studs.
+                      All platforms and categories are eligible for studs. The points system is configurable by administrators.
                     </p>
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-semibold text-[#fab387] mb-3">Full Game Runs</h3>
-                    <div className="space-y-2 text-ctp-text">
-                      <p className="font-medium">Solo Runs:</p>
-                      <ul className="list-disc list-inside space-y-1 ml-2 text-ctp-subtext1">
-                        <li>Rank 1: 60 studs (10 base + 50 bonus)</li>
-                        <li>Rank 2: 40 studs (10 base + 30 bonus)</li>
-                        <li>Rank 3: 30 studs (10 base + 20 bonus)</li>
-                        <li>All others: 10 base studs</li>
-                      </ul>
-                      <p className="font-medium mt-3">Co-op Runs:</p>
-                      <ul className="list-disc list-inside space-y-1 ml-2 text-ctp-subtext1">
-                        <li>Rank 1: 30 studs per player (60 total ÷ 2)</li>
-                        <li>Rank 2: 20 studs per player (40 total ÷ 2)</li>
-                        <li>Rank 3: 15 studs per player (30 total ÷ 2)</li>
-                        <li>All others: 5 studs per player (10 total ÷ 2)</li>
-                      </ul>
-                      <p className="text-sm text-ctp-overlay0 mt-2 italic">
-                        Co-op runs split studs equally between both players.
-                      </p>
+                    <h3 className="text-lg font-semibold text-[#fab387] mb-3">How Studs Are Calculated</h3>
+                    <div className="space-y-3 text-ctp-text">
+                      <div>
+                        <p className="font-medium mb-2">Base Points:</p>
+                        <p className="text-ctp-subtext1 ml-2">
+                          All verified runs receive base points. This is the foundation for all stud calculations.
+                        </p>
+                      </div>
+                      <div>
+                        <p className="font-medium mb-2">Rank Bonuses:</p>
+                        <p className="text-ctp-subtext1 ml-2">
+                          Full Game runs ranked 1st, 2nd, or 3rd receive additional bonus points. Rank bonuses can optionally be enabled for Individual Levels and Community Golds.
+                        </p>
+                      </div>
+                      <div>
+                        <p className="font-medium mb-2">Multipliers:</p>
+                        <ul className="list-disc list-inside space-y-1 ml-2 text-ctp-subtext1">
+                          <li><strong>Co-op Multiplier:</strong> Applied to co-op runs to split points between players</li>
+                          <li><strong>IL Multiplier:</strong> Applied to Individual Level runs</li>
+                          <li><strong>Community Golds Multiplier:</strong> Applied to Community Golds runs</li>
+                          <li><strong>Obsolete Multiplier:</strong> Applied to obsolete runs (typically reduces points)</li>
+                        </ul>
+                      </div>
                     </div>
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-semibold text-[#fab387] mb-3">Individual Levels & Community Golds</h3>
-                    <p className="text-ctp-text leading-relaxed mb-2">
-                      ILs and Community Golds receive <strong>base studs only</strong> (no rank bonuses):
-                    </p>
+                    <h3 className="text-lg font-semibold text-[#fab387] mb-3">Calculation Formula</h3>
                     <div className="space-y-2 text-ctp-text">
-                      <p className="font-medium">Solo Runs:</p>
-                      <ul className="list-disc list-inside space-y-1 ml-2 text-ctp-subtext1">
-                        <li>All ranks: 10 base studs</li>
-                      </ul>
-                      <p className="font-medium mt-3">Co-op Runs:</p>
-                      <ul className="list-disc list-inside space-y-1 ml-2 text-ctp-subtext1">
-                        <li>All ranks: 5 studs per player (10 ÷ 2)</li>
-                      </ul>
+                      <p className="text-ctp-subtext1">
+                        Studs = (Base Points × Multiplier) + Rank Bonus (if applicable)
+                      </p>
                       <p className="text-sm text-ctp-overlay0 mt-2 italic">
-                        ILs and Community Golds do not receive rank bonuses. Co-op runs split studs equally between both players.
+                        For co-op runs, the final result is multiplied by the co-op multiplier to split points between players.
                       </p>
                     </div>
                   </div>
@@ -399,8 +395,8 @@ const PointsLeaderboard = () => {
                   <div className="bg-[hsl(240,21%,18%)] border border-[hsl(235,13%,30%)] p-4 rounded">
                     <p className="text-sm text-ctp-text leading-relaxed">
                       <strong className="text-[#fab387]">Note:</strong> Only verified runs count toward studs. 
-                      Runs that aren't top 3 receive 10 base studs. Obsolete runs receive half base studs (5 studs for solo, 3 studs for co-op). 
-                      Studs are automatically calculated and updated when runs are verified.
+                      Studs are automatically calculated and updated when runs are verified. 
+                      The exact values for base points, rank bonuses, and multipliers can be configured by administrators in the Admin panel.
                     </p>
                   </div>
                 </div>
