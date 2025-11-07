@@ -2971,9 +2971,6 @@ const Admin = () => {
 
           {/* Tools Section */}
           <TabsContent value="tools" className="space-y-4 animate-fade-in">
-            {/* Tools tab content can be added here in the future */}
-          </TabsContent>
-
             {/* Duplicate Detection Card */}
             <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
               <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
@@ -7585,47 +7582,46 @@ const Admin = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
 
-
-      <style>{`
-        @keyframes fadeIn {
-          from {
+        <style>{`
+          @keyframes fadeIn {
+            from {
+              opacity: 0;
+              transform: translateY(20px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          
+          @keyframes gradient {
+            0% {
+              background-position: 0% 50%;
+            }
+            50% {
+              background-position: 100% 50%;
+            }
+            100% {
+              background-position: 0% 50%;
+            }
+          }
+          
+          .animate-fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+          }
+          
+          .animate-fade-in-delay {
+            animation: fadeIn 0.8s ease-out 0.2s forwards;
             opacity: 0;
-            transform: translateY(20px);
           }
-          to {
-            opacity: 1;
-            transform: translateY(0);
+          
+          .animate-gradient {
+            background-size: 200% auto;
+            animation: gradient 3s linear infinite;
           }
-        }
-        
-        @keyframes gradient {
-          0% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-          100% {
-            background-position: 0% 50%;
-          }
-        }
-        
-        .animate-fade-in {
-          animation: fadeIn 0.6s ease-out forwards;
-        }
-        
-        .animate-fade-in-delay {
-          animation: fadeIn 0.8s ease-out 0.2s forwards;
-          opacity: 0;
-        }
-        
-        .animate-gradient {
-          background-size: 200% auto;
-          animation: gradient 3s linear infinite;
-        }
-      `}</style>
+        `}</style>
+      </div>
     </div>
   );
 };
