@@ -2971,79 +2971,8 @@ const Admin = () => {
 
           {/* Tools Section */}
           <TabsContent value="tools" className="space-y-4 animate-fade-in">
-            {/* Recalculate Points Card */}
-            <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
-              <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
-                <CardTitle className="flex items-center gap-2 text-xl text-[#f2cdcd]">
-                  <span>
-                      Recalculate All Points
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <p className="text-sm text-ctp-subtext1 leading-relaxed mb-4">
-                      Recalculate and update points for all verified runs using the current points formula. This will also recalculate all players' total points based on their verified runs. Includes all run types (Full Game, Individual Levels, Community Golds). Obsolete runs receive base points only.
-                    </p>
-                    {backfillingPoints && (
-                  <p className="text-xs text-ctp-overlay0 mb-4 italic flex items-center gap-2">
-                    <span className="animate-pulse">●</span>
-                        This may take a while depending on the number of runs...
-                      </p>
-                    )}
-                  <Button
-                    onClick={async () => {
-                      if (!currentUser) return;
-                      
-                      // Confirmation dialog
-                      if (!window.confirm(
-                        "This will recalculate points for ALL verified runs and update all player totals. " +
-                        "This operation cannot be undone and may take several minutes. Continue?"
-                      )) {
-                        return;
-                      }
-                      
-                      setBackfillingPoints(true);
-                      try {
-                        const result = await backfillPointsForAllRuns();
-                        if (result.errors.length > 0) {
-                          toast({
-                            title: "Recalculation Complete with Errors",
-                            description: `Updated ${result.runsUpdated} runs and ${result.playersUpdated} players. ${result.errors.length} error(s) occurred.`,
-                            variant: "destructive",
-                          });
-                        } else {
-                          toast({
-                            title: "Recalculation Complete",
-                            description: `Successfully recalculated points for ${result.runsUpdated} runs and updated ${result.playersUpdated} players.`,
-                          });
-                        }
-                      } catch (error: any) {
-                        toast({
-                          title: "Error",
-                          description: error.message || "Failed to recalculate points.",
-                          variant: "destructive",
-                        });
-                      } finally {
-                        setBackfillingPoints(false);
-                      }
-                    }}
-                    disabled={backfillingPoints}
-                  className="bg-gradient-to-r from-[#FFD700] to-[#FFA500] hover:from-[#FFA500] hover:to-[#FFD700] text-black font-semibold w-full sm:w-auto transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#FFD700]/50"
-                  >
-                    {backfillingPoints ? (
-                      <>
-                        <LoadingSpinner size="sm" className="mr-2" />
-                        Processing Points...
-                      </>
-                    ) : (
-                      <>
-                        <Trophy className="h-4 w-4 mr-2" />
-                        Recalculate All Points
-                      </>
-                    )}
-                  </Button>
-              </CardContent>
-            </Card>
+            {/* Tools tab content can be added here in the future */}
+          </TabsContent>
 
             {/* Duplicate Detection Card */}
             <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
@@ -6897,6 +6826,85 @@ const Admin = () => {
                     Failed to load points configuration.
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Recalculate Points Card */}
+            <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
+              <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
+                <CardTitle className="flex items-center gap-2 text-xl text-[#fab387]">
+                  <RefreshCw className="h-5 w-5" />
+                  <span>
+                      Recalculate All Points
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <p className="text-sm text-ctp-subtext1 leading-relaxed mb-4">
+                      Recalculate and update points for all verified runs using the current points configuration. This will also recalculate all players' total points based on their verified runs. Includes all run types (Full Game, Individual Levels, Community Golds). The operation runs in the background so you can continue using the admin panel.
+                    </p>
+                    {backfillingPoints && (
+                  <p className="text-xs text-ctp-overlay0 mb-4 italic flex items-center gap-2">
+                    <span className="animate-pulse">●</span>
+                        Recalculation in progress... This may take a while depending on the number of runs. You can continue using the admin panel.
+                      </p>
+                    )}
+                  <Button
+                    onClick={() => {
+                      if (!currentUser) return;
+                      
+                      // Confirmation dialog
+                      if (!window.confirm(
+                        "This will recalculate points for ALL verified runs and update all player totals using the current points configuration. " +
+                        "This operation cannot be undone and may take several minutes. Continue?"
+                      )) {
+                        return;
+                      }
+                      
+                      setBackfillingPoints(true);
+                      
+                      // Run in background - don't block UI
+                      setTimeout(async () => {
+                        try {
+                          const result = await backfillPointsForAllRuns();
+                          if (result.errors.length > 0) {
+                            toast({
+                              title: "Recalculation Complete with Errors",
+                              description: `Updated ${result.runsUpdated} runs and ${result.playersUpdated} players. ${result.errors.length} error(s) occurred.`,
+                              variant: "destructive",
+                            });
+                          } else {
+                            toast({
+                              title: "Recalculation Complete",
+                              description: `Successfully recalculated points for ${result.runsUpdated} runs and updated ${result.playersUpdated} players.`,
+                            });
+                          }
+                        } catch (error: any) {
+                          toast({
+                            title: "Error",
+                            description: error.message || "Failed to recalculate points.",
+                            variant: "destructive",
+                          });
+                        } finally {
+                          setBackfillingPoints(false);
+                        }
+                      }, 0);
+                    }}
+                    disabled={backfillingPoints}
+                    className="bg-gradient-to-r from-[#FFD700] to-[#FFA500] hover:from-[#FFA500] hover:to-[#FFD700] text-black font-semibold w-full sm:w-auto transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#FFD700]/50"
+                  >
+                    {backfillingPoints ? (
+                      <>
+                        <LoadingSpinner size="sm" className="mr-2" />
+                        Recalculating Points...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Recalculate All Points
+                      </>
+                    )}
+                  </Button>
               </CardContent>
             </Card>
           </TabsContent>

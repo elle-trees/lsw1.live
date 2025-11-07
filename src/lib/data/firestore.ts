@@ -3901,13 +3901,14 @@ export const backfillPointsForAllRunsFirestore = async (): Promise<{
             const categoryName = categoryMap.get(runData.category) || "Unknown";
             const platformName = platformMap.get(runData.platform) || "Unknown";
             
-            // Calculate points - CRITICAL: calculatePoints automatically splits for co-op runs
-            // CRITICAL: calculatePoints automatically reduces points for ILs and community golds (half points)
+            // Calculate points using current configuration - CRITICAL: calculatePoints automatically splits for co-op runs
+            // CRITICAL: calculatePoints automatically reduces points for ILs and community golds
             // For co-op runs: points are divided by 2, so each player gets half
-            // For ILs/community golds: points are multiplied by 0.5
+            // For ILs/community golds: points are multiplied by their respective multipliers
             // For solo runs: points are full value
+            // CRITICAL: Obsolete runs only receive base points (no rank bonuses)
             const leaderboardType = runData.leaderboardType || 'regular';
-            const points = calculatePoints(
+            const points = await calculatePoints(
               runData.time, 
               categoryName, 
               platformName,
@@ -3915,7 +3916,8 @@ export const backfillPointsForAllRunsFirestore = async (): Promise<{
               runData.platform,
               rank,
               runData.runType as 'solo' | 'co-op' | undefined,
-              leaderboardType
+              leaderboardType,
+              runData.isObsolete
             );
             
             runsToUpdate.push({
