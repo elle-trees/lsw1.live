@@ -3256,18 +3256,53 @@ export const getUnclaimedRunsBySRCUsernameFirestore = async (srcUsername: string
       // Must be imported from SRC
       if (!run.importedFromSRC) return false;
       
-      // Must be unclaimed
-      const playerId = run.playerId || "";
-      if (playerId && playerId.trim() !== "") return false;
-      if (currentUserId && playerId === currentUserId) return false;
-      
       // Try srcPlayerName first, fallback to playerName if srcPlayerName doesn't exist
       const srcPlayer1 = run.srcPlayerName ? run.srcPlayerName.trim().toLowerCase() : 
                         (run.playerName ? run.playerName.trim().toLowerCase() : "");
       const srcPlayer2 = run.srcPlayer2Name ? run.srcPlayer2Name.trim().toLowerCase() : 
                         (run.player2Name ? run.player2Name.trim().toLowerCase() : "");
       
-      return srcPlayer1 === searchUsername || srcPlayer2 === searchUsername;
+      // Check if this run matches the user's SRC username
+      const matchesPlayer1 = srcPlayer1 === searchUsername;
+      const matchesPlayer2 = srcPlayer2 === searchUsername;
+      
+      if (!matchesPlayer1 && !matchesPlayer2) return false;
+      
+      // For co-op runs, check if the user has already claimed their position
+      const playerId = run.playerId || "";
+      const player2Id = run.player2Id || "";
+      const isCoOp = run.runType === 'co-op';
+      
+      // If user matches as player 1, check if they've already claimed it
+      if (matchesPlayer1) {
+        if (currentUserId && playerId === currentUserId) {
+          // User has already claimed as player 1, exclude this run
+          return false;
+        }
+        // If playerId is set to someone else, exclude it (already claimed by someone else)
+        if (playerId && playerId.trim() !== "" && playerId !== currentUserId) {
+          return false;
+        }
+      }
+      
+      // If user matches as player 2, check if they've already claimed it
+      if (matchesPlayer2 && isCoOp) {
+        if (currentUserId && player2Id === currentUserId) {
+          // User has already claimed as player 2, exclude this run
+          return false;
+        }
+        // If player2Id is set to someone else, exclude it (already claimed by someone else)
+        if (player2Id && player2Id.trim() !== "" && player2Id !== currentUserId) {
+          return false;
+        }
+      }
+      
+      // For solo runs, if playerId is set, exclude it (already claimed)
+      if (!isCoOp && playerId && playerId.trim() !== "") {
+        return false;
+      }
+      
+      return true;
     });
     
     return matchingRuns;
