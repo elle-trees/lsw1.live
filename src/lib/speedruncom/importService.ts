@@ -436,26 +436,39 @@ export async function importSRCRuns(
       return result;
     }
 
-    // Step 2: Fetch runs from SRC - get 200 most recent runs
-    let srcRuns: SRCRun[];
-    try {
-      srcRuns = await fetchRunsNotOnLeaderboards(gameId, 200);
-    } catch (error) {
-      result.errors.push(`Failed to fetch runs: ${error instanceof Error ? error.message : String(error)}`);
-      return result;
-    }
-
-    if (srcRuns.length === 0) {
-      result.errors.push("No runs found to import");
-      return result;
-    }
-
-    // Step 3: Get existing SRC run IDs to check for duplicates (optimized - only fetch IDs, not full runs)
+    // Step 2: Get existing SRC run IDs first (optimized - only fetch IDs, not full runs)
+    // This allows us to filter out already-linked runs before processing
     let existingSRCRunIds: Set<string>;
     try {
       existingSRCRunIds = await getExistingSRCRunIds();
     } catch (error) {
       result.errors.push(`Failed to fetch existing run IDs: ${error instanceof Error ? error.message : String(error)}`);
+      return result;
+    }
+
+    // Step 3: Fetch runs from SRC - fetch a larger batch to ensure we get 200 unlinked runs
+    // We'll fetch up to 1000 runs, filter out already-linked ones, then take the first 200 unlinked
+    let allSrcRuns: SRCRun[];
+    try {
+      // Fetch a larger batch to account for runs that are already linked
+      allSrcRuns = await fetchRunsNotOnLeaderboards(gameId, 1000);
+    } catch (error) {
+      result.errors.push(`Failed to fetch runs: ${error instanceof Error ? error.message : String(error)}`);
+      return result;
+    }
+
+    if (allSrcRuns.length === 0) {
+      result.errors.push("No runs found to import");
+      return result;
+    }
+
+    // Filter out runs that are already linked on the boards
+    // Keep only the most recent 200 runs that aren't already linked
+    const unlinkedRuns = allSrcRuns.filter(run => !existingSRCRunIds.has(run.id));
+    const srcRuns = unlinkedRuns.slice(0, 200);
+
+    if (srcRuns.length === 0) {
+      result.errors.push("No new runs to import - all recent runs are already linked on the boards");
       return result;
     }
 
@@ -501,9 +514,10 @@ export async function importSRCRuns(
     await Promise.all(playerLookupPromises);
 
     // Step 6: Process each run
+    // Note: We've already filtered out linked runs, so we can process all of them
     for (const srcRun of srcRuns) {
       try {
-        // Skip if already exists in database (already linked on boards)
+        // Double-check: Skip if already exists in database (safety check)
         if (existingSRCRunIds.has(srcRun.id)) {
           result.skipped++;
           onProgress?.({ total: srcRuns.length, imported: result.imported, skipped: result.skipped });

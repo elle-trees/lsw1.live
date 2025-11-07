@@ -172,8 +172,10 @@ export async function getLSWGameId(): Promise<string | null> {
 
 /**
  * Fetch all runs for a game
- * This fetches runs with status "verified" that can be imported
- * Uses pagination to fetch up to 500 runs (configurable limit)
+ * This fetches runs with status "verified" ordered by submission date (most recent first)
+ * Note: This function does NOT filter out runs already on leaderboards - that filtering
+ * happens in the import service. This just fetches the most recent verified runs.
+ * Uses pagination to fetch up to the specified limit (default 500)
  */
 export async function fetchRunsNotOnLeaderboards(
   gameId: string, 
