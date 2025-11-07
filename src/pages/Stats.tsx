@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Trophy, 
@@ -474,12 +475,66 @@ const Stats = () => {
     return progression;
   }, [stats, wrProgressionLeaderboardType, wrProgressionCategory, wrProgressionPlatform, wrProgressionRunType, wrProgressionLevel]);
 
-  if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner />
+  // Loading skeleton component
+  const LoadingSkeletons = () => (
+    <div className="container mx-auto px-4 py-8 animate-fade-in">
+      <div className="mb-8">
+        <Skeleton className="h-10 w-64 mb-2" />
+        <Skeleton className="h-5 w-96" />
       </div>
-    );
+
+      {/* Overview Cards Skeletons */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+        {[1, 2, 3, 4].map((i) => (
+          <Card key={i} className="animate-slide-up" style={{ animationDelay: `${i * 0.1}s` }}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-4 w-4 rounded" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-24 mb-2" />
+              <Skeleton className="h-3 w-40" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Tabs Skeleton */}
+      <Card className="animate-slide-up-delay">
+        <CardHeader>
+          <Skeleton className="h-6 w-48 mb-2" />
+          <Skeleton className="h-4 w-64" />
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex gap-2 mb-4">
+              <Skeleton className="h-10 w-32" />
+              <Skeleton className="h-10 w-32" />
+              <Skeleton className="h-10 w-32" />
+              <Skeleton className="h-10 w-32" />
+            </div>
+            <div className="space-y-4">
+              {/* Chart Skeleton */}
+              <div className="space-y-2">
+                <Skeleton className="h-6 w-40" />
+                <Skeleton className="h-[400px] w-full" />
+              </div>
+              {/* Table Skeleton */}
+              <div className="space-y-2">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-[90%]" />
+                <Skeleton className="h-10 w-[80%]" />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  if (loading) {
+    return <LoadingSkeletons />;
   }
 
   if (!stats) {
@@ -502,15 +557,15 @@ const Stats = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
+    <div className="container mx-auto px-4 py-8 animate-fade-in">
+      <div className="mb-8 animate-slide-up">
         <h1 className="text-4xl font-bold mb-2">Statistics</h1>
         <p className="text-muted-foreground">Leaderboard and world record statistics</p>
       </div>
 
       {/* Overview Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
-        <Card>
+        <Card className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Verified Runs</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
@@ -523,7 +578,7 @@ const Stats = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="animate-slide-up" style={{ animationDelay: '0.2s' }}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">World Records</CardTitle>
             <Trophy className="h-4 w-4 text-muted-foreground" />
@@ -536,7 +591,7 @@ const Stats = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="animate-slide-up" style={{ animationDelay: '0.3s' }}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Solo Runs</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
@@ -549,7 +604,7 @@ const Stats = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="animate-slide-up" style={{ animationDelay: '0.4s' }}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Co-op Runs</CardTitle>
             <Gamepad2 className="h-4 w-4 text-muted-foreground" />
@@ -573,7 +628,7 @@ const Stats = () => {
 
         <TabsContent value="overview" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
-            <Card>
+            <Card className="animate-slide-up-delay">
               <CardHeader>
                 <CardTitle>Leaderboard Types</CardTitle>
                 <CardDescription>Distribution of runs by leaderboard type</CardDescription>
@@ -620,7 +675,7 @@ const Stats = () => {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="animate-slide-up-delay-2">
               <CardHeader>
                 <CardTitle>Top Categories</CardTitle>
                 <CardDescription>Categories with the most runs</CardDescription>
@@ -643,7 +698,7 @@ const Stats = () => {
             </Card>
           </div>
 
-          <Card>
+          <Card className="animate-slide-up-delay-2">
             <CardHeader>
               <CardTitle>Top Platforms</CardTitle>
               <CardDescription>Platforms with the most runs</CardDescription>
@@ -667,7 +722,7 @@ const Stats = () => {
         </TabsContent>
 
         <TabsContent value="progression" className="space-y-4">
-          <Card>
+          <Card className="animate-slide-up-delay-2">
             <CardHeader>
               <CardTitle>World Record Time Progression</CardTitle>
               <CardDescription>World record times improving over time (lower is better)</CardDescription>
@@ -838,7 +893,7 @@ const Stats = () => {
                     </div>
                   )}
                   
-                  <ChartContainer config={chartConfig} className="h-[600px] w-full">
+                  <ChartContainer config={chartConfig} className="h-[600px] w-full [&_.recharts-brush]:fill-[hsl(var(--muted))] [&_.recharts-brush]:stroke-[hsl(var(--border))] [&_.recharts-brush-slide]:fill-[hsl(var(--muted))] [&_.recharts-brush-traveller]:fill-[hsl(var(--muted))] [&_.recharts-brush-traveller]:stroke-[hsl(var(--border))]">
                     <LineChart 
                       data={filteredWRTimeProgression}
                       margin={{ top: 10, right: 30, left: 0, bottom: 60 }}
@@ -926,6 +981,8 @@ const Stats = () => {
                           const date = new Date(value);
                           return `${date.getMonth() + 1}/${date.getFullYear()}`;
                         }}
+                        fill="hsl(var(--muted))"
+                        stroke="hsl(var(--border))"
                       />
                     </LineChart>
                   </ChartContainer>
@@ -972,7 +1029,7 @@ const Stats = () => {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="animate-slide-up-delay-2">
               <CardHeader>
                 <CardTitle>Runs by Platform</CardTitle>
                 <CardDescription>Complete breakdown</CardDescription>
@@ -1004,7 +1061,7 @@ const Stats = () => {
         </TabsContent>
 
         <TabsContent value="recent" className="space-y-4">
-          <Card>
+          <Card className="animate-slide-up-delay">
             <CardHeader>
               <CardTitle>Recent World Records</CardTitle>
               <CardDescription>Most recently achieved world records</CardDescription>
