@@ -92,7 +92,7 @@ const Index = () => {
                   {statsLoading ? (
                     <Skeleton className="h-10 w-28 mb-1 bg-ctp-surface0/50" />
                   ) : (
-                    <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-ctp-green transition-all duration-300 truncate">
+                    <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-ctp-green transition-all duration-300 break-words min-w-0">
                       {totalVerifiedRuns.toLocaleString()}
                     </div>
                   )}

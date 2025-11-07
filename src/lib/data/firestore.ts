@@ -3084,13 +3084,56 @@ export const movePlatformDownFirestore = async (platformId: string): Promise<boo
 export const getAllVerifiedRunsFirestore = async (): Promise<LeaderboardEntry[]> => {
   if (!db) return [];
   try {
-    const q = query(
-      collection(db, "leaderboardEntries"),
-      where("verified", "==", true),
-      firestoreLimit(1000)
-    );
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LeaderboardEntry));
+    const allRuns: LeaderboardEntry[] = [];
+    
+    // Fetch ALL verified runs using pagination
+    let lastDoc = null;
+    do {
+      let verifiedQuery;
+      try {
+        if (lastDoc) {
+          verifiedQuery = query(
+            collection(db, "leaderboardEntries"),
+            where("verified", "==", true),
+            orderBy("__name__"),
+            startAfter(lastDoc),
+            firestoreLimit(5000)
+          );
+        } else {
+          verifiedQuery = query(
+            collection(db, "leaderboardEntries"),
+            where("verified", "==", true),
+            orderBy("__name__"),
+            firestoreLimit(5000)
+          );
+        }
+        const verifiedSnapshot = await getDocs(verifiedQuery);
+        verifiedSnapshot.docs.forEach(doc => {
+          allRuns.push({ id: doc.id, ...doc.data() } as LeaderboardEntry);
+        });
+        if (verifiedSnapshot.docs.length > 0) {
+          lastDoc = verifiedSnapshot.docs[verifiedSnapshot.docs.length - 1];
+        } else {
+          lastDoc = null;
+        }
+      } catch (error) {
+        // If orderBy fails, fall back to simple query with higher limit
+        if (!lastDoc) {
+          const fallbackQuery = query(
+            collection(db, "leaderboardEntries"),
+            where("verified", "==", true),
+            firestoreLimit(10000)
+          );
+          const fallbackSnapshot = await getDocs(fallbackQuery);
+          fallbackSnapshot.docs.forEach(doc => {
+            allRuns.push({ id: doc.id, ...doc.data() } as LeaderboardEntry);
+          });
+        }
+        lastDoc = null; // Break the loop
+      }
+    } while (lastDoc);
+    
+    return allRuns;
   } catch (error) {
     return [];
   }
