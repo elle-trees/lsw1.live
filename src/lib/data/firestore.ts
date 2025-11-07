@@ -1220,12 +1220,13 @@ export const getPlayerRunsFirestore = async (playerId: string): Promise<Leaderbo
       playerDisplayName = player.displayName.trim();
     }
     
-    // Fetch runs by playerId (as player1)
+    // Fetch runs by playerId (as player1) - increased limit to handle IL runs
+    // IL runs can result in many runs per player, so we need a higher limit
     const q = query(
       collection(db, "leaderboardEntries"),
       where("playerId", "==", playerId),
       where("verified", "==", true),
-      firestoreLimit(200)
+      firestoreLimit(1000)
     );
     
     const querySnapshot = await getDocs(q);
@@ -1234,12 +1235,13 @@ export const getPlayerRunsFirestore = async (playerId: string): Promise<Leaderbo
       .filter(entry => !entry.isObsolete);
     
     // Also fetch co-op runs where this player is player2 (via player2Id)
+    // Increased limit to handle players with many co-op IL runs
     const coOpQuery = query(
       collection(db, "leaderboardEntries"),
       where("player2Id", "==", playerId),
       where("verified", "==", true),
       where("runType", "==", "co-op"),
-      firestoreLimit(200)
+      firestoreLimit(1000)
     );
     
     const coOpSnapshot = await getDocs(coOpQuery);
@@ -1790,11 +1792,12 @@ export const recalculatePlayerPointsFirestore = async (playerId: string): Promis
     }
     
     // Get all verified runs where this player is player1 (by playerId)
+    // Increased limit to handle IL runs which can result in many runs per player
     const q = query(
       collection(db, "leaderboardEntries"),
       where("playerId", "==", playerId),
       where("verified", "==", true),
-      firestoreLimit(500)
+      firestoreLimit(1000)
     );
     const querySnapshot = await getDocs(q);
     
@@ -1837,29 +1840,45 @@ export const recalculatePlayerPointsFirestore = async (playerId: string): Promis
     
     // Also check for co-op runs where this player is player2 (all leaderboard types)
     // IMPORTANT: Only count claimed runs for points - unclaimed runs don't contribute to points
+    // Query directly by player2Id for efficiency (includes all leaderboard types: regular, IL, community-golds)
     let player2Runs: LeaderboardEntry[] = [];
     
-    if (playerDisplayName) {
-      const normalizedDisplayName = playerDisplayName.toLowerCase();
-      const coOpQuery = query(
+    try {
+      const coOpQueryById = query(
         collection(db, "leaderboardEntries"),
+        where("player2Id", "==", playerId),
         where("verified", "==", true),
         where("runType", "==", "co-op"),
-        firestoreLimit(500)
+        firestoreLimit(1000)
       );
-      const coOpSnapshot = await getDocs(coOpQuery);
-      player2Runs = coOpSnapshot.docs
+      const coOpSnapshotById = await getDocs(coOpQueryById);
+      player2Runs = coOpSnapshotById.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as LeaderboardEntry))
-        .filter(entry => {
-          const entryPlayer2Name = (entry.player2Name || "").trim().toLowerCase();
-          const nameMatches = entryPlayer2Name === normalizedDisplayName;
-          if (!nameMatches) return false;
-          
-          // Only include runs that are already linked to this player
-          // Unclaimed runs should NOT count for points
-          const currentPlayerId = entry.playerId || "";
-          return currentPlayerId === playerId;
-        });
+        .filter(entry => !entry.isObsolete);
+    } catch (error) {
+      // If query fails (e.g., no index), fall back to name-based matching
+      if (playerDisplayName) {
+        const normalizedDisplayName = playerDisplayName.toLowerCase();
+        const coOpQuery = query(
+          collection(db, "leaderboardEntries"),
+          where("verified", "==", true),
+          where("runType", "==", "co-op"),
+          firestoreLimit(1000)
+        );
+        const coOpSnapshot = await getDocs(coOpQuery);
+        player2Runs = coOpSnapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() } as LeaderboardEntry))
+          .filter(entry => {
+            const entryPlayer2Name = (entry.player2Name || "").trim().toLowerCase();
+            const nameMatches = entryPlayer2Name === normalizedDisplayName;
+            if (!nameMatches) return false;
+            
+            // Only include runs that are already linked to this player
+            // Unclaimed runs should NOT count for points
+            const currentPlayerId = entry.playerId || "";
+            return currentPlayerId === playerId;
+          });
+      }
     }
     
     // Get all categories and platforms for lookup
@@ -1977,7 +1996,9 @@ export const recalculatePlayerPointsFirestore = async (playerId: string): Promis
       const categoryName = categoryMap.get(runData.category) || "Unknown";
       const platformName = platformMap.get(runData.platform) || "Unknown";
       
-      // Calculate points (already split for co-op runs)
+      // Calculate points - CRITICAL: calculatePoints automatically splits for co-op runs
+      // For co-op runs: points are divided by 2, so each player gets half
+      // For solo runs: points are full value
       const points = calculatePoints(
         runData.time, 
         categoryName, 
@@ -1991,8 +2012,10 @@ export const recalculatePlayerPointsFirestore = async (playerId: string): Promis
       // Always update the run with recalculated points and rank
       runsToUpdate.push({ id: runData.id, points, rank: rank });
       
-      // For co-op runs, points are already split, so each player gets the calculated points
+      // IMPORTANT: Points are already split for co-op runs by calculatePoints
+      // So for co-op runs, each player gets the calculated (split) points
       // For solo runs, player gets full points
+      // This ensures both players in a co-op run get equal points
       totalPoints += points;
     }
     
@@ -2166,14 +2189,22 @@ async function recalculatePointsForPlayers(
   const uniquePlayerIds = new Set(validPlayerIds);
   
   // Add player2 if it's a co-op run
-  if (runData?.runType === 'co-op' && runData.player2Name) {
-    try {
-      const player2 = await getPlayerByDisplayNameFirestore(runData.player2Name.trim());
-      if (player2?.uid && player2.uid.trim() !== "") {
-        uniquePlayerIds.add(player2.uid);
+  // CRITICAL: Always use player2Id if available (more reliable than name lookup)
+  if (runData?.runType === 'co-op') {
+    // First try player2Id (most reliable)
+    if (runData.player2Id && runData.player2Id.trim() !== "") {
+      uniquePlayerIds.add(runData.player2Id.trim());
+    } 
+    // Fallback to player2Name lookup if player2Id not available
+    else if (runData.player2Name) {
+      try {
+        const player2 = await getPlayerByDisplayNameFirestore(runData.player2Name.trim());
+        if (player2?.uid && player2.uid.trim() !== "") {
+          uniquePlayerIds.add(player2.uid);
+        }
+      } catch (error) {
+        
       }
-    } catch (error) {
-      
     }
   }
   
@@ -3923,7 +3954,9 @@ export const backfillPointsForAllRunsFirestore = async (): Promise<{
             const categoryName = categoryMap.get(runData.category) || "Unknown";
             const platformName = platformMap.get(runData.platform) || "Unknown";
             
-            // Calculate points (already split for co-op runs)
+            // Calculate points - CRITICAL: calculatePoints automatically splits for co-op runs
+            // For co-op runs: points are divided by 2, so each player gets half
+            // For solo runs: points are full value
             const points = calculatePoints(
               runData.time, 
               categoryName, 

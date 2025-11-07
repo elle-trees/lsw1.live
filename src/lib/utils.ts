@@ -160,10 +160,18 @@ export function calculatePoints(
     }
   }
 
-  // For co-op runs, split points equally between both players
-  if (runType === 'co-op') {
+  // CRITICAL: For co-op runs, ALWAYS split points equally between both players
+  // This ensures both players get half the points for co-op runs
+  // Points are already split here, so each player gets the returned value
+  // Safeguard: Check for 'co-op' or 'coop' (case-insensitive) to handle any variations
+  const isCoOp = runType === 'co-op' || 
+                 (typeof runType === 'string' && runType.toLowerCase().includes('co-op')) ||
+                 (typeof runType === 'string' && runType.toLowerCase() === 'coop');
+  
+  if (isCoOp) {
     points = points / 2;
   }
 
+  // Round to nearest integer to avoid floating point issues
   return Math.round(points);
 }
