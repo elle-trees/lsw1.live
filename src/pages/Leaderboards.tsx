@@ -231,15 +231,15 @@ const Leaderboards = () => {
 
   return (
     <div className="min-h-screen bg-[#1e1e2e] text-ctp-text py-4 sm:py-6 overflow-x-hidden">
-      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 w-full">
-        <div className="text-center mb-8 animate-fade-in">
+      <div className="max-w-[1920px] mx-auto px-2 sm:px-4 lg:px-6 w-full">
+        <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Trophy className="h-6 w-6 text-[#a6e3a1]" />
             <h1 className="text-3xl md:text-4xl font-bold text-[#a6e3a1]">
               Leaderboards
             </h1>
           </div>
-          <p className="text-base text-ctp-subtext1 max-w-3xl mx-auto animate-fade-in-delay leading-relaxed">
+          <p className="text-base text-ctp-subtext1 max-w-3xl mx-auto leading-relaxed">
             Browse the fastest times across all categories and platforms
           </p>
         </div>
@@ -273,7 +273,7 @@ const Leaderboards = () => {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value={leaderboardType} className="mt-0 animate-fade-in">
+          <TabsContent value={leaderboardType} className="mt-0">
             {/* Category Tabs */}
             {(() => {
               // Filter out categories that are disabled for the selected level
@@ -295,10 +295,10 @@ const Leaderboards = () => {
               
               return filteredCategories.length > 0 ? (
                 <>
-                  <div className="mb-6 animate-slide-up">
+                  <div className="mb-4">
                     <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
                       <TabsList className="flex w-full p-0.5 gap-1 overflow-x-auto overflow-y-hidden scrollbar-hide rounded-none" style={{ minWidth: 'max-content' }}>
-                        {filteredCategories.map((category, index) => {
+                        {filteredCategories.map((category) => {
                           const categoryWithSRC = categoriesWithSRC.find(c => c.id === category.id);
                           const isLinkedToSRC = categoryWithSRC?.srcCategoryId && categoryWithSRC.srcCategoryId.trim() !== '';
                           
@@ -306,8 +306,7 @@ const Leaderboards = () => {
                           <TabsTrigger 
                             key={category.id} 
                             value={category.id} 
-                            className="data-[state=active]:bg-[#94e2d5] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#94e2d5]/50 py-1.5 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm whitespace-nowrap rounded-none flex items-center gap-1.5"
-                            style={{ animationDelay: `${index * 50}ms` }}
+                            className="data-[state=active]:bg-[#94e2d5] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-colors font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#94e2d5]/50 py-1.5 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm whitespace-nowrap rounded-none flex items-center gap-1.5"
                             title={isLinkedToSRC ? "Linked to Speedrun.com" : undefined}
                           >
                             {category.name}
@@ -323,15 +322,14 @@ const Leaderboards = () => {
                   
                   {/* Subcategory Tabs (only for regular leaderboard type) */}
                   {leaderboardType === 'regular' && availableSubcategories.length > 0 && (
-                    <div className="mb-6 animate-slide-up">
+                    <div className="mb-4">
                       <Tabs value={selectedSubcategory} onValueChange={setSelectedSubcategory}>
                         <TabsList className="flex w-full p-0.5 gap-1 overflow-x-auto overflow-y-hidden scrollbar-hide rounded-none" style={{ minWidth: 'max-content' }}>
-                          {availableSubcategories.map((subcategory, index) => (
+                          {availableSubcategories.map((subcategory) => (
                             <TabsTrigger 
                               key={subcategory.id} 
                               value={subcategory.id} 
-                              className="data-[state=active]:bg-[#cba6f7] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#cba6f7]/50 py-1.5 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm whitespace-nowrap rounded-none"
-                              style={{ animationDelay: `${index * 50}ms` }}
+                              className="data-[state=active]:bg-[#cba6f7] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-colors font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#cba6f7]/50 py-1.5 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm whitespace-nowrap rounded-none"
                             >
                               {subcategory.name}
                             </TabsTrigger>
@@ -343,7 +341,7 @@ const Leaderboards = () => {
                 </>
               ) : (
                 availableCategories.length > 0 && (
-                  <div className="mb-6 p-4 bg-ctp-surface0 rounded-none border border-ctp-surface1">
+                  <div className="mb-4 p-4 bg-ctp-surface0 rounded-none border border-ctp-surface1">
                     <p className="text-sm text-ctp-subtext1">
                       No categories available for the selected level. Please enable categories for this level in the admin panel.
                     </p>
@@ -353,30 +351,23 @@ const Leaderboards = () => {
             })()}
 
         {/* Filters */}
-            <Card className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl mb-6 transition-all duration-300 hover:scale-[1.01] hover:shadow-2xl hover:shadow-ctp-mauve/20 hover:border-ctp-mauve/50 animate-slide-up-delay rounded-none">
-          <CardHeader className="bg-gradient-to-r from-ctp-base to-ctp-mantle border-b border-ctp-surface1">
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <div className="relative">
-                <div className="absolute inset-0 rounded-none bg-gradient-to-br from-ctp-mauve to-ctp-lavender opacity-30 blur-sm animate-pulse"></div>
-                <div className="relative p-1.5 rounded-none bg-gradient-to-br from-ctp-mauve to-ctp-lavender transition-transform duration-300 hover:scale-110">
-                  <Filter className="h-5 w-5 text-ctp-crust" />
-                </div>
-              </div>
-              <span className="bg-gradient-to-r from-ctp-mauve to-ctp-pink bg-clip-text text-transparent">
-                Filter Results
-              </span>
+            <Card className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl mb-4 rounded-none">
+          <CardHeader className="bg-gradient-to-r from-ctp-base to-ctp-mantle border-b border-ctp-surface1 py-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Filter className="h-4 w-4 text-ctp-mauve" />
+              <span className="text-ctp-text">Filter Results</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-3 sm:p-5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <CardContent className="p-3 sm:p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {(leaderboardType === 'individual-level' || leaderboardType === 'community-golds') && (
-                <div className="animate-fade-in" style={{ animationDelay: '100ms' }}>
-                  <label className="block text-sm font-semibold mb-2 text-ctp-text flex items-center gap-2">
+                <div>
+                  <label className="block text-sm font-semibold mb-1.5 text-ctp-text flex items-center gap-2">
                     <Sparkles className="h-3.5 w-3.5 text-ctp-mauve" />
                     Levels
                   </label>
                   <Select value={selectedLevel} onValueChange={setSelectedLevel}>
-                    <SelectTrigger className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 h-10 text-sm hover:border-ctp-mauve hover:bg-gradient-to-br hover:from-ctp-surface0 hover:to-ctp-base transition-all duration-300 hover:shadow-lg hover:shadow-ctp-mauve/20 rounded-none">
+                    <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-9 text-sm rounded-none">
                       <SelectValue placeholder="Select level" />
                   </SelectTrigger>
                   <SelectContent>
@@ -389,13 +380,13 @@ const Leaderboards = () => {
                 </Select>
               </div>
               )}
-              <div className="animate-fade-in" style={{ animationDelay: '200ms' }}>
-                <label className="block text-sm font-semibold mb-2 text-ctp-text flex items-center gap-2">
+              <div>
+                <label className="block text-sm font-semibold mb-1.5 text-ctp-text flex items-center gap-2">
                   <Gamepad2 className="h-3.5 w-3.5 text-ctp-mauve" />
                   Platform
                 </label>
                 <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
-                  <SelectTrigger className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 h-10 text-sm hover:border-ctp-mauve hover:bg-gradient-to-br hover:from-ctp-surface0 hover:to-ctp-base transition-all duration-300 hover:shadow-lg hover:shadow-ctp-mauve/20 rounded-none">
+                  <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-9 text-sm rounded-none">
                     <SelectValue placeholder="Select platform" />
                   </SelectTrigger>
                   <SelectContent>
@@ -407,8 +398,8 @@ const Leaderboards = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="animate-fade-in" style={{ animationDelay: '300ms' }}>
-                <label className="block text-sm font-semibold mb-2 text-ctp-text flex items-center gap-2">
+              <div>
+                <label className="block text-sm font-semibold mb-1.5 text-ctp-text flex items-center gap-2">
                   {selectedRunType === 'solo' ? (
                     <User className="h-3.5 w-3.5 text-ctp-mauve" />
                   ) : (
@@ -417,7 +408,7 @@ const Leaderboards = () => {
                   Run Type
                 </label>
                 <Select value={selectedRunType} onValueChange={setSelectedRunType}>
-                  <SelectTrigger className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 h-10 text-sm hover:border-ctp-mauve hover:bg-gradient-to-br hover:from-ctp-surface0 hover:to-ctp-base transition-all duration-300 hover:shadow-lg hover:shadow-ctp-mauve/20 rounded-none">
+                  <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-9 text-sm rounded-none">
                     <SelectValue placeholder="Select run type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -432,13 +423,13 @@ const Leaderboards = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="animate-fade-in" style={{ animationDelay: '400ms' }}>
-                <label className="block text-sm font-semibold mb-2 text-ctp-text flex items-center gap-2">
+              <div>
+                <label className="block text-sm font-semibold mb-1.5 text-ctp-text flex items-center gap-2">
                   <TrendingUp className="h-3.5 w-3.5 text-ctp-mauve" />
                   Run Status
                 </label>
                 <Select value={showObsoleteRuns} onValueChange={setShowObsoleteRuns}>
-                  <SelectTrigger className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 h-10 text-sm hover:border-ctp-mauve hover:bg-gradient-to-br hover:from-ctp-surface0 hover:to-ctp-base transition-all duration-300 hover:shadow-lg hover:shadow-ctp-mauve/20 rounded-none">
+                  <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-9 text-sm rounded-none">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -452,9 +443,9 @@ const Leaderboards = () => {
         </Card>
 
         {/* Leaderboard Table */}
-        <Card className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl transition-all duration-300 hover:scale-[1.01] hover:shadow-2xl hover:shadow-ctp-mauve/20 hover:border-ctp-mauve/50 animate-slide-up-delay-2">
-          <CardHeader className="bg-gradient-to-r from-ctp-base to-ctp-mantle border-b border-ctp-surface1">
-            <CardTitle className="flex items-center gap-2 text-xl text-[#a6e3a1]">
+        <Card className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl rounded-none">
+          <CardHeader className="bg-gradient-to-r from-ctp-base to-ctp-mantle border-b border-ctp-surface1 py-3">
+            <CardTitle className="flex items-center gap-2 text-lg text-[#a6e3a1]">
               <span>
                 {availableCategories.find(c => c.id === selectedCategory)?.name || "Leaderboards"}
               </span>
@@ -465,25 +456,23 @@ const Leaderboards = () => {
               )}
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-5">
+          <CardContent className="p-0">
             {loading || categoriesLoading ? (
-              <div className="space-y-3 py-6 animate-fade-in">
+              <div className="space-y-2 py-6 px-4">
                 <div className="flex items-center justify-center py-8">
-                  <LoadingSpinner size="lg" />
+                  <LoadingSpinner size="md" />
                 </div>
-                <Skeleton className="h-10 w-full animate-pulse" />
-                <Skeleton className="h-10 w-full animate-pulse" style={{ animationDelay: '100ms' }} />
-                <Skeleton className="h-10 w-full animate-pulse" style={{ animationDelay: '200ms' }} />
-                <Skeleton className="h-10 w-[90%] animate-pulse" style={{ animationDelay: '300ms' }} />
+                <Skeleton className="h-9 w-full" />
+                <Skeleton className="h-9 w-full" />
+                <Skeleton className="h-9 w-full" />
+                <Skeleton className="h-9 w-[90%]" />
               </div>
             ) : leaderboardData.length === 0 ? (
-              <div className="text-center py-12 animate-fade-in">
-                <div className="flex flex-col items-center gap-4">
-                  <div className="p-4 rounded-full bg-gradient-to-br from-ctp-base to-ctp-mantle border border-ctp-surface1">
-                    <Trophy className="h-8 w-8 text-ctp-subtext1 animate-pulse" />
-                  </div>
+              <div className="text-center py-12 px-4">
+                <div className="flex flex-col items-center gap-3">
+                  <Trophy className="h-8 w-8 text-ctp-subtext1" />
                   <div>
-                    <h3 className="text-lg font-semibold mb-2 text-ctp-text">No entries found</h3>
+                    <h3 className="text-base font-semibold mb-1 text-ctp-text">No entries found</h3>
                     <p className="text-sm text-ctp-subtext1">
                       Try adjusting your filters to see more results
                     </p>
@@ -491,7 +480,7 @@ const Leaderboards = () => {
                 </div>
               </div>
             ) : (
-              <div className="animate-fade-in">
+              <div>
                 <LeaderboardTable 
                   data={leaderboardData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)} 
                   platforms={availablePlatforms} 
@@ -500,13 +489,15 @@ const Leaderboards = () => {
                   leaderboardType={leaderboardType}
                 />
                 {leaderboardData.length > itemsPerPage && (
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={Math.ceil(leaderboardData.length / itemsPerPage)}
-                    onPageChange={setCurrentPage}
-                    itemsPerPage={itemsPerPage}
-                    totalItems={leaderboardData.length}
-                  />
+                  <div className="px-4 pb-4 pt-2">
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={Math.ceil(leaderboardData.length / itemsPerPage)}
+                      onPageChange={setCurrentPage}
+                      itemsPerPage={itemsPerPage}
+                      totalItems={leaderboardData.length}
+                    />
+                  </div>
                 )}
               </div>
             )}
