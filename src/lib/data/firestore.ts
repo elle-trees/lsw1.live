@@ -179,7 +179,7 @@ export const getLeaderboardEntriesFirestore = async (
     
     // Debug logging for IL queries
     if (leaderboardType === 'individual-level') {
-      logger.debug(`[getLeaderboardEntriesFirestore] IL query found ${querySnapshot.size} documents before filtering`);
+      console.debug(`[getLeaderboardEntriesFirestore] IL query found ${querySnapshot.size} documents before filtering`);
     }
     
     // Normalize and validate entries
@@ -227,13 +227,13 @@ export const getLeaderboardEntriesFirestore = async (
         if (leaderboardType === 'individual-level') {
           // Must have leaderboardType === 'individual-level'
           if (entry.leaderboardType !== 'individual-level') {
-            logger.debug(`[getLeaderboardEntriesFirestore] Filtering out IL run ${entry.id}: leaderboardType='${entry.leaderboardType}' (expected 'individual-level')`);
+            console.debug(`[getLeaderboardEntriesFirestore] Filtering out IL run ${entry.id}: leaderboardType='${entry.leaderboardType}' (expected 'individual-level')`);
             return false;
           }
           
           // IL runs must have a level field
           if (!entry.level || entry.level.trim() === '') {
-            logger.debug(`[getLeaderboardEntriesFirestore] Filtering out IL run ${entry.id}: missing level field`);
+            console.debug(`[getLeaderboardEntriesFirestore] Filtering out IL run ${entry.id}: missing level field`);
             return false;
           }
         }
@@ -568,7 +568,7 @@ export const addLeaderboardEntryFirestore = async (entry: Omit<LeaderboardEntry,
     
     // Log leaderboardType for IL runs to debug
     if (finalLeaderboardType === 'individual-level') {
-      logger.debug(`[addLeaderboardEntry] Saving IL run with leaderboardType='individual-level', level='${normalized.level || 'none'}'`);
+      console.debug(`[addLeaderboardEntry] Saving IL run with leaderboardType='individual-level', level='${normalized.level || 'none'}'`);
     }
     
     // Only include optional fields if they have values
