@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Upload, User, Settings, ShieldAlert, Download, Radio, Trophy, Github, Menu, Plus, Bell, BarChart3 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
@@ -11,17 +11,21 @@ import { auth } from "@/lib/firebase";
 import { LoginModal } from "@/components/LoginModal";
 import { useToast } from "@/hooks/use-toast";
 import { getErrorMessage, logError } from "@/lib/errorUtils";
-import { getUnverifiedLeaderboardEntries, getUnclaimedRunsBySRCUsername, getPlayerByUid } from "@/lib/db";
+import { getUnverifiedLeaderboardEntries, getUnclaimedRunsBySRCUsername, getPlayerByUid, getGameDetailsConfig } from "@/lib/db";
 import { usePrefetchOnHover } from "@/hooks/usePrefetch";
 import { Notifications } from "@/components/Notifications";
+import { GameDetailsConfig } from "@/types/database";
 
 export function Header() {
   const { currentUser, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [unclaimedRunsCount, setUnclaimedRunsCount] = useState(0);
   const [unverifiedRunsCount, setUnverifiedRunsCount] = useState(0);
+  const [gameDetailsConfig, setGameDetailsConfig] = useState<GameDetailsConfig | null>(null);
+  const [loadingGameDetails, setLoadingGameDetails] = useState(true);
   const { toast } = useToast();
 
   const handleLogout = async () => {
@@ -91,6 +95,22 @@ export function Header() {
     
     return () => clearInterval(interval);
   }, [currentUser?.uid, currentUser?.isAdmin, loading]);
+
+  // Fetch game details config for navigation links
+  useEffect(() => {
+    const fetchGameDetailsConfig = async () => {
+      try {
+        const config = await getGameDetailsConfig();
+        setGameDetailsConfig(config);
+      } catch (error) {
+        // Silent fail
+      } finally {
+        setLoadingGameDetails(false);
+      }
+    };
+
+    fetchGameDetailsConfig();
+  }, []);
 
   const handleNotificationClick = () => {
     if (currentUser?.isAdmin && unverifiedRunsCount > 0) {
@@ -204,6 +224,45 @@ export function Header() {
       </>
     );
   };
+
+  // Get configurable navigation items from game details config
+  const getConfigurableNavItems = () => {
+    if (!gameDetailsConfig || !gameDetailsConfig.enabled || loadingGameDetails) {
+      return null;
+    }
+
+    // Check if component should be visible on current page
+    const currentPath = location.pathname;
+    const isVisible = gameDetailsConfig.visibleOnPages.some(page => {
+      if (page === "/") {
+        return currentPath === "/";
+      }
+      return currentPath.startsWith(page);
+    });
+
+    if (!isVisible) {
+      return null;
+    }
+
+    // Sort nav items by order
+    const sortedNavItems = [...gameDetailsConfig.navItems].sort((a, b) => {
+      const orderA = a.order ?? Infinity;
+      const orderB = b.order ?? Infinity;
+      return orderA - orderB;
+    });
+
+    // Determine active nav item based on current route
+    const activeNavItem = sortedNavItems.find(item => {
+      if (item.route === "/") {
+        return currentPath === "/";
+      }
+      return currentPath.startsWith(item.route);
+    });
+
+    return { sortedNavItems, activeNavItem };
+  };
+
+  const configurableNav = getConfigurableNavItems();
 
   return (
     <>
@@ -408,6 +467,45 @@ export function Header() {
             </div>
           </div>
         </div>
+        
+        {/* Configurable Navigation Links from Game Details Config */}
+        {configurableNav && (
+          <div className="border-t border-ctp-surface1 bg-[#1e1e2e]">
+            <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-3">
+              <nav className="flex flex-wrap gap-4 sm:gap-6">
+                {configurableNav.sortedNavItems.map((item) => {
+                  const isActive = configurableNav.activeNavItem?.id === item.id;
+                  return (
+                    <Link
+                      key={item.id}
+                      to={item.route}
+                      className={`relative text-sm sm:text-base font-medium transition-all duration-200 ${
+                        isActive
+                          ? "text-ctp-text"
+                          : "text-ctp-subtext1 hover:text-ctp-text"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        {item.label}
+                        {item.badgeCount !== undefined && item.badgeCount > 0 && (
+                          <Badge
+                            variant="outline"
+                            className="bg-ctp-surface0 text-ctp-subtext1 border-ctp-surface1 text-xs px-1.5 py-0 h-5 min-w-[1.25rem] flex items-center justify-center"
+                          >
+                            {item.badgeCount}
+                          </Badge>
+                        )}
+                      </span>
+                      {isActive && (
+                        <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-ctp-text"></span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </nav>
+            </div>
+          </div>
+        )}
       </header>
       <LoginModal open={isLoginOpen} onOpenChange={setIsLoginOpen} />
     </>
