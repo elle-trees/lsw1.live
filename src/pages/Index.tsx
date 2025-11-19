@@ -46,7 +46,9 @@ const Index = () => {
   const [totalVerifiedRuns, setTotalVerifiedRuns] = useState<number>(0);
   const [totalTime, setTotalTime] = useState<string>("00:00:00");
   const [statsLoading, setStatsLoading] = useState(true);
+  const [isLive, setIsLive] = useState<boolean | null>(null);
   const lastRefreshTimeRef = useRef<number>(Date.now());
+  const channel = 'lsw1live';
 
   useEffect(() => {
     const fetchData = async () => {
@@ -101,6 +103,45 @@ const Index = () => {
 
     fetchStats();
   }, []);
+
+  useEffect(() => {
+    // Check if stream is live
+    const checkStreamStatus = async () => {
+      try {
+        // Use decapi.me status endpoint which returns "live" or "offline"
+        const response = await fetch(`https://decapi.me/twitch/status/${channel}`);
+        
+        if (!response.ok) {
+          setIsLive(false);
+          return;
+        }
+        
+        const data = await response.text();
+        const trimmedData = data.trim().toLowerCase();
+        
+        // The status endpoint should return "live" or "offline"
+        if (trimmedData === 'live') {
+          setIsLive(true);
+        } else if (trimmedData === 'offline') {
+          setIsLive(false);
+        } else {
+          // If response is unexpected, default to offline for safety
+          setIsLive(false);
+        }
+      } catch (error) {
+        // Default to offline on error
+        setIsLive(false);
+      }
+    };
+
+    // Check immediately
+    checkStreamStatus();
+
+    // Check every 30 seconds
+    const interval = setInterval(checkStreamStatus, 30000);
+
+    return () => clearInterval(interval);
+  }, [channel]);
 
   return (
     <div className="min-h-screen text-ctp-text overflow-x-hidden relative">
@@ -196,13 +237,15 @@ const Index = () => {
 
           {/* Bottom Row - Twitch Embed and Recent Runs */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 lg:gap-8 items-stretch">
-            {/* Left Side - Twitch Embed (under Verified Runs) */}
-            <div className="lg:col-span-8 min-w-0 flex flex-col">
-              <TwitchEmbed channel="lsw1live" />
-            </div>
+            {/* Left Side - Twitch Embed (under Verified Runs) - Only show when live */}
+            {isLive === true && (
+              <div className="lg:col-span-8 min-w-0 flex flex-col">
+                <TwitchEmbed channel={channel} />
+              </div>
+            )}
 
             {/* Right Side - Recent Runs */}
-            <div className="lg:col-span-4 min-w-0 flex flex-col">
+            <div className={`${isLive === true ? 'lg:col-span-4' : 'lg:col-span-12'} min-w-0 flex flex-col`}>
               <div className="mb-3 flex-shrink-0">
                 <h2 className="text-lg sm:text-xl lg:text-2xl font-bold mb-1.5 text-ctp-text flex items-center gap-2">
                   <Trophy className="h-5 w-5 text-ctp-yellow animate-float" />
