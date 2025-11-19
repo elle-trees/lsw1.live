@@ -102,8 +102,8 @@ async function getPointsConfigCached(): Promise<PointsConfig> {
   }
 
   try {
-    const { getPointsConfig } = await import("@/lib/db");
-    cachedPointsConfig = await getPointsConfig();
+    const { getPointsConfigFirestore } = await import("@/lib/data/firestore/points");
+    cachedPointsConfig = await getPointsConfigFirestore();
     configCacheTime = now;
     return cachedPointsConfig;
   } catch (error) {

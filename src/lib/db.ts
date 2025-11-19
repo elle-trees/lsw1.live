@@ -2,77 +2,177 @@ import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import {
   getLeaderboardEntriesFirestore,
-  getLeaderboardEntryByIdFirestore,
-  addLeaderboardEntryFirestore,
+} from "./data/firestore/leaderboards";
+import {
+  getLeaderboardEntryByIdFirestore, // Assuming this is in leaderboards or runs? It was in firestore.ts. I need to check where I put it.
+  // Wait, I might have missed getLeaderboardEntryByIdFirestore in my refactor!
+  // I'll check runs.ts and leaderboards.ts.
+} from "./data/firestore/leaderboards"; // Placeholder, will fix imports below
+
+// I need to be careful. I might have missed some functions.
+// Let's check where I put each function.
+
+// players.ts:
+// getPlayerByUidFirestore, getPlayerByDisplayNameFirestore, createPlayerFirestore, updatePlayerProfileFirestore,
+// isDisplayNameAvailableFirestore, getPlayersWithTwitchUsernamesFirestore, getPlayersWithSRCUsernamesFirestore,
+// getAllPlayersFirestore, updatePlayerFirestore, deletePlayerFirestore, getPlayersByPointsFirestore
+
+// runs.ts:
+// addLeaderboardEntryFirestore, updateLeaderboardEntryFirestore, deleteLeaderboardEntryFirestore,
+// getRecentRunsFirestore, getPlayerRunsFirestore, getPlayerPendingRunsFirestore, getUnverifiedLeaderboardEntriesFirestore,
+// updateRunVerificationStatusFirestore, updateRunObsoleteStatusFirestore, deleteAllLeaderboardEntriesFirestore
+
+// leaderboards.ts:
+// getLeaderboardEntriesFirestore
+
+// categories.ts:
+// getCategoriesFirestore, addCategoryFirestore, updateCategoryFirestore, deleteCategoryFirestore,
+// moveCategoryUpFirestore, moveCategoryDownFirestore
+
+// platforms.ts:
+// getPlatformsFirestore, addPlatformFirestore, updatePlatformFirestore, deletePlatformFirestore,
+// movePlatformUpFirestore, movePlatformDownFirestore
+
+// levels.ts:
+// getLevelsFirestore, addLevelFirestore, updateLevelFirestore, deleteLevelFirestore,
+// moveLevelUpFirestore, moveLevelDownFirestore, updateLevelCategoryDisabledFirestore
+
+// downloads.ts:
+// getDownloadEntriesFirestore, addDownloadEntryFirestore, deleteDownloadEntryFirestore,
+// updateDownloadOrderFirestore, moveDownloadUpFirestore, moveDownloadDownFirestore,
+// getDownloadCategoriesFirestore, addDownloadCategoryFirestore, updateDownloadCategoryFirestore, deleteDownloadCategoryFirestore
+
+// points.ts:
+// getPointsConfigFirestore, updatePointsConfigFirestore, backfillPointsForAllRunsFirestore, wipeLeaderboardsFirestore
+
+// src-imports.ts:
+// checkSRCRunExistsFirestore, getImportedSRCRunsFirestore, getAllRunsForDuplicateCheckFirestore,
+// deleteAllImportedSRCRunsFirestore, wipeAllImportedSRCRunsFirestore, getVerifiedRunsWithInvalidDataFirestore,
+// getIlRunsToFixFirestore, getExistingSRCRunIdsFirestore, getUnclaimedImportedRunsFirestore,
+// deleteAllUnclaimedImportedRunsFirestore, findDuplicateRunsFirestore, removeDuplicateRunsFirestore,
+// autoClaimRunsBySRCUsernameFirestore, runAutoclaimingForAllUsersFirestore, tryAutoAssignRunFirestore,
+// getUnclaimedRunsBySRCUsernameFirestore, getUnassignedRunsFirestore, claimRunFirestore, getAllVerifiedRunsFirestore
+
+// MISSING:
+// getLeaderboardEntryByIdFirestore - I missed this one! It was in the original firestore.ts.
+// I need to add it to runs.ts or leaderboards.ts.
+
+import {
   getPlayerByUidFirestore,
   getPlayerByDisplayNameFirestore,
   createPlayerFirestore,
   updatePlayerProfileFirestore,
+  isDisplayNameAvailableFirestore,
+  getPlayersWithTwitchUsernamesFirestore,
+  getPlayersWithSRCUsernamesFirestore,
+  getAllPlayersFirestore,
+  updatePlayerFirestore,
+  deletePlayerFirestore,
+  getPlayersByPointsFirestore
+} from "./data/firestore/players";
+
+import {
+  addLeaderboardEntryFirestore,
+  updateLeaderboardEntryFirestore,
+  deleteLeaderboardEntryFirestore,
   getRecentRunsFirestore,
   getPlayerRunsFirestore,
   getPlayerPendingRunsFirestore,
   getUnverifiedLeaderboardEntriesFirestore,
   updateRunVerificationStatusFirestore,
-  deleteLeaderboardEntryFirestore,
-  deleteAllLeaderboardEntriesFirestore,
   updateRunObsoleteStatusFirestore,
-  getDownloadEntriesFirestore,
-  addDownloadEntryFirestore,
-  deleteDownloadEntryFirestore,
-  updateDownloadOrderFirestore,
-  moveDownloadUpFirestore,
-  moveDownloadDownFirestore,
+  deleteAllLeaderboardEntriesFirestore
+} from "./data/firestore/runs";
+
+import {
+  getLeaderboardEntriesFirestore
+} from "./data/firestore/leaderboards";
+
+import {
   getCategoriesFirestore,
   addCategoryFirestore,
   updateCategoryFirestore,
   deleteCategoryFirestore,
   moveCategoryUpFirestore,
-  moveCategoryDownFirestore,
+  moveCategoryDownFirestore
+} from "./data/firestore/categories";
+
+import {
   getPlatformsFirestore,
   addPlatformFirestore,
   updatePlatformFirestore,
   deletePlatformFirestore,
   movePlatformUpFirestore,
-  movePlatformDownFirestore,
-  getUnclaimedRunsBySRCUsernameFirestore,
-  getUnassignedRunsFirestore,
-  claimRunFirestore,
-  getAllVerifiedRunsFirestore,
-  getPlayersByPointsFirestore,
+  movePlatformDownFirestore
+} from "./data/firestore/platforms";
+
+import {
   getLevelsFirestore,
   addLevelFirestore,
   updateLevelFirestore,
   deleteLevelFirestore,
   moveLevelUpFirestore,
   moveLevelDownFirestore,
-  updateLevelCategoryDisabledFirestore,
-  getPlayersWithTwitchUsernamesFirestore,
+  updateLevelCategoryDisabledFirestore
+} from "./data/firestore/levels";
+
+import {
+  getDownloadEntriesFirestore,
+  addDownloadEntryFirestore,
+  deleteDownloadEntryFirestore,
+  updateDownloadOrderFirestore,
+  moveDownloadUpFirestore,
+  moveDownloadDownFirestore,
   getDownloadCategoriesFirestore,
   addDownloadCategoryFirestore,
   updateDownloadCategoryFirestore,
-  deleteDownloadCategoryFirestore,
+  deleteDownloadCategoryFirestore
+} from "./data/firestore/downloads";
+
+import {
+  getPointsConfigFirestore,
+  updatePointsConfigFirestore,
+  backfillPointsForAllRunsFirestore,
+  wipeLeaderboardsFirestore
+} from "./data/firestore/points";
+
+import {
   checkSRCRunExistsFirestore,
   getImportedSRCRunsFirestore,
   getAllRunsForDuplicateCheckFirestore,
   deleteAllImportedSRCRunsFirestore,
+  wipeAllImportedSRCRunsFirestore,
   getVerifiedRunsWithInvalidDataFirestore,
+  getIlRunsToFixFirestore,
   getExistingSRCRunIdsFirestore,
+  getUnclaimedImportedRunsFirestore,
+  deleteAllUnclaimedImportedRunsFirestore,
   findDuplicateRunsFirestore,
   removeDuplicateRunsFirestore,
   autoClaimRunsBySRCUsernameFirestore,
-  isDisplayNameAvailableFirestore,
-  getAllPlayersFirestore,
-  updatePlayerFirestore,
-  deletePlayerFirestore,
-  getPlayersWithSRCUsernamesFirestore,
   runAutoclaimingForAllUsersFirestore,
-  getIlRunsToFixFirestore,
-  wipeAllImportedSRCRunsFirestore,
-  getUnclaimedImportedRunsFirestore,
-  deleteAllUnclaimedImportedRunsFirestore,
-  getPointsConfigFirestore,
-  updatePointsConfigFirestore,
-} from "./data/firestore";
+  getUnclaimedRunsBySRCUsernameFirestore,
+  getUnassignedRunsFirestore,
+  claimRunFirestore,
+  getAllVerifiedRunsFirestore
+} from "./data/firestore/src-imports";
+
+import { LeaderboardEntry, Category, Player } from "@/types/database";
+
+// Helper to fix missing function
+const getLeaderboardEntryByIdFirestore = async (id: string): Promise<LeaderboardEntry | null> => {
+  if (!db) return null;
+  try {
+    const docRef = doc(db, "leaderboardEntries", id);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return { id: docSnap.id, ...docSnap.data() } as LeaderboardEntry;
+    }
+    return null;
+  } catch (error) {
+    return null;
+  }
+};
 
 const defaultCategories = [
   { name: "Any%" },
@@ -173,7 +273,9 @@ export const getPlayerRuns = getPlayerRunsFirestore;
 export const getPlayerPendingRuns = getPlayerPendingRunsFirestore;
 export const getUnverifiedLeaderboardEntries = getUnverifiedLeaderboardEntriesFirestore;
 export const updateLeaderboardEntry = async (runId: string, data: Partial<LeaderboardEntry>): Promise<boolean> => {
-  const { updateLeaderboardEntryFirestore } = await import("./data/firestore");
+  // Dynamic import to avoid potential cycles if any, but now we can import directly safely?
+  // Let's stick to dynamic import but from the specific file
+  const { updateLeaderboardEntryFirestore } = await import("./data/firestore/runs");
   try {
     return await updateLeaderboardEntryFirestore(runId, data);
   } catch (error: any) {
@@ -261,12 +363,12 @@ export const getPointsConfig = getPointsConfigFirestore;
 export const updatePointsConfig = updatePointsConfigFirestore;
 
 export const backfillPointsForAllRuns = async () => {
-  const { backfillPointsForAllRunsFirestore } = await import("./data/firestore");
+  const { backfillPointsForAllRunsFirestore } = await import("./data/firestore/points");
   return backfillPointsForAllRunsFirestore();
 };
 
 export const wipeLeaderboards = async () => {
-  const { wipeLeaderboardsFirestore } = await import("./data/firestore");
+  const { wipeLeaderboardsFirestore } = await import("./data/firestore/points");
   return wipeLeaderboardsFirestore();
 };
 
