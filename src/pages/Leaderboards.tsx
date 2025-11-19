@@ -228,9 +228,9 @@ const Leaderboards = () => {
   }, [selectedCategory, selectedPlatform, selectedRunType, selectedLevel, showObsoleteRuns, leaderboardType, selectedSubcategory]);
 
   return (
-    <div className="min-h-screen bg-[#1e1e2e] text-ctp-text py-4 sm:py-6 overflow-x-hidden">
+    <div className="min-h-screen bg-[#1e1e2e] text-ctp-text py-4 sm:py-6 overflow-x-hidden animate-fade-in">
       <div className="max-w-[1920px] mx-auto px-2 sm:px-4 lg:px-6 w-full">
-        <div className="text-center mb-6">
+        <div className="text-center mb-6 animate-slide-up">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Trophy className="h-6 w-6 text-[#a6e3a1]" />
             <h1 className="text-3xl md:text-4xl font-bold text-[#a6e3a1]">
@@ -243,7 +243,7 @@ const Leaderboards = () => {
         </div>
 
         {/* Leaderboard Type Buttons */}
-        <div className="grid grid-cols-3 mb-6 p-0.5 gap-1 bg-ctp-surface0/50 rounded-none border border-ctp-surface1">
+        <div className="grid grid-cols-3 mb-6 p-0.5 gap-1 bg-ctp-surface0/50 rounded-none border border-ctp-surface1 animate-slide-up" style={{ animationDelay: '0.1s' }}>
           <Button
             variant={leaderboardType === 'regular' ? "default" : "ghost"}
             onClick={() => startTransition(() => setLeaderboardType('regular'))}
@@ -313,7 +313,7 @@ const Leaderboards = () => {
               
               return filteredCategories.length > 0 ? (
                 <>
-                  <div className="mb-4">
+                  <div className="mb-4 animate-slide-up-delay">
                     <div className="flex w-full p-1 gap-2 overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-thumb-ctp-surface1 scrollbar-track-transparent pb-3" style={{ minWidth: 'max-content' }}>
                         {filteredCategories.map((category) => {
                           const isSelected = selectedCategory === category.id;
@@ -337,7 +337,7 @@ const Leaderboards = () => {
                   
                   {/* Subcategory Buttons (only for regular leaderboard type) */}
                   {leaderboardType === 'regular' && availableSubcategories.length > 0 && (
-                    <div className="mb-6">
+                    <div className="mb-6 animate-slide-up-delay">
                       <div className="flex w-full p-1 gap-2 overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-thumb-ctp-surface1 scrollbar-track-transparent pb-3" style={{ minWidth: 'max-content' }}>
                           {availableSubcategories.map((subcategory) => {
                             const isSelected = selectedSubcategory === subcategory.id;
@@ -371,7 +371,7 @@ const Leaderboards = () => {
             })()}
 
         {/* Filters */}
-            <Card className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl mb-6 rounded-none overflow-hidden">
+            <Card className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl mb-6 rounded-none overflow-hidden animate-slide-up-delay-2">
           <CardHeader className="bg-gradient-to-r from-ctp-base to-ctp-mantle border-b border-ctp-surface1 py-4">
             <CardTitle className="flex items-center gap-2 text-lg font-bold">
               <Filter className="h-5 w-5 text-ctp-mauve" />
@@ -463,7 +463,7 @@ const Leaderboards = () => {
         </Card>
 
         {/* Leaderboard Table */}
-        <Card className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl rounded-none overflow-hidden">
+        <Card className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl rounded-none overflow-hidden animate-slide-up-delay-2">
           <CardHeader className="bg-gradient-to-r from-ctp-base to-ctp-mantle border-b border-ctp-surface1 py-4">
             <CardTitle className="flex items-center gap-2 text-lg text-[#a6e3a1]">
               <span>
