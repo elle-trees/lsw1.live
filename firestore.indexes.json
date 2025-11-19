@@ -253,6 +253,20 @@
         {
           "fieldPath": "verified",
           "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "leaderboardEntries",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "playerId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "verified",
+          "order": "ASCENDING"
         },
         {
           "fieldPath": "date",
