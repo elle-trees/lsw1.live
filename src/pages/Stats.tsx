@@ -16,7 +16,8 @@ import {
   Award,
   Star,
   Gem,
-  Filter
+  Filter,
+  CalendarDays
 } from "lucide-react";
 import { getAllVerifiedRuns, getCategories, getPlatforms, getLevels, runTypes } from "@/lib/db";
 import { LeaderboardEntry, Player } from "@/types/database";
@@ -44,6 +45,14 @@ const getCategoryNameWithOverride = (
   return getCategoryName(categoryId, categories, srcCategoryName);
 };
 
+interface LongestHeldWR {
+  run: LeaderboardEntry;
+  days: number;
+  startDate: string;
+  endDate: string;
+  groupKey: string;
+}
+
 interface StatsData {
   totalRuns: number;
   verifiedRuns: number;
@@ -57,6 +66,7 @@ interface StatsData {
   wrStartDate?: string;
   wrEndDate?: string;
   longestWRHolder?: { playerName: string; days: number };
+  longestHeldWRs: LongestHeldWR[];
   allWorldRecords: LeaderboardEntry[];
   allVerifiedRuns: LeaderboardEntry[];
 }
@@ -189,6 +199,7 @@ const Stats = () => {
         // Track WR holders by group (category/platform/runType/level) over time
         // For each group, find all runs that were WRs at some point
         const wrHoldersByGroup = new Map<string, Array<{ playerName: string; date: string; endDate?: string }>>();
+        const longestHeldWRsList: LongestHeldWR[] = [];
         const now = new Date();
         const nowDateStr = now.toISOString().split('T')[0];
         
@@ -229,6 +240,7 @@ const Stats = () => {
           
           // Track the current WR holder over time
           const holders: Array<{ playerName: string; date: string; endDate?: string }> = [];
+          const wrRuns: Array<{ run: LeaderboardEntry; startDate: string; endDate?: string }> = [];
           let currentWR: LeaderboardEntry | null = null;
           let currentWRDate: string | null = null;
           
@@ -251,6 +263,20 @@ const Stats = () => {
                     endDate: run.date,
                   });
                 }
+                
+                // Record when the previous WR run ended
+                const lastWRRun = wrRuns[wrRuns.length - 1];
+                if (lastWRRun && lastWRRun.run.id === currentWR.id && !lastWRRun.endDate) {
+                  // Update the existing entry's end date
+                  lastWRRun.endDate = run.date;
+                } else {
+                  // This shouldn't happen, but add it as a fallback
+                  wrRuns.push({
+                    run: currentWR,
+                    startDate: currentWRDate,
+                    endDate: run.date,
+                  });
+                }
               }
               
               // Set new WR holder
@@ -259,6 +285,11 @@ const Stats = () => {
               holders.push({
                 playerName: run.playerName || 'Unknown',
                 date: run.date,
+                endDate: undefined, // Will be set when broken or at end
+              });
+              wrRuns.push({
+                run: run,
+                startDate: run.date,
                 endDate: undefined, // Will be set when broken or at end
               });
             }
@@ -272,7 +303,30 @@ const Stats = () => {
             }
           }
           
+          // Set end date for current WR run (if still holding)
+          if (wrRuns.length > 0) {
+            const lastWRRun = wrRuns[wrRuns.length - 1];
+            if (!lastWRRun.endDate) {
+              lastWRRun.endDate = nowDateStr;
+            }
+          }
+          
           wrHoldersByGroup.set(groupKey, holders);
+          
+          // Add all WR runs from this group to the longest-held list
+          wrRuns.forEach(wrRun => {
+            const startDate = new Date(wrRun.startDate);
+            const endDate = new Date(wrRun.endDate || nowDateStr);
+            const days = Math.max(0, Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+            
+            longestHeldWRsList.push({
+              run: wrRun.run,
+              days,
+              startDate: wrRun.startDate,
+              endDate: wrRun.endDate || nowDateStr,
+              groupKey,
+            });
+          });
         });
         
         // Calculate total days each player has held WRs (across all groups)
@@ -297,6 +351,9 @@ const Stats = () => {
             longestWRHolder = { playerName, days };
           }
         });
+        
+        // Sort longest-held WRs by duration (longest first)
+        longestHeldWRsList.sort((a, b) => b.days - a.days);
 
         // Recent world records (last 20)
         const recentWorldRecords = worldRecords
@@ -321,6 +378,7 @@ const Stats = () => {
           wrStartDate,
           wrEndDate,
           longestWRHolder,
+          longestHeldWRs: longestHeldWRsList,
           allWorldRecords: worldRecords,
           allVerifiedRuns: verifiedRuns,
         });
@@ -559,7 +617,7 @@ const Stats = () => {
       </div>
 
       <div className="space-y-4">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 mb-4 p-0 gap-0 bg-ctp-surface0/50 rounded-none border border-ctp-surface1">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 mb-4 p-0 gap-0 bg-ctp-surface0/50 rounded-none border border-ctp-surface1">
           <Button
             variant={activeTab === 'overview' ? "default" : "ghost"}
             onClick={() => setActiveTab('overview')}
@@ -603,6 +661,17 @@ const Stats = () => {
             }`}
           >
             <span className="font-medium text-xs sm:text-sm">Recent WRs</span>
+          </Button>
+          <Button
+            variant={activeTab === 'longest' ? "default" : "ghost"}
+            onClick={() => setActiveTab('longest')}
+            className={`h-auto py-2 px-3 rounded-none transition-all duration-300 border-r border-ctp-surface1 last:border-r-0 ${
+              activeTab === 'longest'
+                ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm"
+                : "text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
+            }`}
+          >
+            <span className="font-medium text-xs sm:text-sm">Longest WRs</span>
           </Button>
         </div>
 
@@ -1137,6 +1206,132 @@ const Stats = () => {
               ) : (
                 <p className="text-center text-muted-foreground py-8">
                   No recent world records found
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {activeTab === 'longest' && (
+          <Card className="animate-slide-up-delay">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CalendarDays className="h-5 w-5" />
+                Longest-Held World Records
+              </CardTitle>
+              <CardDescription>
+                Runs that held the world record for the longest duration
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {stats.longestHeldWRs.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Duration</TableHead>
+                      <TableHead>Player</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Platform</TableHead>
+                      <TableHead>Level</TableHead>
+                      <TableHead>Time</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Period</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {stats.longestHeldWRs.map((longestWR, index) => {
+                      const categoryName = getCategoryNameWithOverride(longestWR.run.category, categories);
+                      const platformName = getPlatformName(longestWR.run.platform, platforms);
+                      const levelName = longestWR.run.level ? getLevelName(longestWR.run.level, levels) : null;
+                      const leaderboardTypeName = 
+                        longestWR.run.leaderboardType === 'individual-level' ? 'IL' :
+                        longestWR.run.leaderboardType === 'community-golds' ? 'CG' : 'Full Game';
+                      const startDate = new Date(longestWR.startDate);
+                      const endDate = new Date(longestWR.endDate);
+                      const now = new Date();
+                      const nowDateStr = now.toISOString().split('T')[0];
+                      const isCurrentWR = endDate.toISOString().split('T')[0] === nowDateStr;
+                      
+                      // Format duration
+                      const years = Math.floor(longestWR.days / 365);
+                      const months = Math.floor((longestWR.days % 365) / 30);
+                      const days = longestWR.days % 30;
+                      let durationText = '';
+                      if (years > 0) {
+                        durationText = `${years} year${years !== 1 ? 's' : ''}`;
+                        if (months > 0) {
+                          durationText += `, ${months} month${months !== 1 ? 's' : ''}`;
+                        }
+                      } else if (months > 0) {
+                        durationText = `${months} month${months !== 1 ? 's' : ''}`;
+                        if (days > 0) {
+                          durationText += `, ${days} day${days !== 1 ? 's' : ''}`;
+                        }
+                      } else {
+                        durationText = `${days} day${days !== 1 ? 's' : ''}`;
+                      }
+
+                      return (
+                        <TableRow key={`${longestWR.run.id}-${index}`}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Trophy className="h-4 w-4 text-yellow-500" />
+                              <span className="font-semibold">{durationText}</span>
+                              <Badge variant="outline" className="text-xs">
+                                {longestWR.days} days
+                              </Badge>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Link 
+                              to={`/player/${longestWR.run.playerId}`}
+                              className="text-primary hover:underline"
+                            >
+                              <span style={{ color: longestWR.run.nameColor || 'inherit' }}>
+                                {longestWR.run.playerName}
+                              </span>
+                              {longestWR.run.player2Name && (
+                                <>
+                                  <span className="text-muted-foreground"> & </span>
+                                  <span style={{ color: longestWR.run.player2Color || 'inherit' }}>
+                                    {longestWR.run.player2Name}
+                                  </span>
+                                </>
+                              )}
+                            </Link>
+                          </TableCell>
+                          <TableCell>{categoryName}</TableCell>
+                          <TableCell>{platformName}</TableCell>
+                          <TableCell>{levelName || '-'}</TableCell>
+                          <TableCell className="font-mono">{formatTime(longestWR.run.time)}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Badge variant={longestWR.run.runType === 'co-op' ? 'default' : 'secondary'}>
+                                {longestWR.run.runType === 'co-op' ? 'Co-op' : 'Solo'}
+                              </Badge>
+                              <Badge variant="outline">{leaderboardTypeName}</Badge>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm">
+                              <div>{startDate.toLocaleDateString()}</div>
+                              <div className="text-muted-foreground">
+                                {isCurrentWR ? (
+                                  <span className="text-green-500 font-semibold">Current WR</span>
+                                ) : (
+                                  `→ ${endDate.toLocaleDateString()}`
+                                )}
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-center text-muted-foreground py-8">
+                  No world record data available
                 </p>
               )}
             </CardContent>
