@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { GameDetailsConfig } from "@/types/database";
 import { getGameDetailsConfig } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 
 interface GameDetailsProps {
   className?: string;
@@ -48,26 +47,11 @@ export function GameDetails({ className }: GameDetailsProps) {
     return null;
   }
 
-  // Sort nav items by order
-  const sortedNavItems = [...config.navItems].sort((a, b) => {
-    const orderA = a.order ?? Infinity;
-    const orderB = b.order ?? Infinity;
-    return orderA - orderB;
-  });
-
   // Sort platforms by order
   const sortedPlatforms = [...config.platforms].sort((a, b) => {
     const orderA = a.order ?? Infinity;
     const orderB = b.order ?? Infinity;
     return orderA - orderB;
-  });
-
-  // Determine active nav item based on current route
-  const activeNavItem = sortedNavItems.find(item => {
-    if (item.route === "/") {
-      return currentPath === "/";
-    }
-    return currentPath.startsWith(item.route);
   });
 
   return (
@@ -111,7 +95,7 @@ export function GameDetails({ className }: GameDetailsProps) {
             </div>
 
             {/* Platform Buttons and Discord */}
-            <div className="flex flex-wrap gap-2 mb-6">
+            <div className="flex flex-wrap gap-2">
               {sortedPlatforms.map((platform) => (
                 <Button
                   key={platform.id}
@@ -141,39 +125,6 @@ export function GameDetails({ className }: GameDetailsProps) {
                 </Button>
               )}
             </div>
-
-            {/* Navigation Tabs */}
-            <nav className="flex flex-wrap gap-4 sm:gap-6 border-t border-ctp-surface1 pt-4">
-              {sortedNavItems.map((item) => {
-                const isActive = activeNavItem?.id === item.id;
-                return (
-                  <Link
-                    key={item.id}
-                    to={item.route}
-                    className={`relative text-sm sm:text-base font-medium transition-all duration-200 ${
-                      isActive
-                        ? "text-ctp-text"
-                        : "text-ctp-subtext1 hover:text-ctp-text"
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      {item.label}
-                      {item.badgeCount !== undefined && item.badgeCount > 0 && (
-                        <Badge
-                          variant="outline"
-                          className="bg-ctp-surface0 text-ctp-subtext1 border-ctp-surface1 text-xs px-1.5 py-0 h-5 min-w-[1.25rem] flex items-center justify-center"
-                        >
-                          {item.badgeCount}
-                        </Badge>
-                      )}
-                    </span>
-                    {isActive && (
-                      <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-ctp-text"></span>
-                    )}
-                  </Link>
-                );
-              })}
-            </nav>
           </div>
         </div>
       </div>
