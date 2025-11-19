@@ -104,7 +104,7 @@ export function Header() {
 
   return (
     <>
-      <header className="bg-[#1e1e2e] border-b border-ctp-surface1 shadow-lg sticky top-0 z-40 w-full overflow-x-hidden">
+      <header className="bg-[#1e1e2e] shadow-lg sticky top-0 z-40 w-full overflow-x-hidden">
         <div className="flex items-center justify-between h-16 px-2 sm:px-4 min-w-0 w-full">
           <div className="flex items-center gap-2 sm:gap-4 lg:gap-10 min-w-0 flex-shrink">
             <Link to="/" className="flex items-center space-x-1 sm:space-x-2 group transition-transform duration-300 hover:scale-105 flex-shrink-0">

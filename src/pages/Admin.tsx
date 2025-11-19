@@ -244,6 +244,14 @@ const Admin = () => {
   const [loadingGameDetailsConfig, setLoadingGameDetailsConfig] = useState(false);
   const [savingGameDetailsConfig, setSavingGameDetailsConfig] = useState(false);
   const [gameDetailsConfigForm, setGameDetailsConfigForm] = useState<Partial<GameDetailsConfig>>({});
+  
+  // Header links management state
+  const [newHeaderLink, setNewHeaderLink] = useState({ label: "", route: "", icon: "", color: "#cdd6f4", adminOnly: false });
+  const [editingHeaderLink, setEditingHeaderLink] = useState<GameDetailsHeaderLink | null>(null);
+  const [editingHeaderLinkForm, setEditingHeaderLinkForm] = useState({ label: "", route: "", icon: "", color: "#cdd6f4", adminOnly: false });
+  const [addingHeaderLink, setAddingHeaderLink] = useState(false);
+  const [updatingHeaderLink, setUpdatingHeaderLink] = useState(false);
+  const [reorderingHeaderLink, setReorderingHeaderLink] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPlatforms();
@@ -398,6 +406,203 @@ const Admin = () => {
       });
     } finally {
       setSavingPointsConfig(false);
+    }
+  };
+
+  // Header links management handlers
+  const handleAddHeaderLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newHeaderLink.label.trim() || !newHeaderLink.route.trim()) {
+      toast({
+        title: "Error",
+        description: "Label and route are required.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setAddingHeaderLink(true);
+    try {
+      const currentLinks = gameDetailsConfigForm.headerLinks ?? gameDetailsConfig?.headerLinks ?? [];
+      const newLink: GameDetailsHeaderLink = {
+        id: newHeaderLink.label.toLowerCase().replace(/\s+/g, "-"),
+        label: newHeaderLink.label.trim(),
+        route: newHeaderLink.route.trim(),
+        icon: newHeaderLink.icon || undefined,
+        color: newHeaderLink.color || undefined,
+        adminOnly: newHeaderLink.adminOnly,
+        order: currentLinks.length + 1,
+      };
+      
+      const updatedLinks = [...currentLinks, newLink];
+      setGameDetailsConfigForm({ ...gameDetailsConfigForm, headerLinks: updatedLinks });
+      setNewHeaderLink({ label: "", route: "", icon: "", color: "#cdd6f4", adminOnly: false });
+      
+      toast({
+        title: "Header Link Added",
+        description: "New header link has been added. Don't forget to save the configuration.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add header link.",
+        variant: "destructive",
+      });
+    } finally {
+      setAddingHeaderLink(false);
+    }
+  };
+  
+  const handleStartEditHeaderLink = (link: GameDetailsHeaderLink) => {
+    setEditingHeaderLink(link);
+    setEditingHeaderLinkForm({
+      label: link.label,
+      route: link.route,
+      icon: link.icon || "",
+      color: link.color || "#cdd6f4",
+      adminOnly: link.adminOnly || false,
+    });
+  };
+  
+  const handleCancelEditHeaderLink = () => {
+    setEditingHeaderLink(null);
+    setEditingHeaderLinkForm({ label: "", route: "", icon: "", color: "#cdd6f4", adminOnly: false });
+  };
+  
+  const handleSaveEditHeaderLink = async () => {
+    if (!editingHeaderLink || !editingHeaderLinkForm.label.trim() || !editingHeaderLinkForm.route.trim()) {
+      toast({
+        title: "Error",
+        description: "Label and route are required.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setUpdatingHeaderLink(true);
+    try {
+      const currentLinks = gameDetailsConfigForm.headerLinks ?? gameDetailsConfig?.headerLinks ?? [];
+      const updatedLinks = currentLinks.map(link => 
+        link.id === editingHeaderLink.id
+          ? {
+              ...link,
+              label: editingHeaderLinkForm.label.trim(),
+              route: editingHeaderLinkForm.route.trim(),
+              icon: editingHeaderLinkForm.icon || undefined,
+              color: editingHeaderLinkForm.color || undefined,
+              adminOnly: editingHeaderLinkForm.adminOnly,
+            }
+          : link
+      );
+      
+      setGameDetailsConfigForm({ ...gameDetailsConfigForm, headerLinks: updatedLinks });
+      handleCancelEditHeaderLink();
+      
+      toast({
+        title: "Header Link Updated",
+        description: "Header link has been updated. Don't forget to save the configuration.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update header link.",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingHeaderLink(false);
+    }
+  };
+  
+  const handleDeleteHeaderLink = (linkId: string) => {
+    if (!window.confirm("Are you sure you want to delete this header link?")) {
+      return;
+    }
+    
+    try {
+      const currentLinks = gameDetailsConfigForm.headerLinks ?? gameDetailsConfig?.headerLinks ?? [];
+      const updatedLinks = currentLinks.filter(link => link.id !== linkId);
+      // Reorder remaining links
+      const reorderedLinks = updatedLinks.map((link, index) => ({
+        ...link,
+        order: index + 1,
+      }));
+      
+      setGameDetailsConfigForm({ ...gameDetailsConfigForm, headerLinks: reorderedLinks });
+      
+      toast({
+        title: "Header Link Deleted",
+        description: "Header link has been removed. Don't forget to save the configuration.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete header link.",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const handleMoveHeaderLinkUp = (linkId: string) => {
+    setReorderingHeaderLink(linkId);
+    try {
+      const currentLinks = [...(gameDetailsConfigForm.headerLinks ?? gameDetailsConfig?.headerLinks ?? [])];
+      const index = currentLinks.findIndex(link => link.id === linkId);
+      
+      if (index <= 0) {
+        setReorderingHeaderLink(null);
+        return;
+      }
+      
+      // Swap with previous
+      [currentLinks[index - 1], currentLinks[index]] = [currentLinks[index], currentLinks[index - 1]];
+      
+      // Update orders
+      const reorderedLinks = currentLinks.map((link, idx) => ({
+        ...link,
+        order: idx + 1,
+      }));
+      
+      setGameDetailsConfigForm({ ...gameDetailsConfigForm, headerLinks: reorderedLinks });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to move header link.",
+        variant: "destructive",
+      });
+    } finally {
+      setReorderingHeaderLink(null);
+    }
+  };
+  
+  const handleMoveHeaderLinkDown = (linkId: string) => {
+    setReorderingHeaderLink(linkId);
+    try {
+      const currentLinks = [...(gameDetailsConfigForm.headerLinks ?? gameDetailsConfig?.headerLinks ?? [])];
+      const index = currentLinks.findIndex(link => link.id === linkId);
+      
+      if (index < 0 || index >= currentLinks.length - 1) {
+        setReorderingHeaderLink(null);
+        return;
+      }
+      
+      // Swap with next
+      [currentLinks[index], currentLinks[index + 1]] = [currentLinks[index + 1], currentLinks[index]];
+      
+      // Update orders
+      const reorderedLinks = currentLinks.map((link, idx) => ({
+        ...link,
+        order: idx + 1,
+      }));
+      
+      setGameDetailsConfigForm({ ...gameDetailsConfigForm, headerLinks: reorderedLinks });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to move header link.",
+        variant: "destructive",
+      });
+    } finally {
+      setReorderingHeaderLink(null);
     }
   };
 
@@ -4207,37 +4412,270 @@ const Admin = () => {
                     {/* Header Links */}
                     <div className="space-y-4">
                       <Label className="text-base font-semibold">Header Navigation Links</Label>
-                      <p className="text-sm text-[hsl(222,15%,60%)] mb-2">
-                        Configure header navigation links shown in the game details card. Each line should be: Label|Route|Icon|Color|AdminOnly (optional)
-                        <br />
-                        Available icons: Trophy, Upload, Radio, Download, BarChart3, ShieldAlert, LegoStud
-                        <br />
-                        Example: "Leaderboards|/leaderboards|Trophy|#a6e3a1" or "Admin|/admin|ShieldAlert|#f2cdcd|true"
+                      <p className="text-sm text-[hsl(222,15%,60%)] mb-4">
+                        Configure header navigation links shown in the game details card below platforms and Discord.
                       </p>
-                      <Textarea
-                        rows={10}
-                        placeholder="Leaderboards|/leaderboards|Trophy|#a6e3a1&#10;Studs|/points|LegoStud|#fab387&#10;Submit Run|/submit|Upload|#eba0ac&#10;Live|/live|Radio|#f38ba8&#10;Downloads|/downloads|Download|#cba6f7&#10;Stats|/stats|BarChart3|#89b4fa&#10;Admin|/admin|ShieldAlert|#f2cdcd|true"
-                        value={(gameDetailsConfigForm.headerLinks ?? gameDetailsConfig.headerLinks ?? []).map(item => 
-                          `${item.label}|${item.route}|${item.icon || ""}|${item.color || ""}${item.adminOnly ? "|true" : ""}`
-                        ).join("\n")}
-                        onChange={(e) => {
-                          const lines = e.target.value.split("\n").filter(l => l.trim().length > 0);
-                          const headerLinks = lines.map((line, index) => {
-                            const parts = line.split("|").map(p => p.trim());
-                            return {
-                              id: parts[0].toLowerCase().replace(/\s+/g, "-"),
-                              label: parts[0],
-                              route: parts[1] || "/",
-                              icon: parts[2] || undefined,
-                              color: parts[3] || undefined,
-                              adminOnly: parts[4] === "true",
-                              order: index + 1,
-                            };
-                          });
-                          setGameDetailsConfigForm({ ...gameDetailsConfigForm, headerLinks });
-                        }}
-                        className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] font-mono text-sm"
-                      />
+                      
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {/* Add New Header Link Form */}
+                        <div>
+                          <h3 className="text-base font-semibold mb-3">Add New Header Link</h3>
+                          <form onSubmit={handleAddHeaderLink} className="space-y-3">
+                            <div>
+                              <Label htmlFor="headerLinkLabel" className="text-sm">Label</Label>
+                              <Input
+                                id="headerLinkLabel"
+                                type="text"
+                                value={newHeaderLink.label}
+                                onChange={(e) => setNewHeaderLink({ ...newHeaderLink, label: e.target.value })}
+                                placeholder="e.g., Leaderboards"
+                                required
+                                className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] h-9 text-sm"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="headerLinkRoute" className="text-sm">Route</Label>
+                              <Input
+                                id="headerLinkRoute"
+                                type="text"
+                                value={newHeaderLink.route}
+                                onChange={(e) => setNewHeaderLink({ ...newHeaderLink, route: e.target.value })}
+                                placeholder="e.g., /leaderboards"
+                                required
+                                className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] h-9 text-sm"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="headerLinkIcon" className="text-sm">Icon (Optional)</Label>
+                              <Select
+                                value={newHeaderLink.icon}
+                                onValueChange={(value) => setNewHeaderLink({ ...newHeaderLink, icon: value })}
+                              >
+                                <SelectTrigger className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] h-9 text-sm">
+                                  <SelectValue placeholder="Select icon" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="">None</SelectItem>
+                                  <SelectItem value="Trophy">Trophy</SelectItem>
+                                  <SelectItem value="LegoStud">LegoStud</SelectItem>
+                                  <SelectItem value="Upload">Upload</SelectItem>
+                                  <SelectItem value="Radio">Radio</SelectItem>
+                                  <SelectItem value="Download">Download</SelectItem>
+                                  <SelectItem value="BarChart3">BarChart3</SelectItem>
+                                  <SelectItem value="ShieldAlert">ShieldAlert</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label htmlFor="headerLinkColor" className="text-sm">Color (Optional)</Label>
+                              <Input
+                                id="headerLinkColor"
+                                type="text"
+                                value={newHeaderLink.color}
+                                onChange={(e) => setNewHeaderLink({ ...newHeaderLink, color: e.target.value })}
+                                placeholder="#cdd6f4"
+                                className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] h-9 text-sm"
+                              />
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id="headerLinkAdminOnly"
+                                checked={newHeaderLink.adminOnly}
+                                onChange={(e) => setNewHeaderLink({ ...newHeaderLink, adminOnly: e.target.checked })}
+                                className="rounded"
+                              />
+                              <Label htmlFor="headerLinkAdminOnly" className="text-sm cursor-pointer">
+                                Admin Only
+                              </Label>
+                            </div>
+                            <Button
+                              type="submit"
+                              disabled={addingHeaderLink}
+                              size="sm"
+                              className="bg-gradient-to-r from-[#94e2d5] to-[#7dd3c7] hover:from-[#7dd3c7] hover:to-[#94e2d5] text-[hsl(240,21%,15%)] font-bold flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                            >
+                              <PlusCircle className="h-3 w-3" />
+                              {addingHeaderLink ? "Adding..." : "Add Header Link"}
+                            </Button>
+                          </form>
+                        </div>
+                        
+                        {/* Existing Header Links */}
+                        <div>
+                          <h3 className="text-base font-semibold mb-3">Existing Header Links</h3>
+                          {(!gameDetailsConfigForm.headerLinks && !gameDetailsConfig?.headerLinks) || 
+                           (gameDetailsConfigForm.headerLinks ?? gameDetailsConfig?.headerLinks ?? []).length === 0 ? (
+                            <p className="text-[hsl(222,15%,60%)] text-center py-4 text-sm">No header links found. Add your first link!</p>
+                          ) : (
+                            <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow className="border-b border-[hsl(235,13%,30%)] hover:bg-transparent">
+                                    <TableHead className="py-2 px-3 text-left text-xs">Order</TableHead>
+                                    <TableHead className="py-2 px-3 text-left text-xs">Label</TableHead>
+                                    <TableHead className="py-2 px-3 text-left text-xs">Route</TableHead>
+                                    <TableHead className="py-2 px-3 text-left text-xs">Icon</TableHead>
+                                    <TableHead className="py-2 px-3 text-left text-xs">Color</TableHead>
+                                    <TableHead className="py-2 px-3 text-center text-xs">Admin</TableHead>
+                                    <TableHead className="py-2 px-3 text-center text-xs">Actions</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {[...(gameDetailsConfigForm.headerLinks ?? gameDetailsConfig?.headerLinks ?? [])]
+                                    .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity))
+                                    .map((link, index) => (
+                                    <TableRow key={link.id} className="border-b border-[hsl(235,13%,30%)] hover:bg-[hsl(235,19%,13%)] transition-all duration-200 hover:shadow-sm">
+                                      <TableCell className="py-2 px-3 text-sm">
+                                        <div className="flex items-center gap-1">
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleMoveHeaderLinkUp(link.id)}
+                                            disabled={reorderingHeaderLink === link.id || index === 0}
+                                            className="text-purple-500 hover:bg-purple-900/20 disabled:opacity-50 h-6 w-6 p-0 transition-all duration-200 hover:scale-110"
+                                            title="Move up"
+                                          >
+                                            <ArrowUp className="h-3 w-3" />
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleMoveHeaderLinkDown(link.id)}
+                                            disabled={reorderingHeaderLink === link.id || index === (gameDetailsConfigForm.headerLinks ?? gameDetailsConfig?.headerLinks ?? []).length - 1}
+                                            className="text-purple-500 hover:bg-purple-900/20 disabled:opacity-50 h-6 w-6 p-0 transition-all duration-200 hover:scale-110"
+                                            title="Move down"
+                                          >
+                                            <ArrowDown className="h-3 w-3" />
+                                          </Button>
+                                        </div>
+                                      </TableCell>
+                                      <TableCell className="py-2 px-3 font-medium text-sm">
+                                        {editingHeaderLink?.id === link.id ? (
+                                          <Input
+                                            value={editingHeaderLinkForm.label}
+                                            onChange={(e) => setEditingHeaderLinkForm({ ...editingHeaderLinkForm, label: e.target.value })}
+                                            className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] h-8 text-sm w-24"
+                                            autoFocus
+                                          />
+                                        ) : (
+                                          link.label
+                                        )}
+                                      </TableCell>
+                                      <TableCell className="py-2 px-3 text-sm">
+                                        {editingHeaderLink?.id === link.id ? (
+                                          <Input
+                                            value={editingHeaderLinkForm.route}
+                                            onChange={(e) => setEditingHeaderLinkForm({ ...editingHeaderLinkForm, route: e.target.value })}
+                                            className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] h-8 text-sm w-24"
+                                          />
+                                        ) : (
+                                          <span className="text-[hsl(222,15%,60%)]">{link.route}</span>
+                                        )}
+                                      </TableCell>
+                                      <TableCell className="py-2 px-3 text-sm">
+                                        {editingHeaderLink?.id === link.id ? (
+                                          <Select
+                                            value={editingHeaderLinkForm.icon}
+                                            onValueChange={(value) => setEditingHeaderLinkForm({ ...editingHeaderLinkForm, icon: value })}
+                                          >
+                                            <SelectTrigger className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] h-8 text-xs w-28">
+                                              <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              <SelectItem value="">None</SelectItem>
+                                              <SelectItem value="Trophy">Trophy</SelectItem>
+                                              <SelectItem value="LegoStud">LegoStud</SelectItem>
+                                              <SelectItem value="Upload">Upload</SelectItem>
+                                              <SelectItem value="Radio">Radio</SelectItem>
+                                              <SelectItem value="Download">Download</SelectItem>
+                                              <SelectItem value="BarChart3">BarChart3</SelectItem>
+                                              <SelectItem value="ShieldAlert">ShieldAlert</SelectItem>
+                                            </SelectContent>
+                                          </Select>
+                                        ) : (
+                                          <span className="text-[hsl(222,15%,60%)]">{link.icon || "—"}</span>
+                                        )}
+                                      </TableCell>
+                                      <TableCell className="py-2 px-3 text-sm">
+                                        {editingHeaderLink?.id === link.id ? (
+                                          <Input
+                                            value={editingHeaderLinkForm.color}
+                                            onChange={(e) => setEditingHeaderLinkForm({ ...editingHeaderLinkForm, color: e.target.value })}
+                                            className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] h-8 text-sm w-24"
+                                          />
+                                        ) : (
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-[hsl(222,15%,60%)]">{link.color || "—"}</span>
+                                            {link.color && (
+                                              <div className="w-4 h-4 rounded border border-ctp-surface1" style={{ backgroundColor: link.color }}></div>
+                                            )}
+                                          </div>
+                                        )}
+                                      </TableCell>
+                                      <TableCell className="py-2 px-3 text-center text-sm">
+                                        {editingHeaderLink?.id === link.id ? (
+                                          <input
+                                            type="checkbox"
+                                            checked={editingHeaderLinkForm.adminOnly}
+                                            onChange={(e) => setEditingHeaderLinkForm({ ...editingHeaderLinkForm, adminOnly: e.target.checked })}
+                                            className="rounded"
+                                          />
+                                        ) : (
+                                          <span className="text-[hsl(222,15%,60%)]">{link.adminOnly ? "Yes" : "No"}</span>
+                                        )}
+                                      </TableCell>
+                                      <TableCell className="py-2 px-3 text-center space-x-1">
+                                        {editingHeaderLink?.id === link.id ? (
+                                          <>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={handleSaveEditHeaderLink}
+                                              disabled={updatingHeaderLink}
+                                              className="text-green-500 hover:bg-green-900/20"
+                                            >
+                                              Save
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={handleCancelEditHeaderLink}
+                                              disabled={updatingHeaderLink}
+                                              className="text-gray-500 hover:bg-gray-900/20"
+                                            >
+                                              Cancel
+                                            </Button>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => handleStartEditHeaderLink(link)}
+                                              className="text-blue-500 hover:bg-blue-900/20 h-7 w-7 p-0 transition-all duration-200 hover:scale-110"
+                                            >
+                                              <Edit2 className="h-3 w-3" />
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => handleDeleteHeaderLink(link.id)}
+                                              className="text-red-500 hover:bg-red-900/20 h-7 w-7 p-0 transition-all duration-200 hover:scale-110"
+                                            >
+                                              <Trash2 className="h-3 w-3" />
+                                            </Button>
+                                          </>
+                                        )}
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
 
                     {/* Visible Pages */}
