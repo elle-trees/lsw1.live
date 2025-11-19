@@ -583,16 +583,16 @@ async function extractPlatformNameAsync(
  */
 export async function mapSRCRunToLeaderboardEntry(
   run: SRCRun,
+  categoryMapping: Map<string, string>,
+  platformMapping: Map<string, string>,
+  levelMapping: Map<string, string>,
+  defaultPlayerId: string = "",
   embeddedData?: {
     players?: SRCPlayer[];
     category?: SRCCategory;
     level?: SRCLevel;
     platform?: SRCPlatform;
   },
-  categoryMapping: Map<string, string>,
-  platformMapping: Map<string, string>,
-  levelMapping: Map<string, string>,
-  defaultPlayerId: string = "",
   categoryNameMapping?: Map<string, string>,
   platformNameMapping?: Map<string, string>,
   srcPlatformIdToName?: Map<string, string>,

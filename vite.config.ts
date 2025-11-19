@@ -8,6 +8,10 @@ export default defineConfig(({ mode }) => {
   const host = "0.0.0.0";
   
   return {
+    // Enable Rolldown's native plugins for better performance
+    experimental: {
+      enableNativePlugin: 'v1',
+    },
     server: {
       host: host,
       port: port,

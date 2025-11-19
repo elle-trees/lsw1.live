@@ -615,11 +615,11 @@ export async function importSRCRuns(
           try {
             mappedRun = await mapSRCRunToLeaderboardEntry(
             srcRun,
-            undefined,
             mappings.categoryMapping,
             mappings.platformMapping,
             mappings.levelMapping,
             "", // CRITICAL: Use empty string for unclaimed imported runs - never create temporary profiles
+            undefined, // embeddedData
             mappings.categoryNameMapping,
             mappings.platformNameMapping,
             mappings.srcPlatformIdToName,
