@@ -559,11 +559,11 @@ const Stats = () => {
       </div>
 
       <div className="space-y-4">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 mb-6 p-0.5 gap-1 bg-ctp-surface0/50 rounded-none border border-ctp-surface1">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 mb-4 p-0 gap-0 bg-ctp-surface0/50 rounded-none border border-ctp-surface1">
           <Button
             variant={activeTab === 'overview' ? "default" : "ghost"}
             onClick={() => setActiveTab('overview')}
-            className={`h-auto py-2 px-3 rounded-none transition-all duration-300 ${
+            className={`h-auto py-2 px-3 rounded-none transition-all duration-300 border-r border-ctp-surface1 last:border-r-0 ${
               activeTab === 'overview'
                 ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm"
                 : "text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
@@ -574,7 +574,7 @@ const Stats = () => {
           <Button
             variant={activeTab === 'progression' ? "default" : "ghost"}
             onClick={() => setActiveTab('progression')}
-            className={`h-auto py-2 px-3 rounded-none transition-all duration-300 ${
+            className={`h-auto py-2 px-3 rounded-none transition-all duration-300 border-r border-ctp-surface1 last:border-r-0 ${
               activeTab === 'progression'
                 ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm"
                 : "text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
@@ -585,7 +585,7 @@ const Stats = () => {
           <Button
             variant={activeTab === 'breakdown' ? "default" : "ghost"}
             onClick={() => setActiveTab('breakdown')}
-            className={`h-auto py-2 px-3 rounded-none transition-all duration-300 ${
+            className={`h-auto py-2 px-3 rounded-none transition-all duration-300 border-r border-ctp-surface1 last:border-r-0 ${
               activeTab === 'breakdown'
                 ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm"
                 : "text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
@@ -596,7 +596,7 @@ const Stats = () => {
           <Button
             variant={activeTab === 'recent' ? "default" : "ghost"}
             onClick={() => setActiveTab('recent')}
-            className={`h-auto py-2 px-3 rounded-none transition-all duration-300 ${
+            className={`h-auto py-2 px-3 rounded-none transition-all duration-300 border-r border-ctp-surface1 last:border-r-0 ${
               activeTab === 'recent'
                 ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm"
                 : "text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
