@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getErrorMessage, logError } from "@/lib/errorUtils";
 import { getUnverifiedLeaderboardEntries, getUnclaimedRunsBySRCUsername, getPlayerByUid } from "@/lib/db";
 import { usePrefetchOnHover } from "@/hooks/usePrefetch";
+import { Notifications } from "@/components/Notifications";
 
 export function Header() {
   const { currentUser, loading } = useAuth();
@@ -375,22 +376,7 @@ export function Header() {
                   >
                     Hi, {currentUser.displayName || currentUser.email?.split('@')[0]}
                   </Link>
-                  {hasNotifications && (
-                    <Button
-                      variant="outline"
-                      onClick={handleNotificationClick}
-                      className="relative text-ctp-text hover:text-ctp-text border-yellow-600/50 hover:bg-yellow-600/20 hover:border-yellow-600 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-                      title={currentUser.isAdmin ? `${unverifiedRunsCount} run(s) waiting for verification` : `${unclaimedRunsCount} unclaimed run(s)`}
-                    >
-                      <Bell className="h-4 w-4" />
-                      <Badge 
-                        variant="destructive" 
-                        className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs font-bold"
-                      >
-                        {notificationCount > 99 ? '99+' : notificationCount}
-                      </Badge>
-                    </Button>
-                  )}
+                  <Notifications />
                   <Button 
                     variant="outline" 
                     asChild

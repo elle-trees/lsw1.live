@@ -1,51 +1,54 @@
 # lsw1.dev
 
-A modern, fast, speedrunning leaderboard platform for LEGO Star Wars: The Video Game. Built with React, TypeScript, and Vite as an alternative to traditional database sites.
+A modern, fast, speedrunning leaderboard platform for LEGO Star Wars: The Video Game. Built with React, TypeScript, and Vite as an alternative to traditional database sites. Makes heavy use of shadcn components and rolldown-vite.
 
 ## Features
 
 ### Leaderboards
 - **Full Game Leaderboards** - Track runs across different categories (Any%, 100%, Free Play, etc.)
-- **Individual Level Runs** - Separate leaderboards for each level with Story/Free Play categories
+- **Individual Level Runs** - Separate leaderboards for each level with different categories
 - **Community Golds** - Community Gold splits leaderboard for each category and level
-  - Configurable categories per level
-  - Disable categories for specific levels
-- **Multi-platform Support** - PC, PS2, Xbox, GameCube
-- **Run Types** - Solo and Co-op runs
-- **Filtering** - Filter by category, platform, run type, and level for ILs and CGs
-- **Real-time Rankings** - Automatic rank calculation with stud icons for top 3 positions
-- **Pagination** - Paginated leaderboards, points leaderboard, and admin views for better performance
+- **Platform filtering** - PC, PS2, Xbox, GameCube. The leaderboard is filtered by platform by default.
+- **Run Types** - Solo and Co-op runs. Solo runs are default.
+- **Filtering** - Filter by category, platform, run type, and level for ILs and CGs.
+- **Real-time Rankings** - Automatic rank calculation with stud icons for top 3 positions.
+- **Pagination** - Paginated leaderboards, points leaderboard, and admin views for easier viewing of large tables.
 
 ### Points System
-- **Balanced Points System** Points system rewards totals runs submitted and Top 3 across all categories
-- **Points Leaderboard** - Top players ranked by total points
+- **Balanced Points System** Points system rewards totals runs submitted and Top 3 across all categories.
+- **Points Leaderboard** - Top players ranked by total points.
 
 ### User Profiles
-- **Customizable Profiles** - Profile pictures, bios, and pronouns
-- **Name Colors** - Customize your display name color
-- **Run Statistics** - View total runs, best rank
-- **Run History** - See all submitted and pending runs
-- **Twitch Integration** - Add your Twitch username to appear on the live page
-- **Run Claiming** - Claim runs that match your display name from imported or manually submitted runs
+- **Customizable Profiles** - Profile pictures, bios, and pronouns.
+- **Name Colors** - Customize your display name color.
+- **Run Statistics** - View total runs, best rank, filter runs.
+- **Run History** - See all submitted and pending runs.
+- **Twitch Integration** - Add your Twitch username to appear on the live page.
+- **Run Claiming** - Claim imported runs that match your SRC username in user settings.
 
 ### Run Submission
-- **Easy Submission** - Submit runs with video proof (YouTube)
-- **Multiple Leaderboard Types** - Submit Full Game, Individual Level, or Community Gold runs
-- **Category Selection** - Choose from available categories for each leaderboard type
-- **Level Selection** - Select levels for IL and Community Gold submissions
-- **Run Verification** - Admin verification system for submitted runs
-- **Run Claiming** - Claim runs imported from speedrun.com or manually submitted by matching your display name
+- **Easy Submission** - Submit runs with video proof (YouTube).
+- **Multiple Leaderboard Types** - Submit Full Game, Individual Level, or Community Gold runs.
+- **Category Selection** - Choose from available categories for each leaderboard type.
+- **Level Selection** - Select levels for IL and Community Gold submissions.
+- **Run Verification** - Admin verification system for submitted runs.
+- **Run Claiming** - Claim runs imported from speedrun.com or manually submitted by matching your display name.
 
 ### Live Streaming
-- **Official Stream** - Embedded Twitch player for the official community stream
-- **Community Streams** - Automatically displays community members streaming when official stream is offline
-- **Live Status** - Real-time status checking for all streams
-- **Chat Integration** - Twitch chat embedded
+- **Official Stream** - Embedded Twitch player for the official community stream.
+- **Community Streams** - Automatically displays community members streaming when official stream is offline.
+- **Live Status** - Real-time status checking for all streams.
+- **Chat Integration** - Twitch chat embedded.
+
+### Downloads
+- **Organized Resources** - Tools, guides, save files, and more.
+- **File Uploads** - Support for both file uploads using uploadthing and external links.
+- **Categories** - Organize downloads by category.
 
 ### Admin Panel
-- **Run Management** - Verify, reject, or delete runs
-- **Manual Run Addition** - Admins can manually add verified runs
-- **Speedrun.com Import** - Import runs directly from speedrun.com using the API with automatic mapping
+- **Run Management** - Verify, reject, or delete runs.
+- **Manual Run Addition** - Admins can manually add runs.
+- **Speedrun.com Import** - Import runs directly from speedrun.com using the API with automatic mapping.
   - Import Full Game and Individual Level runs
   - Automatic category, platform, and level mapping
   - Duplicate detection to prevent importing existing runs
@@ -53,21 +56,16 @@ A modern, fast, speedrunning leaderboard platform for LEGO Star Wars: The Video 
   - Edit imported runs before verification
   - Filter and paginate imported runs by category, platform, level, and run type
   - Clear all imported runs functionality
-- **Category Management** - Create, edit, delete, and reorder categories
+- **Category Management** - Create, edit, delete, and reorder categories.
   - Support for different categories per leaderboard type (Regular, Individual Level, Community Golds)
   - Disable categories for specific levels
-- **Level Management** - Manage levels for Individual Level and Community Gold leaderboards
+- **Level Management** - Manage levels for Individual Level and Community Gold leaderboards.
   - Disable categories for specific levels
-- **Platform Management** - Manage available platforms
-- **Download Management** - Add and organize downloads (tools, guides, save files)
-- **Admin Management** - Add or remove admin privileges
-- **Points Backfill** - Recalculate points for all verified runs
-- **Verified Runs with Invalid Data** - View and edit verified runs that have missing or incorrect data
-
-### Downloads
-- **Organized Resources** - Tools, guides, save files, and more
-- **File Uploads** - Support for both file uploads using uploadthing and external links
-- **Categories** - Organize downloads by category
+- **Platform Management** - Manage available platforms.
+- **Download Management** - Add and organize downloads using uploadthing (tools, guides, save files).
+- **Admin Management** - Add or remove admin privileges.
+- **Points Backfill** - Recalculate points for all verified runs.
+- **Verified Runs with Invalid Data** - View and edit verified runs that have missing or incorrect data.
 
 ### Design & UX
 - **Catppuccin Mocha** - Beautiful, consistent pastel color scheme throughout
@@ -96,9 +94,9 @@ A modern, fast, speedrunning leaderboard platform for LEGO Star Wars: The Video 
 ## TODO
 
 ### High Priority
-- [ ] Create API documentation
-- [ ] Implement notification system for run verification
-- [ ] Add more robust error handling for speedrun.com API rate limits
+- [ ] Create API documentation.
+- [ ] Implement notification system for run verification.
+- [ ] Add more robust error handling for speedrun.com API rate limits.
 
 ## Contributing
 

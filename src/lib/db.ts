@@ -65,6 +65,15 @@ import {
 } from "./data/firestore/players";
 
 import {
+  createNotificationFirestore,
+  getUserNotificationsFirestore,
+  getUnreadUserNotificationsFirestore,
+  markNotificationAsReadFirestore,
+  markAllNotificationsAsReadFirestore,
+  deleteNotificationFirestore
+} from "./data/firestore/notifications";
+
+import {
   addLeaderboardEntryFirestore,
   updateLeaderboardEntryFirestore,
   deleteLeaderboardEntryFirestore,
@@ -351,6 +360,15 @@ export const updatePlayer = updatePlayerFirestore;
 export const deletePlayer = deletePlayerFirestore;
 export const getPlayersWithSRCUsernames = getPlayersWithSRCUsernamesFirestore;
 export const runAutoclaimingForAllUsers = runAutoclaimingForAllUsersFirestore;
+
+// Notification exports
+export const createNotification = createNotificationFirestore;
+export const getUserNotifications = getUserNotificationsFirestore;
+export const getUnreadUserNotifications = getUnreadUserNotificationsFirestore;
+export const markNotificationAsRead = markNotificationAsReadFirestore;
+export const markAllNotificationsAsRead = markAllNotificationsAsReadFirestore;
+export const deleteNotification = deleteNotificationFirestore;
+
 export const syncCategoriesFromSRC = async () => {
   const { syncCategoriesFromSRC } = await import("./speedruncom/importService");
   return syncCategoriesFromSRC();

@@ -2,6 +2,7 @@ import { db } from "@/lib/firebase";
 import { 
   collection, 
   doc, 
+  getDoc,
   setDoc, 
   updateDoc, 
   deleteDoc, 
@@ -16,6 +17,7 @@ import { LeaderboardEntry } from "@/types/database";
 import { leaderboardEntryConverter } from "./converters";
 import { normalizeLeaderboardEntry, validateLeaderboardEntry } from "@/lib/dataValidation";
 import { checkSRCRunExistsFirestore, tryAutoAssignRunFirestore } from "./src-imports";
+import { createNotificationFirestore } from "./notifications";
 
 // We need to be careful about circular dependencies. 
 // checkSRCRunExistsFirestore is in the main file currently. 
@@ -179,7 +181,34 @@ export const getUnverifiedLeaderboardEntriesFirestore = async (): Promise<Leader
 };
 
 export const updateRunVerificationStatusFirestore = async (runId: string, verified: boolean, verifiedBy?: string): Promise<boolean> => {
-    return updateLeaderboardEntryFirestore(runId, { verified, verifiedBy });
+    if (!db) return false;
+    try {
+        const success = await updateLeaderboardEntryFirestore(runId, { verified, verifiedBy });
+        
+        if (success && verified) {
+            // Fetch the run to get the playerId and details
+            const docRef = doc(db, "leaderboardEntries", runId).withConverter(leaderboardEntryConverter);
+            const docSnap = await getDoc(docRef);
+            
+            if (docSnap.exists()) {
+                const run = docSnap.data();
+                if (run.playerId) {
+                    await createNotificationFirestore({
+                        userId: run.playerId,
+                        type: 'run_verified',
+                        title: 'Run Verified',
+                        message: `Your run for ${run.category} has been verified!`,
+                        link: `/runs/${runId}`,
+                        metadata: { runId: run.id }
+                    });
+                }
+            }
+        }
+        return success;
+    } catch (error) {
+        console.error("Error updating verification status and notifying:", error);
+        return false;
+    }
 };
 
 export const updateRunObsoleteStatusFirestore = async (runId: string, isObsolete: boolean): Promise<boolean> => {

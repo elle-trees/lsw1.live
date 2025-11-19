@@ -402,7 +402,7 @@ const SubmitRun = () => {
                         setLeaderboardType('regular');
                         setFormData(prev => ({ ...prev, category: "", level: "" }));
                       })}
-                      className={`button-click-animation h-auto py-2 sm:py-3 px-2 sm:px-4 rounded-md transition-all duration-200 ${
+                      className={`button-click-animation h-auto py-2 sm:py-3 px-2 sm:px-4 rounded-none transition-all duration-200 ${
                         leaderboardType === 'regular' 
                           ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm" 
                           : "text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
@@ -421,7 +421,7 @@ const SubmitRun = () => {
                         setLeaderboardType('individual-level');
                         setFormData(prev => ({ ...prev, category: "", level: "" }));
                       })}
-                      className={`button-click-animation h-auto py-2 sm:py-3 px-2 sm:px-4 rounded-md transition-all duration-200 ${
+                      className={`button-click-animation h-auto py-2 sm:py-3 px-2 sm:px-4 rounded-none transition-all duration-200 ${
                         leaderboardType === 'individual-level' 
                           ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm" 
                           : "text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
@@ -440,7 +440,7 @@ const SubmitRun = () => {
                         setLeaderboardType('community-golds');
                         setFormData(prev => ({ ...prev, category: "", level: "" }));
                       })}
-                      className={`button-click-animation h-auto py-2 sm:py-3 px-2 sm:px-4 rounded-md transition-all duration-200 ${
+                      className={`button-click-animation h-auto py-2 sm:py-3 px-2 sm:px-4 rounded-none transition-all duration-200 ${
                         leaderboardType === 'community-golds' 
                           ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm" 
                           : "text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
@@ -583,7 +583,7 @@ const SubmitRun = () => {
                             type="button"
                             variant={isSelected ? "default" : "outline"}
                             onClick={() => handleSelectChange("category", category.id)}
-                            className={`button-click-animation category-button-animate whitespace-nowrap px-4 py-2 h-9 text-sm font-medium transition-all duration-200 ${
+                            className={`button-click-animation category-button-animate whitespace-nowrap px-4 py-2 h-9 text-sm font-medium transition-all duration-200 rounded-none ${
                               isSelected 
                                 ? "bg-[#94e2d5] text-[#11111b] hover:bg-[#94e2d5]/90 border-transparent shadow-sm" 
                                 : "bg-ctp-surface0 text-ctp-text border-ctp-surface1 hover:bg-ctp-surface1 hover:text-ctp-text hover:border-[#94e2d5]/50"
@@ -652,7 +652,7 @@ const SubmitRun = () => {
                                 type="button"
                                 variant={isSelected ? "default" : "outline"}
                                 onClick={() => handleSelectChange("subcategory", subcategory.id)}
-                                className={`button-click-animation category-button-animate whitespace-nowrap px-4 py-2 h-8 text-xs sm:text-sm font-medium transition-all duration-200 ${
+                                className={`button-click-animation category-button-animate whitespace-nowrap px-4 py-2 h-8 text-xs sm:text-sm font-medium transition-all duration-200 rounded-none ${
                                   isSelected 
                                     ? "bg-[#cba6f7] text-[#11111b] hover:bg-[#cba6f7]/90 border-transparent shadow-sm" 
                                     : "bg-ctp-surface0 text-ctp-text border-ctp-surface1 hover:bg-ctp-surface1 hover:text-ctp-text hover:border-[#cba6f7]/50"
@@ -811,7 +811,7 @@ const SubmitRun = () => {
                   <Button 
                     type="submit" 
                     disabled={loading}
-                    className="button-click-animation w-full bg-gradient-to-r from-[#cba6f7] via-[#f5c2e7] to-[#cba6f7] hover:from-[#f5c2e7] hover:via-[#cba6f7] hover:to-[#f5c2e7] text-[hsl(240,21%,15%)] font-bold py-3 text-base transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-[#cba6f7]/50 disabled:opacity-50 disabled:cursor-not-allowed animate-gradient bg-[length:200%_auto]"
+                    className="button-click-animation w-full bg-gradient-to-r from-[#cba6f7] via-[#f5c2e7] to-[#cba6f7] hover:from-[#f5c2e7] hover:via-[#cba6f7] hover:to-[#f5c2e7] text-[hsl(240,21%,15%)] font-bold py-3 text-base transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-[#cba6f7]/50 disabled:opacity-50 disabled:cursor-not-allowed animate-gradient bg-[length:200%_auto] rounded-none"
                   >
                     {loading ? "Submitting..." : "Submit Run for Review"}
                   </Button>
@@ -821,23 +821,16 @@ const SubmitRun = () => {
           </Card>
 
             {/* Guidelines Section */}
-            <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
+            <div className="mt-8 animate-fade-in">
               <Accordion type="single" collapsible className="w-full">
-                <AccordionItem value="guidelines" className="border-none">
-                  <AccordionTrigger className="px-6 py-4 hover:no-underline">
-                    <CardHeader className="w-full p-0 bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
-                      <CardTitle className="flex items-center gap-2 text-xl">
-                        <div className="p-2 rounded-lg bg-gradient-to-br from-[#cba6f7] to-[#b4a0e2]">
-                          <FileText className="h-5 w-5 text-[hsl(240,21%,15%)]" />
-                        </div>
-                        <span className="bg-gradient-to-r from-[#cba6f7] to-[#f5c2e7] bg-clip-text text-transparent">
-                          Submission Guidelines
-                        </span>
-                      </CardTitle>
-                    </CardHeader>
+                <AccordionItem value="guidelines" className="border-[hsl(235,13%,30%)]">
+                  <AccordionTrigger className="text-[#eba0ac] hover:text-[#eba0ac]/80 px-4 py-6">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      <span className="text-lg font-semibold">Submission Guidelines</span>
+                    </div>
                   </AccordionTrigger>
-                  <AccordionContent>
-                    <CardContent className="p-6">
+                  <AccordionContent className="px-4 pb-6 text-ctp-text">
                       <div className="space-y-6 text-base text-[hsl(222,15%,70%)]">
                         <div>
                           <h3 className="text-lg font-semibold text-[hsl(220,17%,92%)] mb-3 flex items-center gap-2">
@@ -900,11 +893,10 @@ const SubmitRun = () => {
                           </ul>
                         </div>
                       </div>
-                    </CardContent>
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
-            </Card>
+            </div>
           </div>
         )}
       </div>
