@@ -143,7 +143,7 @@ export function Header() {
                       <div className="flex flex-col gap-3">
                 <Link 
                           to={`/player/${currentUser.uid}`}
-                          className="text-sm text-ctp-subtext1 hover:text-ctp-text transition-colors"
+                          className="text-sm text-ctp-text transition-colors"
                           onClick={() => setIsMobileMenuOpen(false)}
                 >
                           Hi, {currentUser.displayName || currentUser.email?.split('@')[0]}
@@ -211,7 +211,7 @@ export function Header() {
                       href="https://discord.gg/6A5MNqaK49"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-ctp-subtext1 hover:text-[#5865F2] transition-all duration-300 hover:scale-110"
+                      className="text-[#5865F2] hover:text-[#5865F2] transition-all duration-300 hover:scale-110"
                       aria-label="Discord Server"
                 >
                       <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -222,7 +222,7 @@ export function Header() {
                       href="https://github.com/elle-trees/lsw1.dev"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-ctp-subtext1 hover:text-ctp-text transition-colors"
+                      className="text-ctp-text hover:text-ctp-text transition-colors"
                       aria-label="GitHub Repository"
                     >
                       <Github className="h-5 w-5" />
@@ -238,7 +238,7 @@ export function Header() {
                 href="https://discord.gg/6A5MNqaK49"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-ctp-subtext1 hover:text-[#5865F2] transition-all duration-300 hover:scale-110"
+                className="text-[#5865F2] hover:text-[#5865F2] transition-all duration-300 hover:scale-110"
                 aria-label="Discord Server"
               >
                 <svg className="h-5 w-5 transition-transform duration-300 hover:rotate-12" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -249,7 +249,7 @@ export function Header() {
                 href="https://github.com/elle-trees/lsw1.dev"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-ctp-subtext1 hover:text-ctp-text transition-all duration-300 hover:scale-110"
+                className="text-ctp-text hover:text-ctp-text transition-all duration-300 hover:scale-110"
                 aria-label="GitHub Repository"
               >
                 <Github className="h-5 w-5 transition-transform duration-300 hover:rotate-12" />
@@ -262,7 +262,7 @@ export function Header() {
                 <div className="flex items-center gap-2">
                   <Link 
                     to={`/player/${currentUser.uid}`}
-                    className="text-ctp-subtext1 hover:text-ctp-text mr-2 transition-all duration-300 hover:scale-105 cursor-pointer font-medium"
+                    className="text-ctp-text hover:text-ctp-text mr-2 transition-all duration-300 hover:scale-105 cursor-pointer font-medium"
                   >
                     Hi, {currentUser.displayName || currentUser.email?.split('@')[0]}
                   </Link>
