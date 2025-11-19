@@ -132,16 +132,6 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
-    // Game Details
-    match /gameDetails/{detailId} {
-      // Anyone can read
-      allow read: if true;
-      // Only admins can create/update
-      allow create, update: if isAdmin();
-      // Only admins can delete
-      allow delete: if isAdmin();
-    }
-
     // Notifications
     match /notifications/{notificationId} {
       // Users can read their own notifications

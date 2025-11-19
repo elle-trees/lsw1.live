@@ -83,7 +83,6 @@ import { collection, query, getDocs, limit as firestoreLimit } from "firebase/fi
 import { Player } from "@/types/database";
 import { prepareRunForVerification, batchVerifyRuns } from "@/lib/data/runFieldService";
 import { getLeaderboardEntryById } from "@/lib/db";
-import { GameDetailsEditor } from "@/components/admin/GameDetailsEditor";
 
 const Admin = () => {
   const { currentUser, loading: authLoading } = useAuth();
@@ -2957,13 +2956,6 @@ const Admin = () => {
               Points
             </TabsTrigger>
             <TabsTrigger 
-              value="game-details" 
-              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap"
-            >
-              <Wrench className="h-4 w-4 mr-1.5" />
-              Game Details
-            </TabsTrigger>
-            <TabsTrigger 
               value="src" 
               className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap"
             >
@@ -2976,11 +2968,6 @@ const Admin = () => {
               Tools
             </TabsTrigger>
           </TabsList>
-
-          {/* Game Details Section */}
-          <TabsContent value="game-details" className="space-y-4 animate-fade-in">
-            <GameDetailsEditor />
-          </TabsContent>
 
           {/* Tools Section */}
           <TabsContent value="tools" className="space-y-4 animate-fade-in">

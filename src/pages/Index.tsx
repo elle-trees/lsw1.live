@@ -13,7 +13,6 @@ import { parseTimeToSeconds, formatSecondsToTime, cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { buttonVariants } from "@/components/ui/button";
 import { AnimatedCard } from "@/components/ui/animated-card";
-import { GameDetails } from "@/components/GameDetails";
 
 const MotionLink = motion(Link);
 
@@ -153,81 +152,118 @@ const Index = () => {
     <div className="min-h-screen text-ctp-text overflow-x-hidden relative">
       <FadeIn className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-[1920px] mx-auto w-full">
-          {/* Game Details */}
-          <GameDetails />
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-6 lg:mb-8">
-            {/* Verified Runs Card */}
-            <AnimatedCard 
-              className="glass shadow-colored-green card-hover border-ctp-surface1/50 w-full group overflow-hidden relative rounded-xl"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-ctp-green/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <CardHeader className="pb-2 pt-4 px-4 relative z-10">
-                <CardTitle className="flex items-center gap-2 text-card-foreground text-base sm:text-lg lg:text-xl whitespace-nowrap">
-                  <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-ctp-green transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12 flex-shrink-0" />
-                  <span className="truncate font-semibold">Verified Runs</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-4 pb-4 pt-2 relative z-10">
-                {statsLoading ? (
-                  <Skeleton className="h-10 w-28 mb-1 bg-ctp-surface0/50" />
-                ) : (
-                  <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-ctp-green transition-all duration-300 break-words min-w-0">
-                    {totalVerifiedRuns.toLocaleString()}
+          {/* Top Row - Stats Cards and Title */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 lg:gap-8 mb-6 lg:mb-8">
+            {/* Left Side - Verified Runs Card */}
+            <div className="lg:col-span-3 lg:order-1 min-w-0">
+              <AnimatedCard 
+                className="glass shadow-colored-green card-hover border-ctp-surface1/50 w-full group overflow-hidden relative rounded-none"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-ctp-green/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <CardHeader className="pb-2 pt-4 px-4 relative z-10">
+                  <CardTitle className="flex items-center gap-2 text-card-foreground text-base sm:text-lg lg:text-xl whitespace-nowrap">
+                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-ctp-green transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12 flex-shrink-0" />
+                    <span className="truncate font-semibold">Verified Runs</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 pb-4 pt-2 relative z-10">
+                  {statsLoading ? (
+                    <Skeleton className="h-10 w-28 mb-1 bg-ctp-surface0/50" />
+                  ) : (
+                    <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-ctp-green transition-all duration-300 break-words min-w-0">
+                      {totalVerifiedRuns.toLocaleString()}
+                    </div>
+                  )}
+                  <p className="text-xs sm:text-sm lg:text-base text-muted-foreground mt-1.5 whitespace-nowrap">
+                    Total verified speedruns
+                  </p>
+                  <div className="mt-2">
+                    <Badge variant="outline" className="border-green-600/50 bg-green-600/10 text-green-400 text-xs px-2 py-0.5 flex items-center gap-1.5 w-fit">
+                      <CheckCircle className="h-3 w-3" />
+                      <span>Linked with Speedrun.com</span>
+                      <a
+                        href="https://www.speedrun.com/lsw1"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:underline flex items-center gap-1"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </Badge>
                   </div>
-                )}
-                <p className="text-xs sm:text-sm lg:text-base text-muted-foreground mt-1.5 whitespace-nowrap">
-                  Total verified speedruns
-                </p>
-                <div className="mt-2">
-                  <Badge variant="outline" className="border-green-600/50 bg-green-600/10 text-green-400 text-xs px-2 py-0.5 flex items-center gap-1.5 w-fit">
-                    <CheckCircle className="h-3 w-3" />
-                    <span>Linked with Speedrun.com</span>
-                    <a
-                      href="https://www.speedrun.com/lsw1"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:underline flex items-center gap-1"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
-                  </Badge>
-                </div>
-              </CardContent>
-            </AnimatedCard>
+                </CardContent>
+              </AnimatedCard>
+            </div>
 
-            {/* Total Time Card */}
-            <AnimatedCard 
-              className="glass shadow-colored card-hover border-ctp-surface1/50 w-full group overflow-hidden relative rounded-xl"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-ctp-mauve/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <CardHeader className="pb-2 pt-4 px-4 relative z-10">
-                <CardTitle className="flex items-center gap-2 text-card-foreground text-base sm:text-lg lg:text-xl whitespace-nowrap">
-                  <Clock className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-ctp-mauve transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12 flex-shrink-0" />
-                  <span className="truncate font-semibold">Total Time</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-4 pb-4 pt-2 relative z-10">
-                {statsLoading ? (
-                  <Skeleton className="h-10 w-36 mb-1 bg-ctp-surface0/50" />
-                ) : (
-                  <div className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-ctp-text transition-all duration-300 break-words min-w-0 leading-tight">
-                    {totalTime}
-                  </div>
-                )}
-                <p className="text-xs sm:text-sm lg:text-base text-muted-foreground mt-1.5 whitespace-nowrap">
-                  Combined runtime
-                </p>
-              </CardContent>
-            </AnimatedCard>
+            {/* Center Content - Title, Subtext, Buttons */}
+            <div className="lg:col-span-6 text-center lg:order-2 min-w-0">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 whitespace-nowrap truncate animate-fade-in-scale">
+                <span className="text-[#74c7ec]">
+                  lsw1.dev
+                </span>
+              </h1>
+              <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl mb-10 text-ctp-subtext1 max-w-3xl mx-auto animate-fade-in-delay px-2 leading-relaxed">
+                The official site for the LEGO Star Wars: The Video Game speedrunning community. Track your progress and try to earn a stud on the leaderboards!
+              </p>
+              <div className="flex flex-col sm:flex-row justify-center gap-4 lg:gap-6 animate-fade-in-delay-2 px-2">
+                <MotionLink 
+                  to="/submit"
+                  className={cn(
+                    buttonVariants({ size: "lg" }),
+                    "bg-gradient-to-r from-ctp-mauve via-ctp-pink to-ctp-mauve hover:from-ctp-pink hover:via-ctp-mauve hover:to-ctp-pink text-ctp-crust font-bold transition-all duration-300 hover:shadow-xl hover:shadow-ctp-mauve/50 animate-gradient bg-[length:200%_auto] whitespace-nowrap text-base sm:text-lg lg:text-xl px-6 sm:px-8 lg:px-10 py-6 sm:py-7 lg:py-8 rounded-none border-0 shadow-colored"
+                  )}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Submit Run
+                </MotionLink>
+                <MotionLink 
+                  to="/leaderboards"
+                  className={cn(
+                    buttonVariants({ size: "lg", variant: "outline" }),
+                    "text-ctp-text hover:text-ctp-text border-ctp-surface1/50 bg-glass hover:bg-ctp-blue/10 hover:border-ctp-blue/50 transition-all duration-300 hover:shadow-xl hover:shadow-ctp-blue/30 whitespace-nowrap text-base sm:text-lg lg:text-xl px-6 sm:px-8 lg:px-10 py-6 sm:py-7 lg:py-8 rounded-none backdrop-blur-sm"
+                  )}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  View All Leaderboards
+                </MotionLink>
+              </div>
+            </div>
+
+            {/* Right Side - Total Time Card */}
+            <div className="lg:col-span-3 lg:order-3 min-w-0">
+              <AnimatedCard 
+                className="glass shadow-colored card-hover border-ctp-surface1/50 w-full group overflow-hidden relative rounded-none"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-ctp-mauve/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <CardHeader className="pb-2 pt-4 px-4 relative z-10">
+                  <CardTitle className="flex items-center gap-2 text-card-foreground text-base sm:text-lg lg:text-xl whitespace-nowrap">
+                    <Clock className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-ctp-mauve transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12 flex-shrink-0" />
+                    <span className="truncate font-semibold">Total Time</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 pb-4 pt-2 relative z-10">
+                  {statsLoading ? (
+                    <Skeleton className="h-10 w-36 mb-1 bg-ctp-surface0/50" />
+                  ) : (
+                    <div className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-ctp-text transition-all duration-300 break-words min-w-0 leading-tight">
+                      {totalTime}
+                    </div>
+                  )}
+                  <p className="text-xs sm:text-sm lg:text-base text-muted-foreground mt-1.5 whitespace-nowrap">
+                    Combined runtime
+                  </p>
+                </CardContent>
+              </AnimatedCard>
+            </div>
           </div>
 
           {/* Bottom Row - Twitch Embed and Recent Runs */}
