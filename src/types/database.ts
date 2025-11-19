@@ -159,6 +159,8 @@ export interface GameDetailsConfig {
   }>;
   // Discord button
   discordUrl?: string;
+  // Speedrun.com link
+  speedrunComUrl?: string;
   // Header navigation links (shown in game details card)
   headerLinks: GameDetailsHeaderLink[];
   // Navigation items (deprecated, kept for backwards compatibility)

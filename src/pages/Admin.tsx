@@ -626,6 +626,7 @@ const Admin = () => {
         categories: gameDetailsConfigForm.categories ?? gameDetailsConfig.categories ?? [],
         platforms: gameDetailsConfigForm.platforms ?? gameDetailsConfig.platforms ?? [],
         discordUrl: getOptionalField(gameDetailsConfigForm.discordUrl, gameDetailsConfig.discordUrl),
+        speedrunComUrl: getOptionalField(gameDetailsConfigForm.speedrunComUrl, gameDetailsConfig.speedrunComUrl),
         headerLinks: gameDetailsConfigForm.headerLinks ?? gameDetailsConfig.headerLinks ?? [],
         navItems: gameDetailsConfigForm.navItems ?? gameDetailsConfig.navItems ?? [],
         visibleOnPages: gameDetailsConfigForm.visibleOnPages ?? gameDetailsConfig.visibleOnPages ?? [],
@@ -4405,6 +4406,21 @@ const Admin = () => {
                         placeholder="https://discord.gg/..."
                         value={gameDetailsConfigForm.discordUrl ?? gameDetailsConfig.discordUrl ?? ""}
                         onChange={(e) => setGameDetailsConfigForm({ ...gameDetailsConfigForm, discordUrl: e.target.value })}
+                        className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
+                      />
+                    </div>
+
+                    {/* Speedrun.com URL */}
+                    <div className="space-y-2">
+                      <Label htmlFor="speedrunComUrl" className="text-base font-semibold">
+                        Speedrun.com URL (Optional)
+                      </Label>
+                      <Input
+                        id="speedrunComUrl"
+                        type="url"
+                        placeholder="https://www.speedrun.com/..."
+                        value={gameDetailsConfigForm.speedrunComUrl ?? gameDetailsConfig.speedrunComUrl ?? ""}
+                        onChange={(e) => setGameDetailsConfigForm({ ...gameDetailsConfigForm, speedrunComUrl: e.target.value })}
                         className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
                       />
                     </div>
