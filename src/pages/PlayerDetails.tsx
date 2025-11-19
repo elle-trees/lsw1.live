@@ -139,33 +139,31 @@ const PlayerDetails = () => {
 
   // Update selected category when leaderboard type changes
   useEffect(() => {
-    if (categories.length > 0 && playerRuns.length > 0) {
-      // Get categories that have runs for this leaderboard type
-      const runsForType = playerRuns.filter(run => {
-        const runLeaderboardType = run.leaderboardType || 'regular';
-        return runLeaderboardType === leaderboardType;
+    if (categories.length > 0) {
+      // First, filter categories by the current leaderboard type
+      const categoriesForType = categories.filter(cat => {
+        // For 'regular', include categories without leaderboardType field (backward compatibility)
+        if (leaderboardType === 'regular') {
+          return !cat.leaderboardType || cat.leaderboardType === 'regular';
+        }
+        return cat.leaderboardType === leaderboardType;
       });
       
-      const categoriesWithRuns = new Set(runsForType.map(run => run.category));
-      const availableCategories = categories.filter(cat => 
-        categoriesWithRuns.has(cat.id)
-      );
-      
-      if (availableCategories.length > 0) {
-        // Select first category that has runs, or keep current if it's still valid
-        const firstCategoryWithRuns = availableCategories[0];
-        const currentCategoryStillValid = availableCategories.some(cat => cat.id === selectedCategory);
+      if (categoriesForType.length > 0) {
+        // Select first category for this leaderboard type, or keep current if it's still valid
+        const firstCategory = categoriesForType[0];
+        const currentCategoryStillValid = categoriesForType.some(cat => cat.id === selectedCategory);
         
         if (!currentCategoryStillValid) {
-          setSelectedCategory(firstCategoryWithRuns.id);
+          setSelectedCategory(firstCategory.id);
         }
       } else {
         setSelectedCategory("");
       }
-    } else if (categories.length === 0 || playerRuns.length === 0) {
+    } else {
       setSelectedCategory("");
     }
-  }, [leaderboardType, categories, playerRuns, selectedCategory]);
+  }, [leaderboardType, categories, selectedCategory]);
 
   // Fetch subcategories when category changes (only for regular leaderboard type)
   useEffect(() => {
@@ -413,15 +411,24 @@ const PlayerDetails = () => {
 
             <div className="mt-0">
                 {(() => {
+                  // First, filter categories by the current leaderboard type
+                  const categoriesForType = categories.filter(cat => {
+                    // For 'regular', include categories without leaderboardType field (backward compatibility)
+                    if (leaderboardType === 'regular') {
+                      return !cat.leaderboardType || cat.leaderboardType === 'regular';
+                    }
+                    return cat.leaderboardType === leaderboardType;
+                  });
+                  
                   // Get categories that have runs for this leaderboard type
                   const runsForType = playerRuns.filter(run => {
                     const runLeaderboardType = run.leaderboardType || 'regular';
                     return runLeaderboardType === leaderboardType;
                   });
                   
-                  const categoriesWithRuns = categories.filter(cat => 
-                    runsForType.some(run => run.category === cat.id)
-                  );
+                  // Show all categories for this leaderboard type
+                  // This allows users to see all available categories even if they don't have runs yet
+                  const categoriesWithRuns = categoriesForType;
                   
                   // Filter verified runs by leaderboard type
                   let filteredVerifiedRuns = playerRuns.filter(run => {

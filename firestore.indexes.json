@@ -253,6 +253,10 @@
         {
           "fieldPath": "verified",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "date",
+          "order": "DESCENDING"
         }
       ]
     },
