@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { 
   Trophy, 
   Clock, 
@@ -84,6 +86,7 @@ const Stats = () => {
   const [wrProgressionLevel, setWrProgressionLevel] = useState("");
   const [availableWrCategories, setAvailableWrCategories] = useState<Array<{ id: string; name: string }>>([]);
   const [activeTab, setActiveTab] = useState("overview");
+  const [filterCurrentWROnly, setFilterCurrentWROnly] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -1224,7 +1227,27 @@ const Stats = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {stats.longestHeldWRs.length > 0 ? (
+              <div className="mb-4 flex items-center gap-2">
+                <Switch
+                  id="filter-current-wr"
+                  checked={filterCurrentWROnly}
+                  onCheckedChange={setFilterCurrentWROnly}
+                />
+                <Label htmlFor="filter-current-wr" className="cursor-pointer">
+                  Show only current world records
+                </Label>
+              </div>
+              {stats.longestHeldWRs.length > 0 ? (() => {
+                const now = new Date();
+                const nowDateStr = now.toISOString().split('T')[0];
+                const filteredWRs = filterCurrentWROnly
+                  ? stats.longestHeldWRs.filter(wr => {
+                      const endDate = new Date(wr.endDate);
+                      return endDate.toISOString().split('T')[0] === nowDateStr;
+                    })
+                  : stats.longestHeldWRs;
+                
+                return filteredWRs.length > 0 ? (
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -1239,7 +1262,7 @@ const Stats = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {stats.longestHeldWRs.map((longestWR, index) => {
+                    {filteredWRs.map((longestWR, index) => {
                       const categoryName = getCategoryNameWithOverride(longestWR.run.category, categories);
                       const platformName = getPlatformName(longestWR.run.platform, platforms);
                       const levelName = longestWR.run.level ? getLevelName(longestWR.run.level, levels) : null;
@@ -1275,7 +1298,6 @@ const Stats = () => {
                         <TableRow key={`${longestWR.run.id}-${index}`}>
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <Trophy className="h-4 w-4 text-yellow-500" />
                               <span className="font-semibold">{durationText}</span>
                               <Badge variant="outline" className="text-xs">
                                 {longestWR.days} days
@@ -1329,7 +1351,14 @@ const Stats = () => {
                     })}
                   </TableBody>
                 </Table>
-              ) : (
+                ) : (
+                  <p className="text-center text-muted-foreground py-8">
+                    {filterCurrentWROnly 
+                      ? "No current world records found"
+                      : "No world record data available"}
+                  </p>
+                );
+              })() : (
                 <p className="text-center text-muted-foreground py-8">
                   No world record data available
                 </p>
