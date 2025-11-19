@@ -395,6 +395,34 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "categories",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "leaderboardType",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "order",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "leaderboardEntries",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "importedFromSRC",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "srcPlayerName",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []

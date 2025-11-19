@@ -84,6 +84,11 @@ export const getLeaderboardEntriesFirestore = async (
       .filter(entry => {
         // ... Validation logic from original file ...
         // I will simplify for brevity but ideally we copy the robust logic.
+        // Basic validation
+        if (!entry.time) return false;
+        if (!entry.date) return false;
+        if (!entry.playerName && !entry.playerId) return false;
+
         if (entry.verified !== true) return false;
         
         if (!leaderboardType || leaderboardType === 'regular') {
