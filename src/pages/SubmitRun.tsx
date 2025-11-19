@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Upload, Gamepad2, Timer, User, Users, FileText, Sparkles, CheckCircle, Calendar, ChevronDown, ChevronUp, Trophy, Star, Gem, BookOpen } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useAuth } from "@/components/AuthProvider";
@@ -363,9 +362,6 @@ const SubmitRun = () => {
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-4">
-                  <div className="flex items-center justify-center py-8">
-                    <LoadingSpinner size="lg" />
-                  </div>
                   <div className="space-y-4">
                     <Skeleton className="h-10 w-full" />
                     <div className="grid grid-cols-2 gap-4">

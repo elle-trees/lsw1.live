@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import LegoStudIcon from "@/components/icons/LegoStudIcon";
 import { Player, LeaderboardEntry } from "@/types/database";
 import { formatDate, formatTime } from "@/lib/utils";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useAuth } from "@/components/AuthProvider";
 import { getCategoryName, getPlatformName, getLevelName } from "@/lib/dataValidation";
 import { useToast } from "@/hooks/use-toast";
@@ -248,13 +247,6 @@ const PlayerDetails = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-[hsl(240,21%,15%)] to-[hsl(235,19%,13%)] text-[hsl(220,17%,92%)] flex items-center justify-center">
-        <LoadingSpinner size="md" />
-      </div>
-    );
-  }
 
   if (!player) {
     return (

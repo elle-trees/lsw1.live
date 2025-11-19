@@ -4,7 +4,6 @@ import { User, Users, Trophy, Sparkles, TrendingUp, Gamepad2 } from "lucide-reac
 import { LeaderboardEntry } from "@/types/database";
 import { getCategories, getPlatforms } from "@/lib/db";
 import { formatDate, formatTime } from "@/lib/utils";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Link } from "react-router-dom";
 import { useState, useEffect, useRef, useLayoutEffect } from "react";
 
@@ -163,7 +162,7 @@ export function RecentRuns({ runs, loading, showRankBadge = true, maxRuns }: Rec
       </CardHeader>
       <CardContent ref={containerRef} className="p-6 sm:p-8 flex-1 overflow-hidden">
         {loading ? (
-          <LoadingSpinner size="sm" className="py-12" />
+          <div className="py-12" />
         ) : runs.length === 0 ? (
           <div className="text-center py-16">
             <Sparkles className="h-16 w-16 mx-auto mb-4 text-[hsl(222,15%,60%)] opacity-50" />

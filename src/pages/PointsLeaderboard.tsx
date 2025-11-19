@@ -5,7 +5,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Sparkles, Info } from "lucide-react";
 import { Player, LeaderboardEntry } from "@/types/database";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Pagination } from "@/components/Pagination";
 import { getPlayersByPoints, getPlayerRuns, getCategories, getPlatforms } from "@/lib/db";
 import { getCategoryName, getPlatformName } from "@/lib/dataValidation";
@@ -261,7 +260,7 @@ const PointsLeaderboard = () => {
           </CardHeader>
           <CardContent className="p-6 sm:p-8">
             {loading ? (
-              <LoadingSpinner size="sm" className="py-12" />
+              <div className="py-12" />
             ) : players.length === 0 ? (
               <div className="text-center py-16">
                 <Sparkles className="h-16 w-16 mx-auto mb-4 text-[hsl(222,15%,60%)] opacity-50" />
@@ -463,9 +462,7 @@ const PointsLeaderboard = () => {
             </DialogHeader>
             
             {loadingRuns || (playerRuns.length > 0 && recalculatedPoints.size === 0) ? (
-              <div className="py-12">
-                <LoadingSpinner size="sm" />
-              </div>
+              <div className="py-12" />
             ) : studsBreakdown ? (
               <div className="space-y-6 mt-4">
                 {/* By Leaderboard Type */}

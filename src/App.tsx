@@ -6,7 +6,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Analytics } from "@vercel/analytics/react";
 import { Header } from "@/components/Header";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
@@ -50,13 +49,7 @@ const App = () => (
             <div className="flex flex-col min-h-screen">
               <Header />
               <main className="flex-grow">
-                <Suspense
-                  fallback={
-                    <div className="flex items-center justify-center min-h-[60vh]">
-                      <LoadingSpinner />
-                    </div>
-                  }
-                >
+                <Suspense fallback={null}>
                   <Routes>
                     <Route path="/" element={<Index />} />
                     <Route path="/leaderboards" element={<Leaderboards />} />

@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Download, ExternalLink, Wrench, Book, Save } from "lucide-react";
 import { getDownloadEntries, getDownloadCategories } from "@/lib/db";
 import { DownloadEntry } from "@/types/database";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 const Downloads = () => {
   const [downloadEntries, setDownloadEntries] = useState<DownloadEntry[]>([]);
@@ -58,9 +57,7 @@ const Downloads = () => {
         </div>
 
         {loading ? (
-          <div className="flex justify-center items-center py-16">
-            <LoadingSpinner size="md" />
-          </div>
+          <div className="flex justify-center items-center py-16" />
         ) : downloadEntries.length === 0 ? (
           <Card className="bg-gradient-to-br from-[hsl(240,21%,15%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] animate-fade-in">
             <CardContent className="p-12 text-center">

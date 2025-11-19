@@ -13,7 +13,6 @@ import LegoStudIcon from "@/components/icons/LegoStudIcon";
 import { getLeaderboardEntryById, getPlayerByUid, getPlayerByDisplayName, getCategories, getCategoriesFromFirestore, getPlatforms, runTypes, updateLeaderboardEntry, deleteLeaderboardEntry } from "@/lib/db";
 import { LeaderboardEntry, Player } from "@/types/database";
 import { VideoEmbed } from "@/components/VideoEmbed";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { formatDate, calculatePoints, formatTime } from "@/lib/utils";
@@ -478,15 +477,6 @@ const RunDetails = () => {
     calculateDisplayPoints();
   }, [run?.points, run?.verified, run?.isObsolete, run?.rank, run?.time, run?.category, run?.platform, run?.runType, run?.leaderboardType, categories, platforms]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#1e1e2e] text-ctp-text py-8">
-        <div className="max-w-6xl mx-auto px-4">
-          <LoadingSpinner />
-        </div>
-      </div>
-    );
-  }
 
   if (!run) {
     return null;
