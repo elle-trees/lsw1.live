@@ -45,10 +45,14 @@ const SubmitRun = () => {
   const [loadingSubcategories, setLoadingSubcategories] = useState(false);
   const [guidelinesOpen, setGuidelinesOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
-      setLoadingData(true);
+      // Only show loading skeleton on initial load, not when switching types
+      if (isInitialLoad) {
+        setLoadingData(true);
+      }
       try {
         // For Individual Level: fetch Story/Free Play categories
         // For Community Golds: fetch community-golds categories (now configurable)
@@ -77,6 +81,7 @@ const SubmitRun = () => {
         // Silent fail
       } finally {
         setLoadingData(false);
+        setIsInitialLoad(false);
       }
     };
     
@@ -342,7 +347,7 @@ const SubmitRun = () => {
                   Please log in to submit your run to the leaderboard.
                 </p>
               </div>
-              <Button className="bg-gradient-to-r from-ctp-mauve to-ctp-lavender hover:from-ctp-lavender hover:to-ctp-mauve text-ctp-crust font-bold px-8 py-6 text-lg transition-all duration-300 hover:scale-105 hover:shadow-lg">
+              <Button className="button-click-animation bg-gradient-to-r from-ctp-mauve to-ctp-lavender hover:from-ctp-lavender hover:to-ctp-mauve text-ctp-crust font-bold px-8 py-6 text-lg transition-all duration-300 hover:scale-105 hover:shadow-lg">
                 Log In to Submit
               </Button>
             </CardContent>
@@ -401,7 +406,7 @@ const SubmitRun = () => {
                         setLeaderboardType('regular');
                         setFormData(prev => ({ ...prev, category: "", level: "" }));
                       })}
-                      className={`h-auto py-2 sm:py-3 px-2 sm:px-4 rounded-md transition-all duration-200 ${
+                      className={`button-click-animation h-auto py-2 sm:py-3 px-2 sm:px-4 rounded-md transition-all duration-200 ${
                         leaderboardType === 'regular' 
                           ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm" 
                           : "text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
@@ -420,7 +425,7 @@ const SubmitRun = () => {
                         setLeaderboardType('individual-level');
                         setFormData(prev => ({ ...prev, category: "", level: "" }));
                       })}
-                      className={`h-auto py-2 sm:py-3 px-2 sm:px-4 rounded-md transition-all duration-200 ${
+                      className={`button-click-animation h-auto py-2 sm:py-3 px-2 sm:px-4 rounded-md transition-all duration-200 ${
                         leaderboardType === 'individual-level' 
                           ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm" 
                           : "text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
@@ -439,7 +444,7 @@ const SubmitRun = () => {
                         setLeaderboardType('community-golds');
                         setFormData(prev => ({ ...prev, category: "", level: "" }));
                       })}
-                      className={`h-auto py-2 sm:py-3 px-2 sm:px-4 rounded-md transition-all duration-200 ${
+                      className={`button-click-animation h-auto py-2 sm:py-3 px-2 sm:px-4 rounded-md transition-all duration-200 ${
                         leaderboardType === 'community-golds' 
                           ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm" 
                           : "text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
@@ -582,7 +587,7 @@ const SubmitRun = () => {
                             type="button"
                             variant={isSelected ? "default" : "outline"}
                             onClick={() => handleSelectChange("category", category.id)}
-                            className={`whitespace-nowrap px-4 py-2 h-9 text-sm font-medium transition-all duration-200 ${
+                            className={`button-click-animation whitespace-nowrap px-4 py-2 h-9 text-sm font-medium transition-all duration-200 ${
                               isSelected 
                                 ? "bg-[#94e2d5] text-[#11111b] hover:bg-[#94e2d5]/90 border-transparent shadow-sm" 
                                 : "bg-ctp-surface0 text-ctp-text border-ctp-surface1 hover:bg-ctp-surface1 hover:text-ctp-text hover:border-[#94e2d5]/50"
@@ -634,7 +639,7 @@ const SubmitRun = () => {
                                 type="button"
                                 variant={isSelected ? "default" : "outline"}
                                 onClick={() => handleSelectChange("subcategory", subcategory.id)}
-                                className={`whitespace-nowrap px-4 py-2 h-8 text-xs sm:text-sm font-medium transition-all duration-200 ${
+                                className={`button-click-animation whitespace-nowrap px-4 py-2 h-8 text-xs sm:text-sm font-medium transition-all duration-200 ${
                                   isSelected 
                                     ? "bg-[#cba6f7] text-[#11111b] hover:bg-[#cba6f7]/90 border-transparent shadow-sm" 
                                     : "bg-ctp-surface0 text-ctp-text border-ctp-surface1 hover:bg-ctp-surface1 hover:text-ctp-text hover:border-[#cba6f7]/50"
@@ -790,7 +795,7 @@ const SubmitRun = () => {
                   <Button 
                     type="submit" 
                     disabled={loading}
-                    className="w-full bg-gradient-to-r from-[#cba6f7] via-[#f5c2e7] to-[#cba6f7] hover:from-[#f5c2e7] hover:via-[#cba6f7] hover:to-[#f5c2e7] text-[hsl(240,21%,15%)] font-bold py-3 text-base transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-[#cba6f7]/50 disabled:opacity-50 disabled:cursor-not-allowed animate-gradient bg-[length:200%_auto]"
+                    className="button-click-animation w-full bg-gradient-to-r from-[#cba6f7] via-[#f5c2e7] to-[#cba6f7] hover:from-[#f5c2e7] hover:via-[#cba6f7] hover:to-[#f5c2e7] text-[hsl(240,21%,15%)] font-bold py-3 text-base transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-[#cba6f7]/50 disabled:opacity-50 disabled:cursor-not-allowed animate-gradient bg-[length:200%_auto]"
                   >
                     {loading ? "Submitting..." : "Submit Run for Review"}
                   </Button>

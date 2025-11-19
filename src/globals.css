@@ -147,6 +147,59 @@
     background-size: 1000px 100%;
   }
 
+  /* Button click animations */
+  @keyframes buttonClick {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(0.95);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes ripple {
+    0% {
+      transform: scale(0);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(4);
+      opacity: 0;
+    }
+  }
+
+  .button-click-animation {
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.1s ease-out;
+  }
+
+  .button-click-animation:active {
+    animation: buttonClick 0.2s ease-out;
+  }
+
+  .button-click-animation::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .button-click-animation:active::before {
+    animation: ripple 0.6s ease-out;
+    width: 100px;
+    height: 100px;
+  }
+
   /* Glassmorphism effect */
   .glass {
     background: rgba(30, 30, 46, 0.7);
