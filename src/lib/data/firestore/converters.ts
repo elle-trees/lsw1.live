@@ -1,5 +1,5 @@
 import { QueryDocumentSnapshot, SnapshotOptions, DocumentData, FirestoreDataConverter } from "firebase/firestore";
-import { Player, LeaderboardEntry, Category, Platform, Level, DownloadEntry, PointsConfig, Subcategory } from "@/types/database";
+import { Player, LeaderboardEntry, Category, Platform, Level, DownloadEntry, PointsConfig, Subcategory, GameDetails } from "@/types/database";
 
 const genericConverter = <T extends { id: string }>() => ({
   toFirestore(data: T): DocumentData {
@@ -26,3 +26,4 @@ export const levelConverter: FirestoreDataConverter<Level> = genericConverter<Le
 export const downloadEntryConverter: FirestoreDataConverter<DownloadEntry> = genericConverter<DownloadEntry>();
 export const pointsConfigConverter: FirestoreDataConverter<PointsConfig> = genericConverter<PointsConfig>();
 export const subcategoryConverter: FirestoreDataConverter<Subcategory> = genericConverter<Subcategory>();
+export const gameDetailsConverter: FirestoreDataConverter<GameDetails> = genericConverter<GameDetails>();

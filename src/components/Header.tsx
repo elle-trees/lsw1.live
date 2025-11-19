@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Upload, User, Settings, ShieldAlert, Download, Radio, Trophy, Github, Menu, Plus, Bell, BarChart3 } from "lucide-react";
+import { Upload, User, Settings, ShieldAlert, Radio, Trophy, Github, Menu, Bell } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import LegoStudIcon from "@/components/icons/LegoStudIcon";
@@ -106,11 +106,8 @@ export function Header() {
   const NavLinks = () => {
     // Prefetch hooks for all navigation links
     const leaderboardsPrefetch = usePrefetchOnHover("/leaderboards");
-    const pointsPrefetch = usePrefetchOnHover("/points");
     const submitPrefetch = usePrefetchOnHover("/submit");
     const livePrefetch = usePrefetchOnHover("/live");
-    const downloadsPrefetch = usePrefetchOnHover("/downloads");
-    const statsPrefetch = usePrefetchOnHover("/stats");
     const adminPrefetch = usePrefetchOnHover("/admin");
 
     return (
@@ -125,18 +122,6 @@ export function Header() {
           <span className="relative">
             Leaderboards
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#a6e3a1] via-ctp-green to-[#a6e3a1] transition-all duration-300 group-hover:w-full"></span>
-          </span>
-        </Link>
-        <Link 
-          to="/points" 
-          className="text-[#fab387] hover:text-[#fab387] flex items-center gap-1 transition-all duration-300 relative group"
-          onClick={() => setIsMobileMenuOpen(false)}
-          {...pointsPrefetch}
-        >
-          <LegoStudIcon size={16} color="#fab387" className="transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12" />
-          <span className="relative">
-            Studs
-            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#fab387] via-ctp-pink to-[#fab387] transition-all duration-300 group-hover:w-full"></span>
           </span>
         </Link>
         <Link 
@@ -161,30 +146,6 @@ export function Header() {
           <span className="relative">
             Live
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#f38ba8] via-ctp-sapphire to-[#f38ba8] transition-all duration-300 group-hover:w-full"></span>
-          </span>
-        </Link>
-        <Link 
-          to="/downloads" 
-          className="text-[#cba6f7] hover:text-[#cba6f7] flex items-center gap-1 transition-all duration-300 relative group"
-          onClick={() => setIsMobileMenuOpen(false)}
-          {...downloadsPrefetch}
-        >
-          <Download className="h-4 w-4 transition-transform duration-300 group-hover:scale-110 group-hover:translate-y-[2px]" />
-          <span className="relative">
-            Downloads
-            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#cba6f7] via-ctp-sky to-[#cba6f7] transition-all duration-300 group-hover:w-full"></span>
-          </span>
-        </Link>
-        <Link 
-          to="/stats" 
-          className="text-[#89b4fa] hover:text-[#89b4fa] flex items-center gap-1 transition-all duration-300 relative group"
-          onClick={() => setIsMobileMenuOpen(false)}
-          {...statsPrefetch}
-        >
-          <BarChart3 className="h-4 w-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12" />
-          <span className="relative">
-            Stats
-            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#89b4fa] via-ctp-blue to-[#89b4fa] transition-all duration-300 group-hover:w-full"></span>
           </span>
         </Link>
         {currentUser?.isAdmin && (

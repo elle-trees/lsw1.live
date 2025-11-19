@@ -125,3 +125,18 @@ export interface PointsConfig {
   applyRankBonusesToIL: boolean;
   applyRankBonusesToCommunityGolds: boolean;
 }
+
+export interface GameLink {
+  id: string;
+  label: string;
+  url: string;
+  order: number;
+}
+
+export interface GameDetails {
+  id: string;
+  title: string;
+  description: string;
+  coverImage: string;
+  buttons: GameLink[];
+}

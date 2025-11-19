@@ -12,6 +12,7 @@ import { getLeaderboardEntries, getCategories, getPlatforms, runTypes, getLevels
 import { LeaderboardEntry, Category, Level } from "@/types/database";
 import { Skeleton } from "@/components/ui/skeleton";
 import LegoGoldBrickIcon from "@/components/icons/LegoGoldBrickIcon";
+import { GameDetails } from "@/components/GameDetails";
 
 const Leaderboards = () => {
   const [leaderboardType, setLeaderboardType] = useState<'regular' | 'individual-level' | 'community-golds'>('regular');
@@ -236,6 +237,7 @@ const Leaderboards = () => {
   return (
     <FadeIn className="min-h-screen bg-[#1e1e2e] text-ctp-text py-4 sm:py-6 overflow-x-hidden">
       <div className="max-w-[1920px] mx-auto px-2 sm:px-4 lg:px-6 w-full">
+        <GameDetails />
         <div className="text-center mb-6 animate-slide-up">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Trophy className="h-6 w-6 text-[#a6e3a1]" />

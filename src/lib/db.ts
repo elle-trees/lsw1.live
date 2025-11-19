@@ -139,6 +139,11 @@ import {
 } from "./data/firestore/points";
 
 import {
+  getGameDetailsFirestore,
+  updateGameDetailsFirestore
+} from "./data/firestore/gameDetails";
+
+import {
   checkSRCRunExistsFirestore,
   getImportedSRCRunsFirestore,
   getAllRunsForDuplicateCheckFirestore,
@@ -373,6 +378,9 @@ export const syncCategoriesFromSRC = async () => {
 
 export const getPointsConfig = getPointsConfigFirestore;
 export const updatePointsConfig = updatePointsConfigFirestore;
+
+export const getGameDetails = getGameDetailsFirestore;
+export const updateGameDetails = updateGameDetailsFirestore;
 
 export const backfillPointsForAllRuns = async () => {
   return backfillPointsForAllRunsFirestore();
