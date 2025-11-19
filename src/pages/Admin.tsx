@@ -405,7 +405,27 @@ const Admin = () => {
     
     setSavingGameDetailsConfig(true);
     try {
-      const success = await updateGameDetailsConfig(gameDetailsConfigForm as GameDetailsConfig);
+      // Merge form data with existing config, ensuring all required fields are present
+      // For optional fields, convert empty strings to undefined
+      const getOptionalField = (formValue: string | undefined, configValue: string | undefined): string | undefined => {
+        const value = formValue ?? configValue;
+        return value === "" ? undefined : value;
+      };
+      
+      const configToSave: GameDetailsConfig = {
+        id: gameDetailsConfig.id,
+        title: gameDetailsConfigForm.title ?? gameDetailsConfig.title ?? "",
+        subtitle: getOptionalField(gameDetailsConfigForm.subtitle, gameDetailsConfig.subtitle),
+        coverImageUrl: getOptionalField(gameDetailsConfigForm.coverImageUrl, gameDetailsConfig.coverImageUrl),
+        categories: gameDetailsConfigForm.categories ?? gameDetailsConfig.categories ?? [],
+        platforms: gameDetailsConfigForm.platforms ?? gameDetailsConfig.platforms ?? [],
+        discordUrl: getOptionalField(gameDetailsConfigForm.discordUrl, gameDetailsConfig.discordUrl),
+        navItems: gameDetailsConfigForm.navItems ?? gameDetailsConfig.navItems ?? [],
+        visibleOnPages: gameDetailsConfigForm.visibleOnPages ?? gameDetailsConfig.visibleOnPages ?? [],
+        enabled: gameDetailsConfigForm.enabled ?? gameDetailsConfig.enabled ?? true,
+      };
+      
+      const success = await updateGameDetailsConfig(configToSave);
       if (success) {
         // Reload config to get updated values
         const updatedConfig = await getGameDetailsConfig();
