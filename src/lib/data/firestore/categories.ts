@@ -16,20 +16,25 @@ import { categoryConverter } from "./converters";
 export const getCategoriesFirestore = async (leaderboardType?: 'regular' | 'individual-level' | 'community-golds'): Promise<Category[]> => {
   if (!db) return [];
   try {
-    let q = query(collection(db, "categories").withConverter(categoryConverter), orderBy("order", "asc"));
+    // Fetch all categories first, then filter in-memory
+    // This handles categories without leaderboardType field (legacy categories)
+    const q = query(collection(db, "categories").withConverter(categoryConverter), orderBy("order", "asc"));
+    const snapshot = await getDocs(q);
+    const allCategories = snapshot.docs.map(doc => doc.data());
     
-    // If leaderboardType is provided, filter by it
-    // Note: This requires an index on 'leaderboardType' and 'order'
-    if (leaderboardType) {
-       q = query(
-         collection(db, "categories").withConverter(categoryConverter),
-         where("leaderboardType", "==", leaderboardType),
-         orderBy("order", "asc")
-       );
+    // If no leaderboardType filter specified, return all categories
+    if (!leaderboardType) {
+      return allCategories;
     }
     
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => doc.data());
+    // Filter by leaderboardType
+    // For 'regular', include categories without leaderboardType field (backward compatibility)
+    return allCategories.filter(cat => {
+      if (leaderboardType === 'regular') {
+        return !cat.leaderboardType || cat.leaderboardType === 'regular';
+      }
+      return cat.leaderboardType === leaderboardType;
+    });
   } catch (error) {
     console.error("Error fetching categories:", error);
     return [];

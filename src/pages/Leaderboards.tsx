@@ -242,11 +242,11 @@ const Leaderboards = () => {
         </div>
 
         {/* Leaderboard Type Buttons */}
-        <div className="grid grid-cols-3 mb-6 p-0.5 gap-1 bg-ctp-surface0/50 rounded-lg border border-ctp-surface1">
+        <div className="grid grid-cols-3 mb-6 p-0.5 gap-1 bg-ctp-surface0/50 rounded-none border border-ctp-surface1">
           <Button
             variant={leaderboardType === 'regular' ? "default" : "ghost"}
             onClick={() => setLeaderboardType('regular')}
-            className={`h-auto py-2 sm:py-3 px-2 sm:px-4 rounded-md transition-all duration-300 ${
+            className={`h-auto py-2 sm:py-3 px-2 sm:px-4 rounded-none transition-all duration-300 ${
               leaderboardType === 'regular' 
                 ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm" 
                 : "text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
@@ -261,7 +261,7 @@ const Leaderboards = () => {
           <Button
             variant={leaderboardType === 'individual-level' ? "default" : "ghost"}
             onClick={() => setLeaderboardType('individual-level')}
-            className={`h-auto py-2 sm:py-3 px-2 sm:px-4 rounded-md transition-all duration-300 ${
+            className={`h-auto py-2 sm:py-3 px-2 sm:px-4 rounded-none transition-all duration-300 ${
               leaderboardType === 'individual-level' 
                 ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm" 
                 : "text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
@@ -276,7 +276,7 @@ const Leaderboards = () => {
           <Button
             variant={leaderboardType === 'community-golds' ? "default" : "ghost"}
             onClick={() => setLeaderboardType('community-golds')}
-            className={`h-auto py-2 sm:py-3 px-2 sm:px-4 rounded-md transition-all duration-300 ${
+            className={`h-auto py-2 sm:py-3 px-2 sm:px-4 rounded-none transition-all duration-300 ${
               leaderboardType === 'community-golds' 
                 ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm" 
                 : "text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
@@ -360,7 +360,7 @@ const Leaderboards = () => {
                 </>
               ) : (
                 availableCategories.length > 0 && (
-                  <div className="mb-4 p-4 bg-ctp-surface0 rounded-lg border border-ctp-surface1">
+                  <div className="mb-4 p-4 bg-ctp-surface0 rounded-none border border-ctp-surface1">
                     <p className="text-sm text-ctp-subtext1">
                       No categories available for the selected level. Please enable categories for this level in the admin panel.
                     </p>
@@ -370,7 +370,7 @@ const Leaderboards = () => {
             })()}
 
         {/* Filters */}
-            <Card className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl mb-6 rounded-xl overflow-hidden">
+            <Card className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl mb-6 rounded-none overflow-hidden">
           <CardHeader className="bg-gradient-to-r from-ctp-base to-ctp-mantle border-b border-ctp-surface1 py-4">
             <CardTitle className="flex items-center gap-2 text-lg font-bold">
               <Filter className="h-5 w-5 text-ctp-mauve" />
@@ -386,7 +386,7 @@ const Leaderboards = () => {
                     Levels
                   </label>
                   <Select value={selectedLevel} onValueChange={setSelectedLevel}>
-                    <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-10 text-sm rounded-md focus:ring-ctp-mauve">
+                    <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-10 text-sm rounded-none focus:ring-ctp-mauve">
                       <SelectValue placeholder="Select level" />
                     </SelectTrigger>
                   <SelectContent>
@@ -405,7 +405,7 @@ const Leaderboards = () => {
                   Platform
                 </label>
                 <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
-                  <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-10 text-sm rounded-md focus:ring-ctp-mauve">
+                  <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-10 text-sm rounded-none focus:ring-ctp-mauve">
                     <SelectValue placeholder="Select platform" />
                   </SelectTrigger>
                   <SelectContent>
@@ -427,7 +427,7 @@ const Leaderboards = () => {
                   Run Type
                 </label>
                 <Select value={selectedRunType} onValueChange={setSelectedRunType}>
-                  <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-10 text-sm rounded-md focus:ring-ctp-mauve">
+                  <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-10 text-sm rounded-none focus:ring-ctp-mauve">
                     <SelectValue placeholder="Select run type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -448,7 +448,7 @@ const Leaderboards = () => {
                   Run Status
                 </label>
                 <Select value={showObsoleteRuns} onValueChange={setShowObsoleteRuns}>
-                  <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-10 text-sm rounded-md focus:ring-ctp-mauve">
+                  <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-10 text-sm rounded-none focus:ring-ctp-mauve">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -462,7 +462,7 @@ const Leaderboards = () => {
         </Card>
 
         {/* Leaderboard Table */}
-        <Card className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl rounded-xl overflow-hidden">
+        <Card className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl rounded-none overflow-hidden">
           <CardHeader className="bg-gradient-to-r from-ctp-base to-ctp-mantle border-b border-ctp-surface1 py-4">
             <CardTitle className="flex items-center gap-2 text-lg text-[#a6e3a1]">
               <span>
