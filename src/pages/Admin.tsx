@@ -6082,7 +6082,8 @@ const Admin = () => {
                         </Table>
                       </div>
                     )}
-                  </div>
+                      </div>
+                    </div>
                   
                   {/* Category Management for Levels */}
                   {availableLevels.length > 0 && (
@@ -6181,8 +6182,6 @@ const Admin = () => {
                     </div>
                   )}
                 </div>
-                  </TabsContent>
-                </Tabs>
               </CardContent>
             </Card>
           </TabsContent>
