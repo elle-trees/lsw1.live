@@ -393,159 +393,152 @@ const Stats = () => {
       .slice(0, 10);
   }, [stats, platforms]);
 
-  // Calculate Elo rankings based on player studs (totalPoints)
+  // Calculate rankings based on best Any% and Nocuts Noships times on Gamecube
   const [eloRankings, setEloRankings] = useState<Array<{
     playerId: string;
     playerName: string;
-    elo: number;
-    totalRuns: number;
-    worldRecords: number;
-    bestTime: number;
-    bestTimeString: string;
+    bestAnyPercentTime: number;
+    bestAnyPercentTimeString: string;
+    bestNocutsNoshipsTime: number;
+    bestNocutsNoshipsTimeString: string;
+    bestOverallTime: number;
     rank: number;
   }>>([]);
 
   useEffect(() => {
     const fetchEloRankings = async () => {
-      if (!stats || !stats.allVerifiedRuns) {
+      if (!stats || !stats.allVerifiedRuns || !categories.length || !platforms.length) {
         setEloRankings([]);
         return;
       }
 
       try {
-        // Fetch players sorted by totalPoints (studs)
-        const players = await getPlayersByPoints(100);
+        // Find category IDs for "Any%" and "Nocuts Noships"
+        const anyPercentCategory = categories.find(cat => {
+          const name = cat.name.toLowerCase().trim();
+          return name === 'any%' || name === 'any percent';
+        });
+        
+        const nocutsNoshipsCategory = categories.find(cat => {
+          const name = cat.name.toLowerCase().trim();
+          return name === 'nocuts noships' || name === 'nocutsnoships' || name === 'no cuts no ships';
+        });
 
-        // Filter out invalid players
-        const validPlayers = players.filter(p => 
-          p.uid && 
-          p.displayName && 
-          p.displayName.toLowerCase() !== 'unknown' &&
-          !p.uid.startsWith('unclaimed_') &&
-          !p.uid.startsWith('unlinked_') &&
-          p.uid !== 'imported' &&
-          (p.totalPoints || 0) > 0
-        );
+        // Find platform ID for "GameCube" (case-insensitive)
+        const gamecubePlatform = platforms.find(plat => {
+          const name = plat.name.toLowerCase().trim();
+          return name === 'gamecube' || name === 'game cube';
+        });
 
-        // Create a map of player stats from runs
-        const playerStatsMap = new Map<string, {
-          totalRuns: number;
-          worldRecords: number;
-          bestTime: number;
-          bestTimeString: string;
+        if (!anyPercentCategory || !nocutsNoshipsCategory || !gamecubePlatform) {
+          setEloRankings([]);
+          return;
+        }
+
+        // Filter runs to only include Any% and Nocuts Noships on Gamecube
+        const relevantRuns = stats.allVerifiedRuns.filter(run => {
+          if (!run.verified || run.isObsolete) return false;
+          
+          // Must be regular leaderboard type (full game)
+          const leaderboardType = run.leaderboardType || 'regular';
+          if (leaderboardType !== 'regular') return false;
+          
+          // Must be Gamecube platform
+          if (run.platform !== gamecubePlatform.id) return false;
+          
+          // Must be Any% or Nocuts Noships category
+          const isAnyPercent = run.category === anyPercentCategory.id;
+          const isNocutsNoships = run.category === nocutsNoshipsCategory.id;
+          
+          return isAnyPercent || isNocutsNoships;
+        });
+
+        // Track best times for each player in each category
+        const playerTimes = new Map<string, {
+          bestAnyPercentTime: number;
+          bestAnyPercentTimeString: string;
+          bestNocutsNoshipsTime: number;
+          bestNocutsNoshipsTimeString: string;
+          playerName: string;
         }>();
 
-        // Group runs by leaderboard group to find world records
-        const runsByGroup = new Map<string, LeaderboardEntry[]>();
-        
-        stats.allVerifiedRuns.forEach(run => {
-          if (!run.verified || run.isObsolete) return;
-          
-          const leaderboardType = run.leaderboardType || 'regular';
-          const category = run.category || '';
-          const platform = run.platform || '';
-          const runType = run.runType || 'solo';
-          const level = run.level || '';
-          const groupKey = `${leaderboardType}_${category}_${platform}_${runType}_${level}`;
-          
-          if (!runsByGroup.has(groupKey)) {
-            runsByGroup.set(groupKey, []);
-          }
-          runsByGroup.get(groupKey)!.push(run);
-        });
-
-        // Count world records and other stats
-        runsByGroup.forEach((runs, groupKey) => {
-          // Get unique players with their best times
-          const playerTimes = new Map<string, { time: number; run: LeaderboardEntry }>();
-          
-          runs.forEach(run => {
-            const playerId = run.playerId || run.playerName;
-            if (!playerId) return;
-            
-            const runTime = parseTimeToSeconds(run.time) || Infinity;
-            const existing = playerTimes.get(playerId);
-            
-            if (!existing || runTime < existing.time) {
-              playerTimes.set(playerId, { time: runTime, run });
-            }
-          });
-
-          // Sort by time to find WR holder
-          const sortedPlayers = Array.from(playerTimes.entries())
-            .map(([playerId, data]) => ({ playerId, time: data.time, run: data.run }))
-            .sort((a, b) => a.time - b.time);
-
-          if (sortedPlayers.length > 0) {
-            const wrPlayerId = sortedPlayers[0].playerId;
-            if (!playerStatsMap.has(wrPlayerId)) {
-              playerStatsMap.set(wrPlayerId, {
-                totalRuns: 0,
-                worldRecords: 0,
-                bestTime: Infinity,
-                bestTimeString: '',
-              });
-            }
-            playerStatsMap.get(wrPlayerId)!.worldRecords++;
-          }
-        });
-
-        // Count total runs and find best times
-        stats.allVerifiedRuns.forEach(run => {
-          if (!run.verified || run.isObsolete) return;
-          
+        relevantRuns.forEach(run => {
           const playerId = run.playerId || run.playerName;
           if (!playerId) return;
 
-          if (!playerStatsMap.has(playerId)) {
-            playerStatsMap.set(playerId, {
-              totalRuns: 0,
-              worldRecords: 0,
-              bestTime: Infinity,
-              bestTimeString: '',
+          if (!playerTimes.has(playerId)) {
+            playerTimes.set(playerId, {
+              bestAnyPercentTime: Infinity,
+              bestAnyPercentTimeString: '',
+              bestNocutsNoshipsTime: Infinity,
+              bestNocutsNoshipsTimeString: '',
+              playerName: run.playerName || 'Unknown',
             });
           }
 
-          const playerStat = playerStatsMap.get(playerId)!;
-          playerStat.totalRuns++;
-
+          const playerData = playerTimes.get(playerId)!;
           const runTime = parseTimeToSeconds(run.time) || Infinity;
-          if (runTime < playerStat.bestTime) {
-            playerStat.bestTime = runTime;
-            playerStat.bestTimeString = run.time;
+          
+          if (run.category === anyPercentCategory.id) {
+            if (runTime < playerData.bestAnyPercentTime) {
+              playerData.bestAnyPercentTime = runTime;
+              playerData.bestAnyPercentTimeString = run.time;
+            }
+          } else if (run.category === nocutsNoshipsCategory.id) {
+            if (runTime < playerData.bestNocutsNoshipsTime) {
+              playerData.bestNocutsNoshipsTime = runTime;
+              playerData.bestNocutsNoshipsTimeString = run.time;
+            }
           }
         });
 
-        // Combine player data with stats
-        const rankings = validPlayers.map((player, index) => {
-          const stats = playerStatsMap.get(player.uid) || {
-            totalRuns: player.totalRuns || 0,
-            worldRecords: 0,
-            bestTime: Infinity,
-            bestTimeString: '',
-          };
-
-          return {
-            playerId: player.uid,
-            playerName: player.displayName,
-            elo: player.totalPoints || 0, // Use totalPoints as Elo rating
-            totalRuns: stats.totalRuns,
-            worldRecords: stats.worldRecords,
-            bestTime: stats.bestTime,
-            bestTimeString: stats.bestTimeString,
+        // Convert to array and calculate best overall time (minimum of the two)
+        const rankings = Array.from(playerTimes.entries())
+          .map(([playerId, data]) => {
+            const bestOverallTime = Math.min(
+              data.bestAnyPercentTime === Infinity ? Infinity : data.bestAnyPercentTime,
+              data.bestNocutsNoshipsTime === Infinity ? Infinity : data.bestNocutsNoshipsTime
+            );
+            
+            return {
+              playerId,
+              playerName: data.playerName,
+              bestAnyPercentTime: data.bestAnyPercentTime,
+              bestAnyPercentTimeString: data.bestAnyPercentTimeString,
+              bestNocutsNoshipsTime: data.bestNocutsNoshipsTime,
+              bestNocutsNoshipsTimeString: data.bestNocutsNoshipsTimeString,
+              bestOverallTime: bestOverallTime === Infinity ? Infinity : bestOverallTime,
+              rank: 0, // Will be set after sorting
+            };
+          })
+          // Filter out players with no valid times
+          .filter(player => player.bestOverallTime !== Infinity)
+          // Sort by best overall time (lower is better)
+          .sort((a, b) => {
+            // If both have valid times, compare them
+            if (a.bestOverallTime !== Infinity && b.bestOverallTime !== Infinity) {
+              return a.bestOverallTime - b.bestOverallTime;
+            }
+            // If only one has a valid time, it ranks higher
+            if (a.bestOverallTime !== Infinity) return -1;
+            if (b.bestOverallTime !== Infinity) return 1;
+            return 0;
+          })
+          // Assign ranks
+          .map((player, index) => ({
+            ...player,
             rank: index + 1,
-          };
-        });
+          }));
 
         setEloRankings(rankings);
       } catch (error) {
-        console.error("Error fetching Elo rankings:", error);
+        console.error("Error fetching rankings:", error);
         setEloRankings([]);
       }
     };
 
     fetchEloRankings();
-  }, [stats]);
+  }, [stats, categories, platforms]);
 
   // Calculate filtered WR time progression
   const filteredWRTimeProgression = useMemo(() => {
@@ -829,7 +822,7 @@ const Stats = () => {
                 : "text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
             }`}
           >
-            <span className="font-medium text-xs sm:text-sm">Elo Rankings</span>
+            <span className="font-medium text-xs sm:text-sm">Gamecube Rankings</span>
           </Button>
         </div>
 
@@ -1375,19 +1368,18 @@ const Stats = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5" />
-                Elo Rankings
+                Gamecube Rankings
               </CardTitle>
               <CardDescription>
-                Player rankings based on total studs (points) earned from verified runs
+                Player rankings based on best Any% and Nocuts Noships times on Gamecube
               </CardDescription>
             </CardHeader>
             <CardContent>
               {eloRankings.length > 0 ? (
                 <div className="space-y-4">
                   <div className="text-sm text-muted-foreground">
-                    Players are ranked by their total studs (points) earned from all verified runs. 
-                    Studs are awarded based on run performance, rank bonuses, and leaderboard type. 
-                    Players with the most studs rank highest.
+                    Players are ranked by their best overall time across Any% and Nocuts Noships categories on Gamecube. 
+                    The ranking uses the faster of the two category times for each player.
                   </div>
                   <div className="rounded-md border">
                     <Table>
@@ -1395,10 +1387,8 @@ const Stats = () => {
                         <TableRow>
                           <TableHead className="w-16">Rank</TableHead>
                           <TableHead>Player</TableHead>
-                          <TableHead className="text-right">Elo (Studs)</TableHead>
-                          <TableHead className="text-right">World Records</TableHead>
-                          <TableHead className="text-right">Total Runs</TableHead>
-                          <TableHead className="text-right">Best Time</TableHead>
+                          <TableHead className="text-right">Best Any% Time</TableHead>
+                          <TableHead className="text-right">Best Nocuts Noships Time</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1421,37 +1411,11 @@ const Stats = () => {
                                 {player.playerName}
                               </Link>
                             </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <span className="font-bold text-lg">{player.elo.toLocaleString()}</span>
-                                {player.elo >= 10000 && (
-                                  <Badge variant="default" className="bg-yellow-500">
-                                    Legend
-                                  </Badge>
-                                )}
-                                {player.elo >= 5000 && player.elo < 10000 && (
-                                  <Badge variant="secondary">
-                                    Master
-                                  </Badge>
-                                )}
-                                {player.elo < 5000 && player.elo >= 2000 && (
-                                  <Badge variant="outline">
-                                    Expert
-                                  </Badge>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-1">
-                                <Trophy className="h-4 w-4 text-yellow-500" />
-                                <span className="font-semibold">{player.worldRecords}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <span className="text-muted-foreground">{player.totalRuns}</span>
+                            <TableCell className="text-right font-mono">
+                              {player.bestAnyPercentTime !== Infinity ? formatTime(player.bestAnyPercentTimeString) : 'N/A'}
                             </TableCell>
                             <TableCell className="text-right font-mono">
-                              {player.bestTime !== Infinity ? formatTime(player.bestTimeString) : 'N/A'}
+                              {player.bestNocutsNoshipsTime !== Infinity ? formatTime(player.bestNocutsNoshipsTimeString) : 'N/A'}
                             </TableCell>
                           </TableRow>
                         ))}
@@ -1461,7 +1425,7 @@ const Stats = () => {
                 </div>
               ) : (
                 <p className="text-center text-muted-foreground py-8">
-                  No player data available for Elo rankings
+                  No player data available for Gamecube rankings. Make sure there are verified runs for Any% and Nocuts Noships categories on Gamecube platform.
                 </p>
               )}
             </CardContent>
