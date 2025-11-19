@@ -134,6 +134,16 @@ export interface GameDetailsNavItem {
   order?: number; // Order for displaying items
 }
 
+export interface GameDetailsHeaderLink {
+  id: string;
+  label: string;
+  route: string; // Route path (e.g., "/leaderboards", "/stats")
+  icon?: string; // Icon name (e.g., "Trophy", "Upload") - optional
+  color?: string; // Color hex code (e.g., "#a6e3a1") - optional
+  order?: number; // Order for displaying items
+  adminOnly?: boolean; // Whether this link should only show for admins
+}
+
 export interface GameDetailsConfig {
   id: string;
   // Game information
@@ -149,7 +159,9 @@ export interface GameDetailsConfig {
   }>;
   // Discord button
   discordUrl?: string;
-  // Navigation items
+  // Header navigation links (shown in game details card)
+  headerLinks: GameDetailsHeaderLink[];
+  // Navigation items (deprecated, kept for backwards compatibility)
   navItems: GameDetailsNavItem[];
   // Visibility configuration - which pages should show the component
   visibleOnPages: string[]; // Array of route paths (e.g., ["/", "/leaderboards", "/stats"])

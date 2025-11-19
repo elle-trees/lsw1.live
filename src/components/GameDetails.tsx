@@ -1,18 +1,32 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { GameDetailsConfig } from "@/types/database";
 import { getGameDetailsConfig } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Trophy, Upload, Radio, Download, BarChart3, ShieldAlert } from "lucide-react";
+import LegoStudIcon from "@/components/icons/LegoStudIcon";
+import { useAuth } from "@/components/AuthProvider";
 
 interface GameDetailsProps {
   className?: string;
 }
 
+// Icon mapping for header links
+const iconMap: Record<string, React.ComponentType<{ className?: string; size?: number; color?: string }>> = {
+  Trophy,
+  Upload,
+  Radio,
+  Download,
+  BarChart3,
+  ShieldAlert,
+};
+
 export function GameDetails({ className }: GameDetailsProps) {
   const [config, setConfig] = useState<GameDetailsConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const location = useLocation();
+  const { currentUser } = useAuth();
 
   useEffect(() => {
     const fetchConfig = async () => {
@@ -53,6 +67,15 @@ export function GameDetails({ className }: GameDetailsProps) {
     const orderB = b.order ?? Infinity;
     return orderA - orderB;
   });
+
+  // Sort header links by order and filter by admin status
+  const sortedHeaderLinks = [...(config.headerLinks || [])]
+    .filter(link => !link.adminOnly || currentUser?.isAdmin)
+    .sort((a, b) => {
+      const orderA = a.order ?? Infinity;
+      const orderB = b.order ?? Infinity;
+      return orderA - orderB;
+    });
 
   return (
     <div className={`bg-[#1e1e2e] border-b border-ctp-surface1 ${className || ""}`}>
@@ -95,7 +118,7 @@ export function GameDetails({ className }: GameDetailsProps) {
             </div>
 
             {/* Platform Buttons and Discord */}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 mb-4">
               {sortedPlatforms.map((platform) => (
                 <Button
                   key={platform.id}
@@ -125,6 +148,61 @@ export function GameDetails({ className }: GameDetailsProps) {
                 </Button>
               )}
             </div>
+
+            {/* Header Navigation Links */}
+            {sortedHeaderLinks.length > 0 && (
+              <nav className="flex flex-wrap gap-4 sm:gap-6 border-t border-ctp-surface1 pt-4">
+                {sortedHeaderLinks.map((link) => {
+                  const IconComponent = link.icon === "LegoStud" 
+                    ? LegoStudIcon 
+                    : (link.icon ? iconMap[link.icon] : null);
+                  const linkColor = link.color || "#cdd6f4";
+                  const isActive = location.pathname === link.route || 
+                    (link.route !== "/" && location.pathname.startsWith(link.route));
+
+                  return (
+                    <Link
+                      key={link.id}
+                      to={link.route}
+                      className={`relative flex items-center gap-1 transition-all duration-300 group ${
+                        isActive
+                          ? "text-ctp-text"
+                          : "text-ctp-subtext1 hover:text-ctp-text"
+                      }`}
+                      style={{ color: isActive ? linkColor : undefined }}
+                    >
+                      {IconComponent && (
+                        link.icon === "LegoStud" ? (
+                          <LegoStudIcon 
+                            size={16} 
+                            color={isActive ? linkColor : undefined}
+                            className="transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12"
+                          />
+                        ) : (
+                          <IconComponent 
+                            className="h-4 w-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12"
+                            style={{ color: isActive ? linkColor : undefined }}
+                          />
+                        )
+                      )}
+                      <span className="relative">
+                        {link.label}
+                        <span 
+                          className="absolute -bottom-1 left-0 w-0 h-0.5 transition-all duration-300 group-hover:w-full"
+                          style={{ backgroundColor: linkColor }}
+                        ></span>
+                      </span>
+                      {isActive && (
+                        <span 
+                          className="absolute -bottom-1 left-0 w-full h-0.5"
+                          style={{ backgroundColor: linkColor }}
+                        ></span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </nav>
+            )}
           </div>
         </div>
       </div>

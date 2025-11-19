@@ -75,7 +75,7 @@ import {
 import { importSRCRuns, type ImportResult } from "@/lib/speedruncom/importService";
 import { fetchCategoryVariables, getLSWGameId, fetchCategories as fetchSRCCategories, type SRCCategory } from "@/lib/speedruncom";
 import { useUploadThing } from "@/lib/uploadthing";
-import { LeaderboardEntry, DownloadEntry, Category, Level, Subcategory, PointsConfig, GameDetailsConfig, GameDetailsNavItem } from "@/types/database";
+import { LeaderboardEntry, DownloadEntry, Category, Level, Subcategory, PointsConfig, GameDetailsConfig, GameDetailsNavItem, GameDetailsHeaderLink } from "@/types/database";
 import { useNavigate } from "react-router-dom";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { formatTime } from "@/lib/utils";
@@ -348,6 +348,7 @@ const Admin = () => {
             subtitle: "2005",
             categories: [],
             platforms: [],
+            headerLinks: [],
             navItems: [],
             visibleOnPages: [],
             enabled: true,
@@ -420,6 +421,7 @@ const Admin = () => {
         categories: gameDetailsConfigForm.categories ?? gameDetailsConfig.categories ?? [],
         platforms: gameDetailsConfigForm.platforms ?? gameDetailsConfig.platforms ?? [],
         discordUrl: getOptionalField(gameDetailsConfigForm.discordUrl, gameDetailsConfig.discordUrl),
+        headerLinks: gameDetailsConfigForm.headerLinks ?? gameDetailsConfig.headerLinks ?? [],
         navItems: gameDetailsConfigForm.navItems ?? gameDetailsConfig.navItems ?? [],
         visibleOnPages: gameDetailsConfigForm.visibleOnPages ?? gameDetailsConfig.visibleOnPages ?? [],
         enabled: gameDetailsConfigForm.enabled ?? gameDetailsConfig.enabled ?? true,
@@ -4202,33 +4204,37 @@ const Admin = () => {
                       />
                     </div>
 
-                    {/* Navigation Items */}
+                    {/* Header Links */}
                     <div className="space-y-4">
-                      <Label className="text-base font-semibold">Navigation Items</Label>
+                      <Label className="text-base font-semibold">Header Navigation Links</Label>
                       <p className="text-sm text-[hsl(222,15%,60%)] mb-2">
-                        Configure navigation tabs. Each line should be: Label|Route|BadgeCount (optional)
+                        Configure header navigation links shown in the game details card. Each line should be: Label|Route|Icon|Color|AdminOnly (optional)
                         <br />
-                        Example: "Levels|/leaderboards|18" or "Stats|/stats"
+                        Available icons: Trophy, Upload, Radio, Download, BarChart3, ShieldAlert, LegoStud
+                        <br />
+                        Example: "Leaderboards|/leaderboards|Trophy|#a6e3a1" or "Admin|/admin|ShieldAlert|#f2cdcd|true"
                       </p>
                       <Textarea
-                        rows={8}
-                        placeholder="Levels|/leaderboards|18&#10;News|/&#10;Guides|/downloads|8&#10;Resources|/downloads|12&#10;Forums|/|20&#10;Streams|/live|1&#10;Stats|/stats&#10;Leaderboards|/leaderboards"
-                        value={(gameDetailsConfigForm.navItems ?? gameDetailsConfig.navItems ?? []).map(item => 
-                          `${item.label}|${item.route}${item.badgeCount !== undefined ? `|${item.badgeCount}` : ""}`
+                        rows={10}
+                        placeholder="Leaderboards|/leaderboards|Trophy|#a6e3a1&#10;Studs|/points|LegoStud|#fab387&#10;Submit Run|/submit|Upload|#eba0ac&#10;Live|/live|Radio|#f38ba8&#10;Downloads|/downloads|Download|#cba6f7&#10;Stats|/stats|BarChart3|#89b4fa&#10;Admin|/admin|ShieldAlert|#f2cdcd|true"
+                        value={(gameDetailsConfigForm.headerLinks ?? gameDetailsConfig.headerLinks ?? []).map(item => 
+                          `${item.label}|${item.route}|${item.icon || ""}|${item.color || ""}${item.adminOnly ? "|true" : ""}`
                         ).join("\n")}
                         onChange={(e) => {
                           const lines = e.target.value.split("\n").filter(l => l.trim().length > 0);
-                          const navItems: GameDetailsNavItem[] = lines.map((line, index) => {
+                          const headerLinks = lines.map((line, index) => {
                             const parts = line.split("|").map(p => p.trim());
                             return {
                               id: parts[0].toLowerCase().replace(/\s+/g, "-"),
                               label: parts[0],
                               route: parts[1] || "/",
-                              badgeCount: parts[2] ? parseInt(parts[2]) : undefined,
+                              icon: parts[2] || undefined,
+                              color: parts[3] || undefined,
+                              adminOnly: parts[4] === "true",
                               order: index + 1,
                             };
                           });
-                          setGameDetailsConfigForm({ ...gameDetailsConfigForm, navItems });
+                          setGameDetailsConfigForm({ ...gameDetailsConfigForm, headerLinks });
                         }}
                         className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] font-mono text-sm"
                       />
