@@ -2,14 +2,16 @@ import { db } from "@/lib/firebase";
 import { 
   collection, 
   doc, 
-  getDoc, 
   setDoc, 
-  updateDoc, 
+  deleteDoc, 
   getDocs, 
   query, 
   where, 
   limit as firestoreLimit,
-  DocumentData
+  orderBy,
+  updateDoc,
+  writeBatch,
+  getDoc
 } from "firebase/firestore";
 import { Player } from "@/types/database";
 import { playerConverter } from "./converters";
@@ -69,8 +71,6 @@ export const getPlayerByDisplayNameFirestore = async (displayName: string): Prom
     }
     
     // Fallback: search by email prefix (only if displayName query fails)
-    // Note: This is expensive and should be avoided if possible. 
-    // Ideally, we should have a normalized 'emailPrefix' field or similar.
     const allPlayersQuery = query(collection(db, "players").withConverter(playerConverter), firestoreLimit(500));
     const allPlayersSnapshot = await getDocs(allPlayersQuery);
     const normalizedSearch = normalizedDisplayName.toLowerCase();
@@ -91,19 +91,10 @@ export const getPlayerByDisplayNameFirestore = async (displayName: string): Prom
   }
 };
 
-/**
- * Check if a display name is available (case-insensitive)
- * Returns true if available, false if taken
- */
 export const isDisplayNameAvailableFirestore = async (displayName: string): Promise<boolean> => {
   if (!db || !displayName || !displayName.trim()) return false;
   try {
     const normalizedDisplayName = displayName.trim().toLowerCase();
-    
-    // Optimization: If we had a 'displayNameLower' field, we could use a simple where clause.
-    // For now, we still have to fetch, but we can try to limit the impact.
-    // TODO: Add 'displayNameLower' field to Player document for efficient querying.
-    
     const allPlayersQuery = query(collection(db, "players").withConverter(playerConverter), firestoreLimit(1000));
     const querySnapshot = await getDocs(allPlayersQuery);
     
@@ -126,11 +117,6 @@ export const isDisplayNameAvailableFirestore = async (displayName: string): Prom
 export const getPlayersWithTwitchUsernamesFirestore = async (): Promise<Array<{ uid: string; displayName: string; twitchUsername: string; nameColor?: string; profilePicture?: string }>> => {
   if (!db) return [];
   try {
-    // Optimization: Use 'where' clause if possible, but twitchUsername might not be indexed or might be null for many.
-    // If we have an index on twitchUsername, we can use: where("twitchUsername", "!=", null)
-    // However, "!=" queries are not supported directly in this way usually (requires specific setup).
-    // ">" "" works for non-empty strings.
-    
     const q = query(
       collection(db, "players").withConverter(playerConverter),
       where("twitchUsername", ">", ""), 
@@ -207,12 +193,32 @@ export const getPlayersWithSRCUsernamesFirestore = async (): Promise<Array<{ uid
   }
 };
 
-export const getAllPlayersFirestore = async (): Promise<Player[]> => {
+export const getAllPlayersFirestore = async (sortBy?: string, sortOrder?: 'asc' | 'desc'): Promise<Player[]> => {
     if (!db) return [];
     try {
         const q = query(collection(db, "players").withConverter(playerConverter));
         const snapshot = await getDocs(q);
-        return snapshot.docs.map(d => d.data());
+        let players = snapshot.docs.map(d => d.data());
+        
+        if (sortBy) {
+            players.sort((a, b) => {
+                const valA = (a as any)[sortBy];
+                const valB = (b as any)[sortBy];
+                
+                if (valA === valB) return 0;
+                
+                if (valA === undefined || valA === null) return 1;
+                if (valB === undefined || valB === null) return -1;
+                
+                if (sortOrder === 'desc') {
+                    return valA > valB ? -1 : 1;
+                } else {
+                    return valA > valB ? 1 : -1;
+                }
+            });
+        }
+        
+        return players;
     } catch (error) {
         console.error("Error fetching all players:", error);
         return [];
@@ -223,21 +229,32 @@ export const updatePlayerFirestore = async (uid: string, data: Partial<Player>):
     return updatePlayerProfileFirestore(uid, data);
 };
 
-export const deletePlayerFirestore = async (uid: string): Promise<boolean> => {
-    if (!db) return false;
+export const deletePlayerFirestore = async (uid: string, deleteRuns: boolean = false): Promise<{ success: boolean; error?: string; deletedRuns?: number }> => {
+    if (!db) return { success: false, error: "Database not initialized" };
     try {
-        await updateDoc(doc(db, "players", uid), {
-            // We might want to soft delete or just delete the doc.
-            // For now, let's assume we shouldn't actually delete players often.
-            // But if requested:
-        });
-        // Actually delete:
-        const { deleteDoc } = await import("firebase/firestore");
-        await deleteDoc(doc(db, "players", uid));
-        return true;
-    } catch (error) {
+        let deletedRunsCount = 0;
+        const batch = writeBatch(db);
+        
+        // Delete player
+        const playerRef = doc(db, "players", uid);
+        batch.delete(playerRef);
+        
+        // Delete runs if requested
+        if (deleteRuns) {
+            const runsQuery = query(collection(db, "leaderboardEntries"), where("playerId", "==", uid));
+            const runsSnapshot = await getDocs(runsQuery);
+            runsSnapshot.docs.forEach(doc => {
+                batch.delete(doc.ref);
+                deletedRunsCount++;
+            });
+        }
+        
+        await batch.commit();
+        
+        return { success: true, deletedRuns: deletedRunsCount };
+    } catch (error: any) {
         console.error("Error deleting player:", error);
-        return false;
+        return { success: false, error: error.message };
     }
 };
 
@@ -248,7 +265,6 @@ export const getPlayersByPointsFirestore = async (limitCount: number = 100): Pro
             collection(db, "players").withConverter(playerConverter),
             where("totalPoints", ">", 0),
             firestoreLimit(limitCount)
-            // orderBy("totalPoints", "desc") // Requires index
         );
         
         const snapshot = await getDocs(q);
@@ -263,3 +279,4 @@ export const getPlayersByPointsFirestore = async (limitCount: number = 100): Pro
         return [];
     }
 };
+

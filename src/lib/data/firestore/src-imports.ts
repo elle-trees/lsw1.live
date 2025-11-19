@@ -8,7 +8,8 @@ import {
   where, 
   limit as firestoreLimit,
   writeBatch,
-  updateDoc
+  updateDoc,
+  deleteDoc
 } from "firebase/firestore";
 import { LeaderboardEntry } from "@/types/database";
 import { leaderboardEntryConverter } from "./converters";
@@ -60,19 +61,99 @@ export const getAllRunsForDuplicateCheckFirestore = async (): Promise<Leaderboar
     }
 };
 
-export const deleteAllImportedSRCRunsFirestore = async (): Promise<boolean> => {
-    if (!db) return false;
+export const deleteAllImportedSRCRunsFirestore = async (): Promise<{ deleted: number; errors: string[] }> => {
+    if (!db) return { deleted: 0, errors: ["Database not initialized"] };
+    
+    let deletedCount = 0;
+    const errors: string[] = [];
+
     try {
         // Query all imported runs
-        // Batch delete
-        // Implementation omitted for brevity
-        return false;
-    } catch (error) {
-        return false;
+        const q = query(
+            collection(db, "leaderboardEntries"),
+            where("importedFromSRC", "==", true)
+        );
+        const snapshot = await getDocs(q);
+        
+        if (snapshot.empty) {
+            return { deleted: 0, errors: [] };
+        }
+
+        const batches = [];
+        let batch = writeBatch(db);
+        let operationCount = 0;
+
+        for (const doc of snapshot.docs) {
+            batch.delete(doc.ref);
+            operationCount++;
+            deletedCount++;
+
+            if (operationCount >= 500) {
+                batches.push(batch.commit());
+                batch = writeBatch(db);
+                operationCount = 0;
+            }
+        }
+
+        if (operationCount > 0) {
+            batches.push(batch.commit());
+        }
+
+        await Promise.all(batches);
+        
+        return { deleted: deletedCount, errors };
+    } catch (error: any) {
+        errors.push(error.message || "Unknown error occurred during deletion");
+        return { deleted: deletedCount, errors };
     }
 };
 
-export const wipeAllImportedSRCRunsFirestore = deleteAllImportedSRCRunsFirestore;
+export const wipeAllImportedSRCRunsFirestore = async (
+  onProgress?: (deletedCount: number) => void
+): Promise<{ deleted: number; errors: string[] }> => {
+    if (!db) return { deleted: 0, errors: ["Database not initialized"] };
+    
+    let deletedCount = 0;
+    const errors: string[] = [];
+
+    try {
+        // Query all imported runs
+        const q = query(
+            collection(db, "leaderboardEntries"),
+            where("importedFromSRC", "==", true)
+        );
+        const snapshot = await getDocs(q);
+        
+        if (snapshot.empty) {
+            return { deleted: 0, errors: [] };
+        }
+
+        // Process in chunks to avoid memory issues and provide progress
+        const chunkSize = 500;
+        const docs = snapshot.docs;
+        
+        for (let i = 0; i < docs.length; i += chunkSize) {
+            const chunk = docs.slice(i, i + chunkSize);
+            const batch = writeBatch(db);
+            
+            chunk.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            
+            await batch.commit();
+            deletedCount += chunk.length;
+            
+            if (onProgress) {
+                onProgress(deletedCount);
+            }
+        }
+        
+        return { deleted: deletedCount, errors };
+    } catch (error: any) {
+        errors.push(error.message || "Unknown error occurred during deletion");
+        return { deleted: deletedCount, errors };
+    }
+};
 
 export const getVerifiedRunsWithInvalidDataFirestore = async (): Promise<LeaderboardEntry[]> => {
     // Implementation omitted
@@ -124,16 +205,63 @@ export const getUnclaimedImportedRunsFirestore = async (limitCount: number = 50)
      }
 };
 
-export const deleteAllUnclaimedImportedRunsFirestore = async (): Promise<number> => {
-    return 0;
+export const deleteAllUnclaimedImportedRunsFirestore = async (): Promise<{ success: boolean; deletedRuns: number; error?: string }> => {
+    if (!db) return { success: false, deletedRuns: 0, error: "Database not initialized" };
+    try {
+        const runs = await getUnclaimedImportedRunsFirestore(1000); // Limit to avoid timeout
+        if (runs.length === 0) return { success: true, deletedRuns: 0 };
+
+        const batch = writeBatch(db);
+        runs.forEach(run => {
+            batch.delete(doc(db, "leaderboardEntries", run.id));
+        });
+        await batch.commit();
+        return { success: true, deletedRuns: runs.length };
+    } catch (error: any) {
+        return { success: false, deletedRuns: 0, error: error.message };
+    }
 };
 
 export const findDuplicateRunsFirestore = async (): Promise<any[]> => {
     return [];
 };
 
-export const removeDuplicateRunsFirestore = async (runIds: string[]): Promise<number> => {
-    return 0;
+export const removeDuplicateRunsFirestore = async (duplicateRuns: { runs: LeaderboardEntry[]; key: string }[]): Promise<{ removed: number; errors: string[] }> => {
+    if (!db) return { removed: 0, errors: ["Database not initialized"] };
+    let removedCount = 0;
+    const errors: string[] = [];
+    
+    try {
+        const batch = writeBatch(db);
+        
+        for (const group of duplicateRuns) {
+            // Keep the first one (or based on some criteria), remove others
+            // For simplicity, keep the verified one or the one with most info
+            // Here we assume the first one is "main" and others are duplicates to remove
+            // This logic depends on how findDuplicateRuns finds them.
+            // Assuming we remove all BUT one.
+            
+            if (group.runs.length <= 1) continue;
+            
+            // Sort to keep the "best" one? 
+            // For now, just remove subsequent ones
+            const toRemove = group.runs.slice(1);
+            
+            toRemove.forEach(run => {
+                batch.delete(doc(db, "leaderboardEntries", run.id));
+                removedCount++;
+            });
+        }
+        
+        if (removedCount > 0) {
+            await batch.commit();
+        }
+        
+        return { removed: removedCount, errors };
+    } catch (error: any) {
+        errors.push(error.message);
+        return { removed: removedCount, errors };
+    }
 };
 
 export const autoClaimRunsBySRCUsernameFirestore = async (uid: string, srcUsername: string): Promise<number> => {
@@ -170,19 +298,21 @@ export const autoClaimRunsBySRCUsernameFirestore = async (uid: string, srcUserna
     }
 };
 
-export const runAutoclaimingForAllUsersFirestore = async (): Promise<{ totalUsers: number; totalClaimed: number; errors: string[] }> => {
-    if (!db) return { totalUsers: 0, totalClaimed: 0, errors: [] };
+export const runAutoclaimingForAllUsersFirestore = async (): Promise<{ runsUpdated: number; playersUpdated: number; errors: string[] }> => {
+    if (!db) return { runsUpdated: 0, playersUpdated: 0, errors: [] };
     
-    const result = { totalUsers: 0, totalClaimed: 0, errors: [] as string[] };
+    const result = { runsUpdated: 0, playersUpdated: 0, errors: [] as string[] };
     
     try {
         const playersWithSRC = await getPlayersWithSRCUsernamesFirestore();
-        result.totalUsers = playersWithSRC.length;
         
         for (const player of playersWithSRC) {
             try {
                 const claimed = await autoClaimRunsBySRCUsernameFirestore(player.uid, player.srcUsername);
-                result.totalClaimed += claimed;
+                if (claimed > 0) {
+                    result.runsUpdated += claimed;
+                    result.playersUpdated++;
+                }
             } catch (err: any) {
                 result.errors.push(`Error claiming for ${player.srcUsername}: ${err.message}`);
             }

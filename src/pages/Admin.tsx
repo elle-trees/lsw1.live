@@ -331,7 +331,7 @@ const Admin = () => {
     
     setSavingPointsConfig(true);
     try {
-      const success = await updatePointsConfig(pointsConfigForm);
+      const success = await updatePointsConfig(pointsConfigForm as PointsConfig);
       if (success) {
         // Reload config to get updated values
         const updatedConfig = await getPointsConfig();
@@ -1565,7 +1565,7 @@ const Admin = () => {
         ),
       };
       
-      const success = await addDownloadEntry(downloadEntry, currentUser.uid);
+      const success = await addDownloadEntry(downloadEntry);
       if (success) {
         toast({
           title: "Download Added",

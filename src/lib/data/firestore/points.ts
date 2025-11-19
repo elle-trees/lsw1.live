@@ -65,9 +65,9 @@ export const updatePointsConfigFirestore = async (config: PointsConfig): Promise
   }
 };
 
-export const backfillPointsForAllRunsFirestore = async (): Promise<{ updated: number; errors: number }> => {
+export const backfillPointsForAllRunsFirestore = async (): Promise<{ runsUpdated: number; playersUpdated: number; errors: string[] }> => {
     // Implementation omitted for brevity - complex logic involving recalculating all points
-    return { updated: 0, errors: 0 };
+    return { runsUpdated: 0, playersUpdated: 0, errors: [] };
 };
 
 export const wipeLeaderboardsFirestore = async (): Promise<boolean> => {

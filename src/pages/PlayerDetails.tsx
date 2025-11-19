@@ -4,16 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PlayerProfile } from "@/components/PlayerProfile";
-import { ArrowLeft, Trophy, User, Users, Clock, Star, Gem, CheckCircle, Filter, Gamepad2, Sparkles } from "lucide-react";
+import { ArrowLeft, Trophy, User, Users, Clock, Star, Gem, CheckCircle, Filter, Gamepad2, Sparkles, MapPin, ExternalLink, Check } from "lucide-react";
 import { Link } from "react-router-dom";
 import { getPlayerRuns, getPlayerByUid, getCategories, getPlatforms, getPlayerPendingRuns, getLevels, getCategoriesFromFirestore, getUnclaimedRunsBySRCUsername, claimRun, runTypes } from "@/lib/db";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import LegoStudIcon from "@/components/icons/LegoStudIcon";
-import { Player, LeaderboardEntry } from "@/types/database";
+import { Player, LeaderboardEntry, Category } from "@/types/database";
 import { formatDate, formatTime } from "@/lib/utils";
 import { useAuth } from "@/components/AuthProvider";
 import { getCategoryName, getPlatformName, getLevelName } from "@/lib/dataValidation";
 import { useToast } from "@/hooks/use-toast";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const PlayerDetails = () => {
   const { playerId } = useParams<{ playerId: string }>();
@@ -26,7 +27,7 @@ const PlayerDetails = () => {
   const [unclaimedRuns, setUnclaimedRuns] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingPendingRuns, setLoadingPendingRuns] = useState(false);
-  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [platforms, setPlatforms] = useState<{ id: string; name: string }[]>([]);
   const [levels, setLevels] = useState<{ id: string; name: string }[]>([]);
   const [leaderboardType, setLeaderboardType] = useState<'regular' | 'individual-level' | 'community-golds'>('regular');
@@ -110,7 +111,7 @@ const PlayerDetails = () => {
           // Fetch pending and unclaimed runs in parallel
           const pendingRunsPromise = getPlayerPendingRuns(playerId).catch(() => []);
           const unclaimedRunsPromise = fetchedPlayer.srcUsername 
-            ? getUnclaimedRunsBySRCUsername(fetchedPlayer.srcUsername, currentUser.uid).catch(() => [])
+            ? getUnclaimedRunsBySRCUsername(fetchedPlayer.srcUsername).catch(() => [])
             : Promise.resolve([]);
           
           const [fetchedPending, fetchedUnclaimed] = await Promise.all([
@@ -227,7 +228,7 @@ const PlayerDetails = () => {
         // Refresh unclaimed runs
         if (fetchedPlayer?.srcUsername) {
           try {
-            const fetchedUnclaimed = await getUnclaimedRunsBySRCUsername(fetchedPlayer.srcUsername, currentUser.uid);
+            const fetchedUnclaimed = await getUnclaimedRunsBySRCUsername(fetchedPlayer.srcUsername);
             setUnclaimedRuns(fetchedUnclaimed || []);
           } catch (error) {
             setUnclaimedRuns([]);
@@ -299,82 +300,73 @@ const PlayerDetails = () => {
         />
 
         {/* Pending Submissions Panel - Only show for own profile */}
-        {isOwnProfile && (
-          <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] mt-8 shadow-xl rounded-none">
-            <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
-              <CardTitle className="flex items-center gap-2 text-ctp-text">
-                <Clock className="h-5 w-5 text-ctp-yellow" />
-                Pending Submissions
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {pendingRuns.length === 0 ? (
-                <p className="text-ctp-overlay0 text-center py-4">No pending submissions</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-[hsl(235,13%,30%)]">
-                        <th className="py-3 px-4 text-left">Category</th>
-                        <th className="py-3 px-4 text-left">Time</th>
-                        <th className="py-3 px-4 text-left">Date</th>
-                        <th className="py-3 px-4 text-left">Platform</th>
-                        <th className="py-3 px-4 text-left">Type</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {pendingRuns.map((run) => {
-                        const categoryName = categories.find(c => c.id === run.category)?.name || run.category;
-                        const platformName = platforms.find(p => p.id === run.platform)?.name || run.platform;
-                        
-                        return (
-                          <tr 
-                            key={run.id} 
-                            className="border-b border-[hsl(235,13%,30%)] hover:bg-[hsl(235,19%,13%)] cursor-pointer transition-colors"
-                            onClick={() => navigate(`/run/${run.id}`)}
-                          >
-                            <td className="py-3 px-4 font-medium">{categoryName}</td>
-                            <td className="py-3 px-4 font-mono">{formatTime(run.time)}</td>
-                            <td className="py-3 px-4 text-ctp-overlay0">{formatDate(run.date)}</td>
-                            <td className="py-3 px-4">
-                              <Badge variant="outline" className="border-[hsl(235,13%,30%)]">
-                                {platformName}
-                              </Badge>
-                            </td>
-                            <td className="py-3 px-4">
-                              <Badge variant="outline" className="border-[hsl(235,13%,30%)] flex items-center gap-1 w-fit">
-                                {run.runType === 'solo' ? <User className="h-3 w-3" /> : <Users className="h-3 w-3" />}
-                                {run.runType.charAt(0).toUpperCase() + run.runType.slice(1)}
-                              </Badge>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        {isOwnProfile && pendingRuns.length > 0 && (
+          <div className="mt-8 animate-fade-in">
+            <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-ctp-text">
+              <Clock className="h-5 w-5 text-ctp-yellow" />
+              Pending Submissions
+            </h3>
+            <div className="overflow-x-auto scrollbar-custom rounded-md border border-ctp-surface1/50">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-ctp-surface1/50 hover:bg-transparent bg-ctp-surface0/50">
+                    <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text">Category</TableHead>
+                    <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text">Time</TableHead>
+                    <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text">Date</TableHead>
+                    <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text">Platform</TableHead>
+                    <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text">Type</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pendingRuns.map((run, index) => {
+                    const categoryName = categories.find(c => c.id === run.category)?.name || run.category;
+                    const platformName = platforms.find(p => p.id === run.platform)?.name || run.platform;
+                    
+                    return (
+                      <TableRow 
+                        key={run.id} 
+                        className="table-row-animate border-b border-ctp-surface1/20 hover:bg-ctp-surface0 hover:brightness-125 transition-all duration-150 cursor-pointer"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                        onClick={() => navigate(`/run/${run.id}`)}
+                      >
+                        <TableCell className="py-3 px-4 font-medium text-ctp-text">{categoryName}</TableCell>
+                        <TableCell className="py-3 px-4 font-mono text-ctp-text">{formatTime(run.time)}</TableCell>
+                        <TableCell className="py-3 px-4 text-ctp-subtext1">{formatDate(run.date)}</TableCell>
+                        <TableCell className="py-3 px-4">
+                          <Badge variant="outline" className="border-ctp-surface1 bg-ctp-surface0 text-ctp-text text-xs px-1.5 py-0.5">
+                            {platformName}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="py-3 px-4">
+                          <Badge variant="outline" className="border-ctp-surface1 bg-ctp-surface0 text-ctp-text flex items-center gap-1 w-fit text-xs px-1.5 py-0.5">
+                            {run.runType === 'solo' ? <User className="h-3 w-3" /> : <Users className="h-3 w-3" />}
+                            {run.runType.charAt(0).toUpperCase() + run.runType.slice(1)}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
         )}
 
-        <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] mt-8 shadow-xl rounded-none">
-          <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
-            <CardTitle className="flex items-center gap-2 text-ctp-text">
+        <div className="mt-8 animate-fade-in-delay">
+            <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-ctp-text">
               <Trophy className="h-5 w-5 text-ctp-yellow" />
               Runs
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            </h3>
+
             {/* Leaderboard Type Buttons */}
             <div className="grid grid-cols-3 mb-4 p-0.5 gap-1 bg-ctp-surface0/50 rounded-none border border-ctp-surface1">
               <Button
                 variant={leaderboardType === 'regular' ? "default" : "ghost"}
                 onClick={() => setLeaderboardType('regular')}
-                className={`h-auto py-1.5 sm:py-2 px-2 sm:px-3 rounded-none transition-all duration-300 font-medium text-xs sm:text-sm whitespace-nowrap ${
+                className={`button-click-animation h-auto py-1.5 sm:py-2 px-2 sm:px-3 rounded-none transition-all duration-200 font-medium text-xs sm:text-sm whitespace-nowrap ${
                   leaderboardType === 'regular'
                     ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm"
-                    : "bg-ctp-surface0 text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
+                    : "text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
                 }`}
               >
                 <Trophy className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
@@ -384,10 +376,10 @@ const PlayerDetails = () => {
               <Button
                 variant={leaderboardType === 'individual-level' ? "default" : "ghost"}
                 onClick={() => setLeaderboardType('individual-level')}
-                className={`h-auto py-1.5 sm:py-2 px-2 sm:px-3 rounded-none transition-all duration-300 font-medium text-xs sm:text-sm whitespace-nowrap ${
+                className={`button-click-animation h-auto py-1.5 sm:py-2 px-2 sm:px-3 rounded-none transition-all duration-200 font-medium text-xs sm:text-sm whitespace-nowrap ${
                   leaderboardType === 'individual-level'
                     ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm"
-                    : "bg-ctp-surface0 text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
+                    : "text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
                 }`}
               >
                 <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
@@ -397,10 +389,10 @@ const PlayerDetails = () => {
               <Button
                 variant={leaderboardType === 'community-golds' ? "default" : "ghost"}
                 onClick={() => setLeaderboardType('community-golds')}
-                className={`h-auto py-1.5 sm:py-2 px-2 sm:px-3 rounded-none transition-all duration-300 font-medium text-xs sm:text-sm whitespace-nowrap ${
+                className={`button-click-animation h-auto py-1.5 sm:py-2 px-2 sm:px-3 rounded-none transition-all duration-200 font-medium text-xs sm:text-sm whitespace-nowrap ${
                   leaderboardType === 'community-golds'
                     ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm"
-                    : "bg-ctp-surface0 text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
+                    : "text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
                 }`}
               >
                 <Gem className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
@@ -527,7 +519,7 @@ const PlayerDetails = () => {
                       {subcategoryButtons}
                       
                       {/* Filters */}
-                      <Card className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl mb-4 rounded-none">
+                      <Card className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl mb-6 rounded-none">
                         <CardHeader className="bg-gradient-to-r from-ctp-base to-ctp-mantle border-b border-ctp-surface1 py-3">
                           <CardTitle className="flex items-center gap-2 text-lg">
                             <Filter className="h-4 w-4 text-ctp-mauve" />
@@ -608,26 +600,27 @@ const PlayerDetails = () => {
                           <p className="text-ctp-overlay0">No runs found matching the selected filters</p>
                         </div>
                       ) : (
-                        <div className="overflow-x-auto scrollbar-custom rounded-none">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b border-[hsl(235,13%,30%)]">
-                            <th className="py-3 px-4 text-left">Rank</th>
-                            <th className="py-3 px-4 text-left">Category</th>
+                        <div className="overflow-x-auto scrollbar-custom rounded-md border border-ctp-surface1/20">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="border-b border-ctp-surface1/50 hover:bg-transparent bg-ctp-surface0/50">
+                            <TableHead className="py-3 pl-3 pr-1 text-left text-sm font-semibold text-ctp-text whitespace-nowrap w-16">Rank</TableHead>
+                            <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text">Category</TableHead>
                             {leaderboardType !== 'regular' && (
-                              <th className="py-3 px-4 text-left">Level</th>
+                              <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text">Level</TableHead>
                             )}
-                            <th className="py-3 px-4 text-left">Time</th>
-                            <th className="py-3 px-4 text-left">Date</th>
-                            <th className="py-3 px-4 text-left">Platform</th>
-                            <th className="py-3 px-4 text-left">Type</th>
+                            <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text">Time</TableHead>
+                            <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text hidden sm:table-cell">Date</TableHead>
+                            <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text hidden md:table-cell">Platform</TableHead>
+                            <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text hidden lg:table-cell">Type</TableHead>
+                            <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text">Video</TableHead>
                             {isOwnProfile && (
-                              <th className="py-3 px-4 text-left">Action</th>
+                              <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text">Action</TableHead>
                             )}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {allRuns.map((run) => {
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {allRuns.map((run, index) => {
                             // Check if this is an unclaimed run
                             const isUnclaimed = !run.playerId || run.playerId.trim() === "";
                             // Use data validation utilities for proper name resolution with SRC fallbacks
@@ -646,45 +639,31 @@ const PlayerDetails = () => {
                               : undefined;
                             
                             return (
-                              <tr 
+                              <TableRow 
                                 key={run.id} 
-                                className="border-b border-[hsl(235,13%,30%)] hover:bg-[hsl(235,19%,13%)] cursor-pointer transition-colors"
+                                className="table-row-animate border-b border-ctp-surface1/20 hover:bg-ctp-surface0 hover:brightness-125 transition-all duration-150 cursor-pointer"
+                                style={{ animationDelay: `${index * 50}ms` }}
                                 onClick={() => navigate(`/run/${run.id}`)}
                               >
-                                <td className="py-3 px-4">
+                                <TableCell className="py-2.5 pl-3 pr-1">
                                   {run.rank ? (
                                     run.rank === 1 ? (
-                                      <div className="flex items-center gap-2">
-                                        <LegoStudIcon size={36} color="#0055BF" />
-                                        <span className="font-bold text-base text-ctp-text">
-                                          #{run.rank}
-                                        </span>
-                                      </div>
+                                      <LegoStudIcon size={28} color="#0055BF" />
                                     ) : run.rank === 2 ? (
-                                      <div className="flex items-center gap-2">
-                                        <LegoStudIcon size={36} color="#FFD700" />
-                                        <span className="font-bold text-base text-ctp-text">
-                                          #{run.rank}
-                                        </span>
-                                      </div>
+                                      <LegoStudIcon size={28} color="#FFD700" />
                                     ) : run.rank === 3 ? (
-                                      <div className="flex items-center gap-2">
-                                        <LegoStudIcon size={36} color="#C0C0C0" />
-                                        <span className="font-bold text-base text-ctp-text">
-                                          #{run.rank}
-                                        </span>
-                                      </div>
+                                      <LegoStudIcon size={28} color="#C0C0C0" />
                                     ) : (
-                                      <span className="font-bold text-base text-ctp-text w-9 h-9 flex items-center justify-center">
+                                      <span className="font-bold text-sm text-ctp-text w-7 h-7 flex items-center justify-center">
                                         #{run.rank}
                                       </span>
                                     )
                                   ) : (
                                     <span className="text-ctp-overlay0">—</span>
                                   )}
-                                </td>
-                                <td className="py-3 px-4 font-medium">
-                                  <div className="flex items-center gap-2">
+                                </TableCell>
+                                <TableCell className="py-2.5 px-4 font-medium">
+                                  <div className="flex items-center gap-2 text-ctp-text">
                                     {categoryName}
                                     {isUnclaimed && (
                                       <Badge variant="outline" className="border-yellow-600/50 bg-yellow-600/10 text-yellow-400 text-xs">
@@ -692,54 +671,74 @@ const PlayerDetails = () => {
                                       </Badge>
                                     )}
                                   </div>
-                                </td>
+                                </TableCell>
                                 {leaderboardType !== 'regular' && (
-                                  <td className="py-3 px-4 text-ctp-overlay0">
-                                    {levelName || run.srcLevelName || '—'}
-                                  </td>
+                                  <TableCell className="py-2.5 px-4 text-ctp-subtext1 flex items-center gap-1">
+                                    {levelName ? (
+                                      <>
+                                        <MapPin className="h-3.5 w-3.5 text-ctp-overlay0" />
+                                        {levelName}
+                                      </>
+                                    ) : (
+                                      run.srcLevelName || '—'
+                                    )}
+                                  </TableCell>
                                 )}
-                                <td className="py-3 px-4 text-base font-semibold">{formatTime(run.time)}</td>
-                                <td className="py-3 px-4 text-ctp-overlay0">{formatDate(run.date)}</td>
-                                <td className="py-3 px-4">
-                                  <Badge variant="outline" className="border-[hsl(235,13%,30%)]">
+                                <TableCell className="py-2.5 px-4 font-semibold text-ctp-text">{formatTime(run.time)}</TableCell>
+                                <TableCell className="py-2.5 px-4 text-ctp-subtext1 hidden sm:table-cell">{formatDate(run.date)}</TableCell>
+                                <TableCell className="py-2.5 px-4 hidden md:table-cell">
+                                  <Badge variant="outline" className="border-ctp-surface1 bg-ctp-surface0 text-ctp-text text-xs px-1.5 py-0.5">
                                     {platformName}
                                   </Badge>
-                                </td>
-                                <td className="py-3 px-4">
-                                  <Badge variant="outline" className="border-[hsl(235,13%,30%)] flex items-center gap-1 w-fit">
+                                </TableCell>
+                                <TableCell className="py-2.5 px-4 hidden lg:table-cell">
+                                  <Badge variant="outline" className="border-ctp-surface1 bg-ctp-surface0 text-ctp-text flex items-center gap-1 w-fit text-xs px-1.5 py-0.5">
                                     {run.runType === 'solo' ? <User className="h-3 w-3" /> : <Users className="h-3 w-3" />}
                                     {run.runType.charAt(0).toUpperCase() + run.runType.slice(1)}
                                   </Badge>
-                                </td>
+                                </TableCell>
+                                <TableCell className="py-2.5 px-4">
+                                  {run.videoUrl && (
+                                    <a 
+                                      href={run.videoUrl} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer" 
+                                      className="text-[#cba6f7] hover:text-[#f5c2e7] flex items-center gap-1"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <ExternalLink className="h-3 w-3" />
+                                      <span className="text-xs hidden sm:inline">Watch</span>
+                                    </a>
+                                  )}
+                                </TableCell>
                                 {isOwnProfile && (
-                                  <td className="py-3 px-4">
+                                  <TableCell className="py-2.5 px-4">
                                     {isUnclaimed ? (
                                       <Button
                                         onClick={(e) => handleClaimRun(run.id, e)}
                                         size="sm"
-                                        className="bg-[#cba6f7] hover:bg-[#b4a0e2] text-[hsl(240,21%,15%)] font-bold"
+                                        className="bg-[#cba6f7] hover:bg-[#b4a0e2] text-[hsl(240,21%,15%)] font-bold h-7 text-xs"
                                       >
-                                        <CheckCircle className="h-4 w-4 mr-2" />
+                                        <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
                                         Claim
                                       </Button>
                                     ) : (
-                                      <span className="text-ctp-overlay0 text-sm">—</span>
+                                      <Check className="h-4 w-4 text-green-500 opacity-0" /> // Spacer
                                     )}
-                                  </td>
+                                  </TableCell>
                                 )}
-                              </tr>
+                              </TableRow>
                             );
                           })}
-                        </tbody>
-                      </table>
+                        </TableBody>
+                      </Table>
                     </div>
                       )}
                     </>
                   );
                 })()}
             </div>
-          </CardContent>
-        </Card>
+        </div>
       </div>
     </div>
   );
