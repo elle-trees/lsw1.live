@@ -475,7 +475,7 @@ const RunDetails = () => {
     };
     
     calculateDisplayPoints();
-  }, [run?.points, run?.verified, run?.isObsolete, run?.rank, run?.time, run?.category, run?.platform, run?.runType, run?.leaderboardType, categories, platforms]);
+  }, [run, categories, platforms]);
 
 
   if (!run) {

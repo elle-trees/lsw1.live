@@ -24,13 +24,9 @@ let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
 
-try {
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  db = getFirestore(app);
-} catch (error) {
-  throw error;
-}
+app = initializeApp(firebaseConfig);
+auth = getAuth(app);
+db = getFirestore(app);
 
 export { auth, db };
 export default app;

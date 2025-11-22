@@ -3,7 +3,7 @@ import { Player, LeaderboardEntry, Category, Platform, Level, DownloadEntry, Poi
 
 const genericConverter = <T extends { id: string }>() => ({
   toFirestore(data: T): DocumentData {
-    const { id, ...rest } = data;
+    const { id: _id, ...rest } = data;
     return rest;
   },
   fromFirestore(
@@ -50,7 +50,7 @@ export const subcategoryConverter: FirestoreDataConverter<Subcategory> = generic
 // Custom converter for GameDetailsConfig that removes undefined values
 export const gameDetailsConfigConverter: FirestoreDataConverter<GameDetailsConfig> = {
   toFirestore(data: GameDetailsConfig): DocumentData {
-    const { id, ...rest } = data;
+    const { id: _id, ...rest } = data;
     // Remove undefined values before saving
     return removeUndefined(rest);
   },

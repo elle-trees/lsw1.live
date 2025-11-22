@@ -9,7 +9,6 @@ import {
   mapSRCRunToLeaderboardEntry,
   fetchCategories as fetchSRCCategories,
   fetchLevels as fetchSRCLevels,
-  fetchPlatformById,
   type SRCRun,
 } from "../speedruncom";
 import { 
@@ -162,7 +161,7 @@ export async function createSRCMappings(srcRuns: SRCRun[], gameId: string): Prom
           uniquePlatforms.set(platform.id, { id: platform.id, name });
         }
       }
-    } catch (error) {
+    } catch (_error) {
       // Fallback: Fetch platforms individually if bulk fetch fails
       const platformFetchPromises = platformsToFetch.map(async (platform) => {
         try {
@@ -171,7 +170,7 @@ export async function createSRCMappings(srcRuns: SRCRun[], gameId: string): Prom
           if (name) {
             uniquePlatforms.set(platform.id, { id: platform.id, name });
           }
-        } catch (error) {
+        } catch (_error) {
           // Platform fetch failed, skip this platform
         }
       });
@@ -396,7 +395,7 @@ export async function createSRCMappings(srcRuns: SRCRun[], gameId: string): Prom
  */
 function validateMappedRun(
   run: Partial<LeaderboardEntry> & { srcRunId: string },
-  srcRunId: string
+  _srcRunId: string
 ): string[] {
   const errors: string[] = [];
 
@@ -555,7 +554,7 @@ export async function importSRCRuns(
     let localCategories: Category[] = [];
     try {
       localCategories = await getCategoriesFromFirestore();
-    } catch (error) {
+    } catch (_error) {
       // Continue without subcategory mapping - runs will still import with srcSubcategory
     }
 
@@ -585,7 +584,7 @@ export async function importSRCRuns(
         if (player) {
           playerNameCache.set(name.toLowerCase(), player);
         }
-      } catch (error) {
+      } catch (_error) {
         // Silently fail - player doesn't exist
       }
     });
@@ -696,13 +695,14 @@ export async function importSRCRuns(
           }
           
           // Log non-critical validation issues as warnings
-          const warnings = validationErrors.filter(err => 
-            !err.includes('missing player name') && 
-            !err.includes('missing time') && 
-            !err.includes('invalid time format') &&
-            !err.includes('missing date') &&
-            !err.includes('invalid date format')
-          );
+          // Note: warnings variable was declared but never used - removed for now
+          // const warnings = validationErrors.filter(err => 
+          //   !err.includes('missing player name') && 
+          //   !err.includes('missing time') && 
+          //   !err.includes('invalid time format') &&
+          //   !err.includes('missing date') &&
+          //   !err.includes('invalid date format')
+          // );
 
           // Handle platform - allow empty if SRC name exists
           if (!mappedRun.platform || mappedRun.platform.trim() === '') {
@@ -770,7 +770,7 @@ export async function importSRCRuns(
             onProgress?.({ total: srcRuns.length, imported: result.imported, skipped: result.skipped });
           }
 
-        } catch (error) {
+        } catch (_error) {
           // Catch any unexpected errors processing this run
           result.skipped++;
           result.errors.push(`Run ${srcRun.id}: ${error instanceof Error ? error.message : String(error)}`);
@@ -787,7 +787,7 @@ export async function importSRCRuns(
       }
       if (autoclaimResult.errors.length > 0) {
       }
-    } catch (autoclaimError) {
+    } catch (_autoclaimError) {
       // Don't fail the import if autoclaiming fails
     }
 

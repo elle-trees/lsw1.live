@@ -9,9 +9,9 @@ import {
   limit as firestoreLimit,
   QueryConstraint
 } from "firebase/firestore";
-import { LeaderboardEntry, Level, Category, Platform, Player } from "@/types/database";
-import { leaderboardEntryConverter, categoryConverter, platformConverter, levelConverter, playerConverter } from "./converters";
-import { normalizeCategoryId, normalizePlatformId, normalizeLevelId, normalizeLeaderboardEntry, validateLeaderboardEntry } from "@/lib/dataValidation";
+import { LeaderboardEntry, Level } from "@/types/database";
+import { leaderboardEntryConverter, playerConverter } from "./converters";
+import { normalizeCategoryId, normalizePlatformId, normalizeLevelId } from "@/lib/dataValidation";
 import { parseTimeToSeconds } from "@/lib/utils";
 
 /**
@@ -62,20 +62,10 @@ export const getLeaderboardEntriesFirestore = async (
     
     // Fetch levels to check disabled categories
     // Optimization: Only fetch if needed
-    let selectedLevelData: Level | undefined;
-    if (normalizedLevelId) {
-        // We could cache this or fetch only the specific level
-        // For now, let's try to fetch just the one level if we can, or all if that's the pattern
-        // The original code fetched all levels. Let's fetch just the one.
-        // Actually, `getDocs` on collection fetches all.
-        // Let's use `getDoc` if we have the ID.
-        // But we need to import `doc` and `getDoc`.
-        // I'll stick to the pattern but maybe optimize later.
-        // For now, let's just assume we can fetch the specific level document if we knew where it was.
-        // But levels are in a collection.
-        // Let's just fetch all for now to match behavior, or optimize if I have the tool.
-        // I'll import getDoc in the file imports.
-    }
+    // Note: selectedLevelData was declared but never used - removed for now
+    // if (normalizedLevelId) {
+    //   // Could fetch specific level here if needed
+    // }
 
     const querySnapshot = await getDocs(query(collection(db, "leaderboardEntries").withConverter(leaderboardEntryConverter), ...constraints));
     

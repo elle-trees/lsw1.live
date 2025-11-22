@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { GameDetailsConfig } from "@/types/database";
 import { getGameDetailsConfig } from "@/lib/db";
@@ -123,7 +123,7 @@ export function GameDetails({ className }: GameDetailsProps) {
     const interval = setInterval(fetchNotificationCounts, 30000);
     
     return () => clearInterval(interval);
-  }, [currentUser?.uid, currentUser?.isAdmin, authLoading]);
+  }, [currentUser, authLoading]);
 
   const handleNotificationClick = () => {
     if (currentUser?.isAdmin && unverifiedRunsCount > 0) {

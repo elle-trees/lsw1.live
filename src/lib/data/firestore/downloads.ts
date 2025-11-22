@@ -9,7 +9,7 @@ import {
   orderBy,
   updateDoc
 } from "firebase/firestore";
-import { DownloadEntry, Category } from "@/types/database"; // Assuming Category is used for download categories too?
+import { DownloadEntry } from "@/types/database";
 import { downloadEntryConverter } from "./converters";
 
 // Note: The original file had 'getDownloadCategoriesFirestore' which returned Category[]? 
@@ -62,16 +62,16 @@ export const deleteDownloadEntryFirestore = async (id: string): Promise<boolean>
   }
 };
 
-export const updateDownloadOrderFirestore = async (id: string, newOrder: number): Promise<boolean> => {
+export const updateDownloadOrderFirestore = async (_id: string, _newOrder: number): Promise<boolean> => {
     // Implementation omitted
     return false;
 };
 
-export const moveDownloadUpFirestore = async (id: string): Promise<boolean> => {
+export const moveDownloadUpFirestore = async (_id: string): Promise<boolean> => {
     return false;
 };
 
-export const moveDownloadDownFirestore = async (id: string): Promise<boolean> => {
+export const moveDownloadDownFirestore = async (_id: string): Promise<boolean> => {
     return false;
 };
 

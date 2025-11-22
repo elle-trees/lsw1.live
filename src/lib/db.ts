@@ -164,7 +164,7 @@ import {
   getAllVerifiedRunsFirestore
 } from "./data/firestore/src-imports";
 
-import { LeaderboardEntry, Category, Player, Platform, Level } from "@/types/database";
+import { LeaderboardEntry, Category, Platform } from "@/types/database";
 
 // Helper to fix missing function
 const getLeaderboardEntryByIdFirestore = async (id: string): Promise<LeaderboardEntry | null> => {
@@ -176,7 +176,7 @@ const getLeaderboardEntryByIdFirestore = async (id: string): Promise<Leaderboard
       return { id: docSnap.id, ...docSnap.data() } as LeaderboardEntry;
     }
     return null;
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
 };
@@ -196,7 +196,7 @@ export const initializeDefaultCategories = async (): Promise<void> => {
         await addCategoryFirestore(defaultCategories[i].name);
       }
     }
-  } catch (error) {
+  } catch (_error) {
     // Silent fail
   }
 };
@@ -213,7 +213,7 @@ export const getCategories = async (leaderboardType?: 'regular' | 'individual-le
     }
     
     return firestoreCategories;
-  } catch (error) {
+  } catch (_error) {
     return [];
   }
 };
@@ -233,7 +233,7 @@ export const initializeDefaultPlatforms = async (): Promise<void> => {
         await addPlatformFirestore(defaultPlatforms[i].name);
       }
     }
-  } catch (error) {
+  } catch (_error) {
     // Silent fail
   }
 };
@@ -248,7 +248,7 @@ export const getPlatforms = async (): Promise<Platform[]> => {
     }
     
     return firestorePlatforms;
-  } catch (error) {
+  } catch (_error) {
     return [];
   }
 };

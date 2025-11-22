@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Radio, User } from 'lucide-react';
+import { Radio } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
@@ -57,7 +57,7 @@ const Live = () => {
           // If response is unexpected, default to offline for safety
           setIsLive(false);
         }
-      } catch (error) {
+      } catch (_error) {
         // Default to offline on error
         setIsLive(false);
       }
@@ -103,7 +103,7 @@ const Live = () => {
                 return trimmedData === 'live' ? player : null;
               }
               return null;
-            } catch (error) {
+            } catch (_error) {
               return null;
             }
           })
@@ -111,7 +111,7 @@ const Live = () => {
 
         const live = liveStatusChecks.filter((runner): runner is LiveRunner => runner !== null);
         setLiveRunners(live);
-      } catch (error) {
+      } catch (_error) {
         setLiveRunners([]);
       } finally {
         setCheckingRunners(false);

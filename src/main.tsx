@@ -12,7 +12,7 @@ onAuthStateChanged(auth, async (user) => {
   if (user && ADMIN_UID && user.uid === ADMIN_UID) {
     try {
       await setPlayerAdminStatus(ADMIN_UID, true);
-    } catch (error) {
+    } catch (_error) {
       // Silent fail - admin status will be set on next auth check
     }
   }

@@ -136,7 +136,7 @@ const PlayerDetails = () => {
     };
 
     fetchPlayerData();
-  }, [playerId, currentUser?.uid]);
+  }, [playerId, currentUser]);
 
   // Update selected category when leaderboard type changes
   useEffect(() => {

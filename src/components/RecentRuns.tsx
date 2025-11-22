@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { User, Users, Trophy, Sparkles, TrendingUp, Gamepad2 } from "lucide-react";
+import { User, Users, Trophy, Sparkles, Gamepad2 } from "lucide-react";
 import { LeaderboardEntry } from "@/types/database";
 import { getCategories, getPlatforms } from "@/lib/db";
 import { formatDate, formatTime } from "@/lib/utils";
@@ -32,7 +32,7 @@ export function RecentRuns({ runs, loading, showRankBadge = true, maxRuns }: Rec
         ]);
         setPlatforms(platformsData);
         setCategories(categoriesData);
-      } catch (error) {
+      } catch (_error) {
         // Silent fail
       }
     };

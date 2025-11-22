@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Bell, Check, ExternalLink, Trash2, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
@@ -96,14 +96,14 @@ export function Notifications() {
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [open, currentUser]);
+  }, [open, currentUser, fetchData]);
 
   // Initial fetch for badge
   useEffect(() => {
       if (currentUser) {
           fetchData();
       }
-  }, [currentUser]);
+  }, [currentUser, fetchData]);
 
   const handleMarkAsRead = async (id: string) => {
     await markNotificationAsRead(id);

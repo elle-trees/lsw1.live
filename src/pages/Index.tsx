@@ -1,15 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { FadeIn } from "@/components/ui/fade-in";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, CheckCircle, Clock, ExternalLink } from "lucide-react";
 import { getRecentRuns, getAllVerifiedRuns } from "@/lib/db";
 import { LeaderboardEntry } from "@/types/database";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { RecentRuns } from "@/components/RecentRuns";
 import TwitchEmbed from "@/components/TwitchEmbed";
-import { parseTimeToSeconds, formatSecondsToTime, cn } from "@/lib/utils";
+import { parseTimeToSeconds, cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { buttonVariants } from "@/components/ui/button";
 import { AnimatedCard } from "@/components/ui/animated-card";
@@ -62,7 +62,7 @@ const Index = () => {
         // Fetch more runs to allow dynamic display based on available space
         const recentEntries = await getRecentRuns(20);
         setRecentRunsData(recentEntries);
-      } catch (error) {
+      } catch (_error) {
         // Silent fail
       } finally {
         setLoading(false);
@@ -99,7 +99,7 @@ const Index = () => {
           return sum + parseTimeToSeconds(run.time);
         }, 0);
         setTotalTime(formatTimeWithDays(totalSeconds));
-      } catch (error) {
+      } catch (_error) {
         // Silent fail
       } finally {
         setStatsLoading(false);
@@ -133,7 +133,7 @@ const Index = () => {
           // If response is unexpected, default to offline for safety
           setIsLive(false);
         }
-      } catch (error) {
+      } catch (_error) {
         // Default to offline on error
         setIsLive(false);
       }

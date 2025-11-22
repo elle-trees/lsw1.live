@@ -1,20 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Settings, User, Mail, Lock, Palette, Trophy, CheckCircle, Upload, X, Sparkles, Gem, Users } from "lucide-react";
+import { Settings, User, Trophy, CheckCircle, Upload, X, Sparkles, Gem, Users } from "lucide-react";
 import { getCategoryName, getPlatformName, getLevelName } from "@/lib/dataValidation";
 import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { updatePlayerProfile, getPlayerByUid, getUnclaimedRunsBySRCUsername, claimRun, getCategories, getPlatforms, getLevels, getCategoriesFromFirestore } from "@/lib/db";
 import { updateEmail, updatePassword, updateProfile } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { useNavigate, Link } from "react-router-dom";
-import { Player, LeaderboardEntry } from "@/types/database";
+import { useNavigate } from "react-router-dom";
+import { LeaderboardEntry } from "@/types/database";
 import { Badge } from "@/components/ui/badge";
 import { formatDate, formatTime } from "@/lib/utils";
 import { useUploadThing } from "@/lib/uploadthing";
@@ -60,7 +60,7 @@ const UserSettings = () => {
         setPageLoading(true);
         try {
           // Fetch categories, platforms, and levels for displaying unclaimed runs
-          const [fetchedCategories, fetchedPlatforms, fetchedLevels, regularCategories, ilCategories, cgCategories] = await Promise.all([
+          const [_fetchedCategories, fetchedPlatforms, _fetchedLevels, regularCategories, ilCategories, cgCategories] = await Promise.all([
             getCategories(),
             getPlatforms(),
             getLevels(),
@@ -95,7 +95,7 @@ const UserSettings = () => {
             setPronouns("");
             setTwitchUsername("");
           }
-        } catch (error) {
+        } catch (_error) {
           toast({
             title: "Error",
             description: "Failed to load user data.",
@@ -107,21 +107,21 @@ const UserSettings = () => {
       };
       fetchPlayerData();
     }
-  }, [currentUser, authLoading, navigate, toast]);
+  }, [currentUser, authLoading, navigate, toast, fetchUnclaimedSRCRuns]);
 
-  const fetchUnclaimedSRCRuns = async (srcUsername: string) => {
+  const fetchUnclaimedSRCRuns = useCallback(async (srcUsername: string) => {
     if (!srcUsername || !currentUser) return;
     setLoadingSRCUnclaimed(true);
     try {
       const runs = await getUnclaimedRunsBySRCUsername(srcUsername);
       const trulyUnclaimed = runs.filter(run => run.playerId !== currentUser.uid);
       setUnclaimedSRCRuns(trulyUnclaimed);
-    } catch (error) {
+    } catch (_error) {
       // Silent fail
     } finally {
       setLoadingSRCUnclaimed(false);
     }
-  };
+  }, [currentUser]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -179,7 +179,7 @@ const UserSettings = () => {
           await updateProfile(auth.currentUser, {
             photoURL: profilePicture
           });
-        } catch (error) {
+        } catch (_error) {
           // Don't fail the whole update if this fails
         }
       }

@@ -78,13 +78,12 @@ A modern, fast, speedrunning leaderboard platform for LEGO Star Wars: The Video 
 ## Tech Stack
 
 - **Frontend**: React 18 + TypeScript
-- **Build Tool**: Vite & rolldown-vite
+- **Build Tools**: Vite & rolldown-vite
+- **Javascript Tools**: Oxc
 - **Styling**: Tailwind CSS + Catppuccin Mocha
 - **UI Components**: shadcn/ui
 - **Routing**: React Router
 - **Database**: Firebase Firestore
-  - Optimized queries with composite indexes
-  - Data validation and normalization utilities
 - **Authentication**: Firebase Auth
 - **File Uploads**: UploadThing
 - **External APIs**: Speedrun.com API integration
@@ -108,6 +107,7 @@ This project is designed to be forked for other speedrunning communities. The co
 - [React](https://react.dev) - The library for web and native user interfaces
 - [Vite](https://vite.dev/) - The Build Tool for the Web
 - [Rolldown](https://rolldown.rs) - Fast Rust-based bundler for JavaScript
+- [Oxc](https://oxc.rs) - A collection of JavaScript tools written in Rust
 - [Vercel](https://vercel.com) - Deployment and hosting
 - [Firebase](https://firebase.google.com) - Authentation and storage
 - [uploadthing](https://uploadthing.com) - File uploading

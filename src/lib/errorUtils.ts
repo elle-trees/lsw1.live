@@ -57,7 +57,7 @@ export function getErrorMessage(error: unknown, defaultMessage = "An error occur
  * Log error with context for debugging
  * Note: Logging removed for production cleanup
  */
-export function logError(error: unknown, context?: string): void {
+export function logError(_error: unknown, _context?: string): void {
   // Error logging removed for production cleanup
   // Errors are handled via user-facing toasts and error boundaries
 }

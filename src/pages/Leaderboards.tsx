@@ -69,8 +69,9 @@ const Leaderboards = () => {
           setSelectedLevel("");
         }
         
-        if (fetchedPlatforms.length > 0 && !selectedPlatform) {
-          setSelectedPlatform(fetchedPlatforms[0].id);
+        // Set default platform if empty - use functional update to avoid reading selectedPlatform
+        if (fetchedPlatforms.length > 0) {
+          setSelectedPlatform(prev => prev || fetchedPlatforms[0].id);
         }
       } catch (error) {
         // Silent fail

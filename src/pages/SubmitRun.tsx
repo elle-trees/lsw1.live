@@ -1,4 +1,4 @@
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AnimatedCard } from "@/components/ui/animated-card";
@@ -46,13 +46,14 @@ const SubmitRun = () => {
   const [loadingData, setLoadingData] = useState(true);
   const [loadingSubcategories, setLoadingSubcategories] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const isInitialLoadRef = useRef(true);
 
   useEffect(() => {
     const fetchData = async () => {
       // Only show loading skeleton on initial load, not when switching types
-      if (isInitialLoad) {
+      if (isInitialLoadRef.current) {
         setLoadingData(true);
+        isInitialLoadRef.current = false;
       }
       try {
         // For Individual Level: fetch Story/Free Play categories
@@ -68,21 +69,30 @@ const SubmitRun = () => {
         setAvailableCategories(fetchedCategories);
         setAvailableLevels(fetchedLevels);
         setAvailablePlatforms(fetchedPlatforms);
-        if (fetchedCategories.length > 0 && !formData.category) {
-          setFormData(prev => ({ ...prev, category: fetchedCategories[0].id }));
-        } else if (fetchedCategories.length === 0) {
-          setFormData(prev => ({ ...prev, category: "" }));
-        }
-        if (fetchedLevels.length > 0 && (leaderboardType === 'individual-level' || leaderboardType === 'community-golds') && !formData.level) {
-          setFormData(prev => ({ ...prev, level: fetchedLevels[0].id }));
-        } else if (leaderboardType === 'regular') {
-          setFormData(prev => ({ ...prev, level: "" }));
-        }
-      } catch (error) {
+        
+        // Set default category if empty - use functional update to avoid reading formData
+        setFormData(prev => {
+          if (fetchedCategories.length > 0 && !prev.category) {
+            return { ...prev, category: fetchedCategories[0].id };
+          } else if (fetchedCategories.length === 0) {
+            return { ...prev, category: "" };
+          }
+          return prev;
+        });
+        
+        // Set default level if empty - use functional update to avoid reading formData
+        setFormData(prev => {
+          if (fetchedLevels.length > 0 && (leaderboardType === 'individual-level' || leaderboardType === 'community-golds') && !prev.level) {
+            return { ...prev, level: fetchedLevels[0].id };
+          } else if (leaderboardType === 'regular') {
+            return { ...prev, level: "" };
+          }
+          return prev;
+        });
+      } catch (_error) {
         // Silent fail
       } finally {
         setLoadingData(false);
-        setIsInitialLoad(false);
       }
     };
     

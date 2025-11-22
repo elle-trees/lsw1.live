@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, ShieldAlert, ExternalLink, Download, PlusCircle, Trash2, Wrench, Edit2, FolderTree, Play, ArrowUp, ArrowDown, Gamepad2, UserPlus, UserMinus, Trophy, Upload, Star, Gem, RefreshCw, X, AlertTriangle, Users, Search, Save, UserX, Coins } from "lucide-react";
+import { CheckCircle, XCircle, ShieldAlert, ExternalLink, Download, PlusCircle, Trash2, Wrench, Edit2, FolderTree, Play, ArrowUp, ArrowDown, Gamepad2, UserPlus, UserMinus, Trophy, Upload, Star, Gem, RefreshCw, X, AlertTriangle, Users, Search, Save, Coins } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
@@ -51,19 +51,14 @@ import {
   backfillPointsForAllRuns,
   getDownloadCategories,
   getImportedSRCRuns,
-  checkSRCRunExists,
-  getAllRunsForDuplicateCheck,
   deleteAllImportedSRCRuns,
   getCategories,
   updateLevelCategoryDisabled,
-  getUnassignedRuns,
   findDuplicateRuns,
   removeDuplicateRuns,
-  claimRun,
   getAllPlayers,
   updatePlayer,
   deletePlayer,
-  wipeAllImportedSRCRuns,
   getPointsConfig,
   updatePointsConfig,
   getGameDetailsConfig,
@@ -72,16 +67,12 @@ import {
 import { importSRCRuns, type ImportResult } from "@/lib/speedruncom/importService";
 import { fetchCategoryVariables, getLSWGameId, fetchCategories as fetchSRCCategories, type SRCCategory } from "@/lib/speedruncom";
 import { useUploadThing } from "@/lib/uploadthing";
-import { LeaderboardEntry, DownloadEntry, Category, Level, Subcategory, PointsConfig, GameDetailsConfig, GameDetailsNavItem, GameDetailsHeaderLink } from "@/types/database";
+import { LeaderboardEntry, DownloadEntry, Category, Level, Subcategory, PointsConfig, GameDetailsConfig, GameDetailsHeaderLink } from "@/types/database";
 import { useNavigate } from "react-router-dom";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { formatTime } from "@/lib/utils";
 import { getCategoryName, getPlatformName, getLevelName, normalizeCategoryId, normalizePlatformId, normalizeLevelId } from "@/lib/dataValidation";
-import { db } from "@/lib/firebase";
-import { collection, query, getDocs, limit as firestoreLimit } from "firebase/firestore";
-import { Player } from "@/types/database";
 import { prepareRunForVerification, batchVerifyRuns } from "@/lib/data/runFieldService";
-import { getLeaderboardEntryById } from "@/lib/db";
 
 const Admin = () => {
   const { currentUser, loading: authLoading } = useAuth();
@@ -252,7 +243,7 @@ const Admin = () => {
         setImportedRunsCategories(categoriesData);
         // Start with "All Categories" selected
         setImportedRunsCategory("__all__");
-      } catch (error) {
+      } catch (_error) {
         // Silent fail
       }
     };
@@ -262,12 +253,12 @@ const Admin = () => {
       try {
         const categoriesData = await getCategories('individual-level');
         setFirestoreCategories(categoriesData);
-      } catch (error) {
+      } catch (_error) {
         // Silent fail
       }
     };
     initLevelCategories();
-  }, []);
+  }, [fetchPlatforms, fetchCategories, fetchLevels, fetchDownloadCategories]);
 
   // Fetch categories for imported runs filter when leaderboard type changes
   useEffect(() => {
@@ -279,7 +270,7 @@ const Admin = () => {
         setImportedRunsCategory("__all__");
         setImportedRunsLevel("__all__"); // Reset level filter
         setImportedPage(1); // Reset to first page
-      } catch (error) {
+      } catch (_error) {
         // Silent fail
       }
     };
@@ -294,7 +285,7 @@ const Admin = () => {
         try {
           const importedData = await getImportedSRCRuns();
           setImportedSRCRuns(importedData);
-        } catch (error) {
+        } catch (_error) {
           // Error handled silently
         } finally {
           setLoadingImportedRuns(false);
@@ -653,7 +644,7 @@ const Admin = () => {
         // For individual-level, use individual-level categories
         const categoriesData = await getCategoriesFromFirestore(levelLeaderboardType);
         setFirestoreCategories(categoriesData);
-      } catch (error) {
+      } catch (_error) {
         // Silent fail
       }
     };
@@ -738,66 +729,70 @@ const Admin = () => {
       }
     };
     fetchSubcategories();
-  }, [editingImportedRunForm.category, editingImportedRun]);
+  }, [editingImportedRunForm.category, editingImportedRunForm.subcategory, editingImportedRun]);
 
-  const fetchImportedRunsCategories = async (leaderboardType: 'regular' | 'individual-level') => {
-    try {
-      const categoriesData = await getCategories(leaderboardType);
-      setImportedRunsCategories(categoriesData);
-    } catch (error) {
-      // Silent fail
-    }
-  };
+  // Note: fetchImportedRunsCategories was declared but never used - removed for now
+  // const fetchImportedRunsCategories = async (leaderboardType: 'regular' | 'individual-level') => {
+  //   try {
+  //     const categoriesData = await getCategories(leaderboardType);
+  //     setImportedRunsCategories(categoriesData);
+  //   } catch (_error) {
+  //     // Silent fail
+  //   }
+  // };
 
-  const fetchDownloadCategories = async () => {
+  const fetchDownloadCategories = useCallback(async () => {
     try {
       const categoriesData = await getDownloadCategories();
       setDownloadCategories(categoriesData);
       // Update newDownload category if empty
-      if (categoriesData.length > 0 && !newDownload.category) {
-        setNewDownload(prev => ({ ...prev, category: categoriesData[0].id }));
-      }
-    } catch (error) {
+      setNewDownload(prev => {
+        if (categoriesData.length > 0 && !prev.category) {
+          return { ...prev, category: categoriesData[0].id };
+        }
+        return prev;
+      });
+    } catch (_error) {
       toast({
         title: "Error",
         description: "Failed to load download categories.",
         variant: "destructive",
       });
     }
-  };
+  }, [toast]);
 
-  const fetchLevels = async () => {
+  const fetchLevels = useCallback(async () => {
     try {
       const levelsData = await getLevels();
       setAvailableLevels(levelsData);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Error",
         description: "Failed to load levels.",
         variant: "destructive",
       });
     }
-  };
+  }, [toast]);
 
-  const fetchCategories = async (leaderboardType?: 'regular' | 'individual-level' | 'community-golds') => {
+  const fetchCategories = useCallback(async (leaderboardType?: 'regular' | 'individual-level' | 'community-golds') => {
     try {
       const type = leaderboardType || categoryLeaderboardType;
       const categoriesData = await getCategoriesFromFirestore(type);
       setFirestoreCategories(categoriesData);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Error",
         description: "Failed to load categories.",
         variant: "destructive",
       });
     }
-  };
+  }, [categoryLeaderboardType, toast]);
 
   useEffect(() => {
     if (firestorePlatforms.length > 0 && !manualRun.platform) {
       setManualRun(prev => ({ ...prev, platform: firestorePlatforms[0].id }));
     }
-  }, [firestorePlatforms]);
+  }, [firestorePlatforms, manualRun.platform]);
 
   useEffect(() => {
     if (editingImportedRun) {
@@ -931,7 +926,7 @@ const Admin = () => {
       const categoryType = verifyingRun.leaderboardType || 'regular';
       fetchCategories(categoryType);
     }
-  }, [verifyingRun, firestoreCategories, firestorePlatforms, availableLevels]);
+  }, [verifyingRun, firestoreCategories, firestorePlatforms, availableLevels, fetchCategories]);
 
   useEffect(() => {
     // Fetch categories when leaderboard type changes for manual run
@@ -939,9 +934,9 @@ const Admin = () => {
     const categoryType = manualRunLeaderboardType;
     fetchCategories(categoryType);
     setManualRun(prev => ({ ...prev, category: "", level: "" })); // Reset category and level when type changes
-  }, [manualRunLeaderboardType]);
+  }, [manualRunLeaderboardType, fetchCategories]);
 
-  const fetchAllData = async () => {
+  const fetchAllData = useCallback(async () => {
     if (hasFetchedData) return;
     setLoading(true);
     try {
@@ -956,7 +951,7 @@ const Admin = () => {
       setDownloadEntries(downloadData);
       setFirestoreCategories(categoriesData);
       setHasFetchedData(true);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Error",
         description: "Failed to load data.",
@@ -965,7 +960,7 @@ const Admin = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [hasFetchedData, toast]);
   
   // Helper function to refresh all run data
   const refreshAllRunData = async () => {
@@ -988,20 +983,20 @@ const Admin = () => {
     if (!authLoading && currentUser) {
       fetchAllData();
     }
-  }, [authLoading, currentUser]);
+  }, [authLoading, currentUser, fetchAllData]);
 
-  const fetchPlatforms = async () => {
+  const fetchPlatforms = useCallback(async () => {
     try {
       const platformsData = await getPlatformsFromFirestore();
       setFirestorePlatforms(platformsData);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Error",
         description: "Failed to load platforms.",
         variant: "destructive",
       });
     }
-  };
+  }, [toast]);
 
   const fetchUnverifiedRuns = async () => {
     try {
@@ -1070,7 +1065,7 @@ const Admin = () => {
         fetchAllData();
       }
     }
-  }, [currentUser?.uid, currentUser?.isAdmin, authLoading]);
+  }, [currentUser, authLoading, hasFetchedData, fetchAllData, navigate, toast]);
   
 
   const handleVerify = async (runId: string) => {
@@ -1445,21 +1440,15 @@ const Admin = () => {
 
   // Helper function to autofill category, platform, and level for imported runs
   // Uses centralized service to eliminate redundancy
-  const autofillRunFields = async (run: LeaderboardEntry) => {
-    // Get all categories (regular, IL, and community golds)
-    const allCategories = [
-      ...firestoreCategories,
-      ...(await getCategoriesFromFirestore('individual-level')),
-      ...(await getCategoriesFromFirestore('community-golds')),
-    ];
-    
-    return await prepareRunForVerification(
-      run,
-      getCategoriesFromFirestore,
-      getPlatformsFromFirestore,
-      getLevels
-    );
-  };
+  // Note: autofillRunFields was declared but never used - removed for now
+  // const autofillRunFields = async (run: LeaderboardEntry) => {
+  //   return await prepareRunForVerification(
+  //     run,
+  //     getCategoriesFromFirestore,
+  //     getPlatformsFromFirestore,
+  //     getLevels
+  //   );
+  // };
 
   const handleBatchVerify = async () => {
     if (!currentUser) return;
@@ -1508,7 +1497,7 @@ const Admin = () => {
         getPlatformsFromFirestore,
         getLevels,
         20, // Process 20 runs in parallel
-        (processed, total) => {
+        (_processed, _total) => {
           // Optional: Could show progress here if needed
         }
       );
@@ -1621,7 +1610,7 @@ const Admin = () => {
         getPlatformsFromFirestore,
         getLevels,
         20, // Process 20 runs in parallel
-        (processed, total) => {
+        (_processed, _total) => {
           // Optional: Could show progress here if needed
         }
       );
@@ -2061,7 +2050,7 @@ const Admin = () => {
   };
 
   // Subcategory management handlers
-  const fetchSRCVariablesForCategory = async (category: Category) => {
+  const fetchSRCVariablesForCategory = useCallback(async (category: Category) => {
     if (!category.srcCategoryId) {
       setSrcVariables([]);
       return;
@@ -2075,7 +2064,7 @@ const Admin = () => {
       } else {
         setSrcVariables([]);
       }
-    } catch (error: any) {
+    } catch (_error: any) {
       toast({
         title: "Error",
         description: "Failed to fetch SRC variables. Make sure the category has a linked SRC category ID.",
@@ -2085,7 +2074,7 @@ const Admin = () => {
     } finally {
       setLoadingSRCVariables(false);
     }
-  };
+  }, [toast]);
 
   // Fetch SRC variables when category is selected or categories are refreshed (only for regular categories)
   useEffect(() => {
@@ -2104,7 +2093,7 @@ const Admin = () => {
     } else {
       setSrcVariables([]);
     }
-  }, [selectedCategoryForSubcategories, categoryLeaderboardType, firestoreCategories]);
+  }, [selectedCategoryForSubcategories, categoryLeaderboardType, firestoreCategories, fetchSRCVariablesForCategory]);
 
   const handleAddSubcategory = async () => {
     if (!selectedCategoryForSubcategories || !newSubcategoryName.trim()) {
@@ -2834,12 +2823,12 @@ const Admin = () => {
   };
 
   // User management functions
-  const fetchPlayers = async () => {
+  const fetchPlayers = useCallback(async () => {
     setLoadingPlayers(true);
     try {
       const players = await getAllPlayers(playersSortBy, playersSortOrder);
       setAllPlayers(players);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Error",
         description: "Failed to load users.",
@@ -2848,13 +2837,13 @@ const Admin = () => {
     } finally {
       setLoadingPlayers(false);
     }
-  };
+  }, [playersSortBy, playersSortOrder, toast]);
 
   useEffect(() => {
     if (activeTab === "users") {
       fetchPlayers();
     }
-  }, [activeTab, playersSortBy, playersSortOrder]);
+  }, [activeTab, playersSortBy, playersSortOrder, fetchPlayers]);
 
   // Auto-run duplicate checking when tools tab is opened
   useEffect(() => {
@@ -2864,7 +2853,7 @@ const Admin = () => {
         try {
           const duplicates = await findDuplicateRuns();
           setDuplicateRuns(duplicates);
-        } catch (error: any) {
+        } catch (_error: any) {
           // Don't show toast on auto-check, only on manual check
         } finally {
           setLoadingDuplicates(false);
@@ -2872,7 +2861,7 @@ const Admin = () => {
       };
       checkDuplicates();
     }
-  }, [activeTab]);
+  }, [activeTab, loadingDuplicates, duplicateRuns.length]);
 
   const handleEditPlayer = (player: Player) => {
     setEditingPlayer(player);

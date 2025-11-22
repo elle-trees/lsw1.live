@@ -7,8 +7,7 @@ import {
   deleteDoc, 
   getDocs, 
   query, 
-  orderBy, 
-  where
+  orderBy
 } from "firebase/firestore";
 import { Category } from "@/types/database";
 import { categoryConverter } from "./converters";
@@ -103,11 +102,11 @@ export const deleteCategoryFirestore = async (id: string): Promise<boolean> => {
   }
 };
 
-export const moveCategoryUpFirestore = async (id: string): Promise<boolean> => {
+export const moveCategoryUpFirestore = async (_id: string): Promise<boolean> => {
     // Implementation omitted for brevity, but would involve swapping orders
     return false; 
 };
 
-export const moveCategoryDownFirestore = async (id: string): Promise<boolean> => {
+export const moveCategoryDownFirestore = async (_id: string): Promise<boolean> => {
     return false;
 };
