@@ -30,7 +30,7 @@ type ImportResult = {
 };
 import { fetchCategoryVariables, getLSWGameId, fetchCategories as fetchSRCCategories, type SRCCategory } from "@/lib/speedruncom";
 import { useUploadThing } from "@/lib/uploadthing";
-import { LeaderboardEntry, DownloadEntry, Category, Level, Subcategory, PointsConfig, GameDetailsConfig, GameDetailsHeaderLink } from "@/types/database";
+import { LeaderboardEntry, DownloadEntry, Category, Level, Subcategory, PointsConfig, GameDetailsConfig, GameDetailsHeaderLink, Player } from "@/types/database";
 import { useNavigate } from "react-router-dom";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { formatTime } from "@/lib/utils";
@@ -710,7 +710,7 @@ const Admin = () => {
   // const fetchImportedRunsCategories = async (leaderboardType: 'regular' | 'individual-level') => {
   //   try {
   //     const db = await getDb();
-     const categoriesData = await db.getCategories(leaderboardType);
+  //     const categoriesData = await db.getCategories(leaderboardType);
   //     setImportedRunsCategories(categoriesData);
   //   } catch (_error) {
   //     // Silent fail
@@ -923,7 +923,6 @@ const Admin = () => {
     setLoading(true);
     try {
       const db = await getDb();
-      const db = await getDb();
       const [unverifiedData, importedData, downloadData, categoriesData] = await Promise.all([
         db.getUnverifiedLeaderboardEntries(),
         db.getImportedSRCRuns(),
@@ -973,7 +972,6 @@ const Admin = () => {
   const fetchPlatforms = useCallback(async () => {
     try {
       const db = await getDb();
-      const db = await getDb();
 
       const platformsData = await db.getPlatformsFromFirestore();
       setFirestorePlatforms(platformsData);
@@ -988,7 +986,6 @@ const Admin = () => {
 
   const fetchUnverifiedRuns = async () => {
     try {
-      const db = await getDb();
       const db = await getDb();
 
       const data = await db.getUnverifiedLeaderboardEntries();
@@ -1021,7 +1018,6 @@ const Admin = () => {
 
   const fetchDownloadEntries = async () => {
     try {
-      const db = await getDb();
       const db = await getDb();
 
       const data = await db.getDownloadEntries();
@@ -1361,6 +1357,7 @@ const Admin = () => {
       setSrcCategoriesWithVars(categoriesWithVars);
       
       // Fetch ALL categories (regular and IL) for linking
+      const db = await getDb();
       const [regularCats, ilCats] = await Promise.all([
         db.getCategoriesFromFirestore('regular'),
         db.getCategoriesFromFirestore('individual-level')
@@ -1496,6 +1493,7 @@ const Admin = () => {
     try {
       // Dynamic import to avoid circular dependency
       const { batchVerifyRuns } = await import("@/lib/data/runFieldService");
+      const db = await getDb();
       // Use optimized batch verification service
       const result = await batchVerifyRuns(
         unverifiedImported,
@@ -1611,6 +1609,7 @@ const Admin = () => {
     try {
       // Dynamic import to avoid circular dependency
       const { batchVerifyRuns } = await import("@/lib/data/runFieldService");
+      const db = await getDb();
       // Use optimized batch verification service
       const result = await batchVerifyRuns(
         unverifiedImported,
@@ -2846,11 +2845,11 @@ const Admin = () => {
     try {
       let player = null;
       if (adminSearchType === "displayName") {
-        player = const db = await getDb();
-        await db.getPlayerByDisplayName(adminUserInput.trim());
+        const db = await getDb();
+        player = await db.getPlayerByDisplayName(adminUserInput.trim());
       } else {
-        player = const db = await getDb();
-        await db.getPlayerByUid(adminUserInput.trim());
+        const db = await getDb();
+        player = await db.getPlayerByUid(adminUserInput.trim());
       }
 
       if (player) {
@@ -3012,7 +3011,7 @@ const Admin = () => {
     try {
       const db = await getDb();
 
-      const result = await db.deletePlayer(playerToDelete.id, db.deletePlayerRuns);
+      const result = await db.deletePlayer(playerToDelete.id, deletePlayerRuns);
       if (result.success) {
         toast({
           title: "User Deleted",
@@ -6841,7 +6840,7 @@ const Admin = () => {
                     <input
                       type="checkbox"
                       id="delete-runs"
-                      checked={db.deletePlayerRuns}
+                      checked={deletePlayerRuns}
                       onChange={(e) => setDeletePlayerRuns(e.target.checked)}
                       className="w-4 h-4"
                     />
