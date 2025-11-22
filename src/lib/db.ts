@@ -371,8 +371,10 @@ export const markNotificationAsRead = markNotificationAsReadFirestore;
 export const markAllNotificationsAsRead = markAllNotificationsAsReadFirestore;
 export const deleteNotification = deleteNotificationFirestore;
 
-// Note: syncCategoriesFromSRC is exported directly from ./speedruncom/importService
-// to avoid circular dependency. Import it directly from there if needed.
+export const syncCategoriesFromSRC = async () => {
+  const { syncCategoriesFromSRC } = await import("./speedruncom/importService");
+  return syncCategoriesFromSRC();
+};
 
 export const getPointsConfig = getPointsConfigFirestore;
 export const updatePointsConfig = updatePointsConfigFirestore;
