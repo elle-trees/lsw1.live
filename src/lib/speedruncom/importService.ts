@@ -11,15 +11,13 @@ import {
   fetchLevels as fetchSRCLevels,
   type SRCRun,
 } from "../speedruncom";
-import { 
-  getCategoriesFromFirestore,
-  getPlatformsFromFirestore,
-  getLevels,
-  getExistingSRCRunIds,
-  addLeaderboardEntry,
-  getPlayerByDisplayName,
-  runAutoclaimingForAllUsers,
-} from "../db";
+// Import directly from firestore files to avoid circular dependency with @/lib/db
+import { getCategoriesFirestore } from "../data/firestore/categories";
+import { getPlatformsFirestore } from "../data/firestore/platforms";
+import { getLevelsFirestore } from "../data/firestore/levels";
+import { getExistingSRCRunIdsFirestore, runAutoclaimingForAllUsersFirestore } from "../data/firestore/src-imports";
+import { addLeaderboardEntryFirestore } from "../data/firestore/runs";
+import { getPlayerByDisplayNameFirestore } from "../data/firestore/players";
 import { LeaderboardEntry, Category } from "@/types/database";
 
 export interface ImportResult {
@@ -98,12 +96,12 @@ export async function createSRCMappings(srcRuns: SRCRun[], gameId: string): Prom
   }
 
   // Fetch our local data and SRC game-specific data in parallel
-  // Note: getLevels() fetches ALL levels across the site (both individual-level and community-golds)
+  // Note: getLevelsFirestore() fetches ALL levels across the site (both individual-level and community-golds)
   // to ensure level matching works for all leaderboard types
   const [ourCategories, ourPlatforms, ourLevels, srcCategories, srcLevels] = await Promise.all([
-    getCategoriesFromFirestore(),
-    getPlatformsFromFirestore(),
-    getLevels(), // Fetches all levels - no filtering by leaderboard type
+    getCategoriesFirestore(),
+    getPlatformsFirestore(),
+    getLevelsFirestore(), // Fetches all levels - no filtering by leaderboard type
     fetchSRCCategories(gameId),
     fetchSRCLevels(gameId),
   ]);
@@ -479,7 +477,7 @@ export async function importSRCRuns(
     // This allows us to filter out already-linked runs before processing
     let existingSRCRunIds: Set<string>;
     try {
-      existingSRCRunIds = await getExistingSRCRunIds();
+      existingSRCRunIds = await getExistingSRCRunIdsFirestore();
     } catch (error) {
       result.errors.push(`Failed to fetch existing run IDs: ${error instanceof Error ? error.message : String(error)}`);
       return result;
@@ -553,7 +551,7 @@ export async function importSRCRuns(
     // This ensures we can map SRC variable values to local subcategory IDs
     let localCategories: Category[] = [];
     try {
-      localCategories = await getCategoriesFromFirestore();
+      localCategories = await getCategoriesFirestore();
     } catch (_error) {
       // Continue without subcategory mapping - runs will still import with srcSubcategory
     }
@@ -580,7 +578,7 @@ export async function importSRCRuns(
     const playerNameCache = new Map<string, any>();
     const playerLookupPromises = Array.from(uniquePlayerNames).map(async (name) => {
       try {
-        const player = await getPlayerByDisplayName(name);
+        const player = await getPlayerByDisplayNameFirestore(name);
         if (player) {
           playerNameCache.set(name.toLowerCase(), player);
         }
@@ -740,7 +738,7 @@ export async function importSRCRuns(
 
           // Save to database
           try {
-            const addedRunId = await addLeaderboardEntry(mappedRun as LeaderboardEntry);
+            const addedRunId = await addLeaderboardEntryFirestore(mappedRun as LeaderboardEntry);
             if (!addedRunId) {
               result.skipped++;
               result.errors.push(`Run ${srcRun.id}: failed to save to database`);
@@ -782,7 +780,7 @@ export async function importSRCRuns(
     // After importing runs, run autoclaiming for all users with SRC usernames
     // This ensures newly imported runs are automatically claimed
     try {
-      const autoclaimResult = await runAutoclaimingForAllUsers();
+      const autoclaimResult = await runAutoclaimingForAllUsersFirestore();
       if (autoclaimResult.totalClaimed > 0) {
       }
       if (autoclaimResult.errors.length > 0) {
@@ -815,7 +813,7 @@ export async function syncCategoriesFromSRC(): Promise<{ created: number; errors
     
     const [srcCategories, localCategories] = await Promise.all([
       fetchSRCCategories(gameId),
-      getCategoriesFromFirestore()
+      getCategoriesFirestore()
     ]);
     
     if (!Array.isArray(srcCategories)) {
