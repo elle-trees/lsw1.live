@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Link } from "react-router-dom";
-import { User, Users, ExternalLink, Trophy, Clock, MapPin, Check } from "lucide-react";
+import { User, Users, ExternalLink, Trophy, MapPin, Check } from "lucide-react";
 import { LeaderboardEntry } from "@/types/database";
 import LegoStudIcon from "@/components/icons/LegoStudIcon";
 import { formatTime } from "@/lib/utils";
@@ -187,8 +187,7 @@ export function LeaderboardTable({ data, platforms = [], categories = [], levels
                 </Link>
               </TableCell>
               <TableCell className="py-2.5 px-2 hidden md:table-cell">
-                <Link to={`/run/${entry.id}`} className="hover:text-[#cba6f7] flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5 text-ctp-overlay0" />
+                <Link to={`/run/${entry.id}`} className="hover:text-[#cba6f7]">
                   <span className="text-sm text-ctp-subtext1 whitespace-nowrap">{entry.date}</span>
                 </Link>
               </TableCell>
