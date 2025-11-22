@@ -16,54 +16,8 @@ import { Switch } from "@/components/ui/switch";
 import { Pagination } from "@/components/Pagination";
 import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  getUnverifiedLeaderboardEntries, 
-  updateRunVerificationStatus, 
-  deleteLeaderboardEntry,
-  addLeaderboardEntry,
-  updateLeaderboardEntry,
-  getPlayerByDisplayName,
-  getPlayerByUid,
-  setPlayerAdminStatus,
-  getDownloadEntries,
-  addDownloadEntry,
-  deleteDownloadEntry as deleteDownloadEntryDb,
-  moveDownloadUp,
-  moveDownloadDown,
-  getCategoriesFromFirestore,
-  addCategory,
-  updateCategory,
-  deleteCategory,
-  moveCategoryUp,
-  moveCategoryDown,
-  getPlatformsFromFirestore,
-  addPlatform,
-  updatePlatform,
-  deletePlatform,
-  movePlatformUp,
-  movePlatformDown,
-  getLevels,
-  addLevel,
-  updateLevel,
-  deleteLevel,
-  moveLevelUp,
-  moveLevelDown,
-  backfillPointsForAllRuns,
-  getDownloadCategories,
-  getImportedSRCRuns,
-  deleteAllImportedSRCRuns,
-  getCategories,
-  updateLevelCategoryDisabled,
-  findDuplicateRuns,
-  removeDuplicateRuns,
-  getAllPlayers,
-  updatePlayer,
-  deletePlayer,
-  getPointsConfig,
-  updatePointsConfig,
-  getGameDetailsConfig,
-  updateGameDetailsConfig,
-} from "@/lib/db";
+// Use namespace import to avoid circular dependency initialization issues
+import * as db from "@/lib/db";
 // Dynamic import to avoid circular dependency at module initialization
 type ImportResult = {
   imported: number;
@@ -78,7 +32,7 @@ import { useNavigate } from "react-router-dom";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { formatTime } from "@/lib/utils";
 import { getCategoryName, getPlatformName, getLevelName, normalizeCategoryId, normalizePlatformId, normalizeLevelId } from "@/lib/dataValidation";
-import { prepareRunForVerification, batchVerifyRuns } from "@/lib/data/runFieldService";
+// Dynamic import to avoid circular dependency at module initialization
 
 const Admin = () => {
   const { currentUser, loading: authLoading } = useAuth();
@@ -245,7 +199,7 @@ const Admin = () => {
     // Load initial categories for imported runs filter
     const initImportedRunsCategories = async () => {
       try {
-        const categoriesData = await getCategories('regular');
+        const categoriesData = await db.getCategories('regular');
         setImportedRunsCategories(categoriesData);
         // Start with "All Categories" selected
         setImportedRunsCategory("__all__");
@@ -257,7 +211,7 @@ const Admin = () => {
     // Load initial categories for level management (should match levelLeaderboardType initial state)
     const initLevelCategories = async () => {
       try {
-        const categoriesData = await getCategories('individual-level');
+        const categoriesData = await db.getCategories('individual-level');
         setFirestoreCategories(categoriesData);
       } catch (_error) {
         // Silent fail
@@ -270,7 +224,7 @@ const Admin = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const categoriesData = await getCategories(importedRunsLeaderboardType);
+        const categoriesData = await db.getCategories(importedRunsLeaderboardType);
         setImportedRunsCategories(categoriesData);
         // Reset to "All Categories" when switching types
         setImportedRunsCategory("__all__");
@@ -289,7 +243,7 @@ const Admin = () => {
       const fetchImportedRuns = async () => {
         setLoadingImportedRuns(true);
         try {
-          const importedData = await getImportedSRCRuns();
+          const importedData = await db.getImportedSRCRuns();
           setImportedSRCRuns(importedData);
         } catch (_error) {
           // Error handled silently
@@ -309,7 +263,7 @@ const Admin = () => {
       const loadPointsConfig = async () => {
         setLoadingPointsConfig(true);
         try {
-          const config = await getPointsConfig();
+          const config = await db.getPointsConfig();
           setPointsConfig(config);
           setPointsConfigForm(config);
         } catch (error) {
@@ -332,7 +286,7 @@ const Admin = () => {
       const loadGameDetailsConfig = async () => {
         setLoadingGameDetailsConfig(true);
         try {
-          const config = await getGameDetailsConfig();
+          const config = await db.getGameDetailsConfig();
           setGameDetailsConfig(config);
           setGameDetailsConfigForm(config || {
             id: "default",
@@ -364,10 +318,10 @@ const Admin = () => {
     
     setSavingPointsConfig(true);
     try {
-      const success = await updatePointsConfig(pointsConfigForm as PointsConfig);
+      const success = await db.updatePointsConfig(pointsConfigForm as PointsConfig);
       if (success) {
         // Reload config to get updated values
-        const updatedConfig = await getPointsConfig();
+        const updatedConfig = await db.getPointsConfig();
         setPointsConfig(updatedConfig);
         setPointsConfigForm(updatedConfig);
         
@@ -617,10 +571,10 @@ const Admin = () => {
         enabled: gameDetailsConfigForm.enabled ?? gameDetailsConfig.enabled ?? true,
       };
       
-      const success = await updateGameDetailsConfig(configToSave);
+      const success = await db.updateGameDetailsConfig(configToSave);
       if (success) {
         // Reload config to get updated values
-        const updatedConfig = await getGameDetailsConfig();
+        const updatedConfig = await db.getGameDetailsConfig();
         setGameDetailsConfig(updatedConfig);
         setGameDetailsConfigForm(updatedConfig || gameDetailsConfigForm);
         
@@ -648,7 +602,7 @@ const Admin = () => {
       try {
         // For community-golds, use community-golds categories (now configurable)
         // For individual-level, use individual-level categories
-        const categoriesData = await getCategoriesFromFirestore(levelLeaderboardType);
+        const categoriesData = await db.getCategoriesFromFirestore(levelLeaderboardType);
         setFirestoreCategories(categoriesData);
       } catch (_error) {
         // Silent fail
@@ -685,7 +639,7 @@ const Admin = () => {
     const fetchSubcategories = async () => {
       if (editingImportedRun && editingImportedRun.leaderboardType === 'regular' && editingImportedRunForm.category) {
         try {
-          const categories = await getCategoriesFromFirestore('regular');
+          const categories = await db.getCategoriesFromFirestore('regular');
           const category = categories.find(c => c.id === editingImportedRunForm.category);
           if (category && category.subcategories && category.subcategories.length > 0) {
             const sorted = [...category.subcategories].sort((a, b) => {
@@ -749,7 +703,7 @@ const Admin = () => {
 
   const fetchDownloadCategories = useCallback(async () => {
     try {
-      const categoriesData = await getDownloadCategories();
+      const categoriesData = await db.getDownloadCategories();
       setDownloadCategories(categoriesData);
       // Update newDownload category if empty
       setNewDownload(prev => {
@@ -769,7 +723,7 @@ const Admin = () => {
 
   const fetchLevels = useCallback(async () => {
     try {
-      const levelsData = await getLevels();
+      const levelsData = await db.getLevels();
       setAvailableLevels(levelsData);
     } catch (_error) {
       toast({
@@ -783,7 +737,7 @@ const Admin = () => {
   const fetchCategories = useCallback(async (leaderboardType?: 'regular' | 'individual-level' | 'community-golds') => {
     try {
       const type = leaderboardType || categoryLeaderboardType;
-      const categoriesData = await getCategoriesFromFirestore(type);
+        const categoriesData = await db.getCategoriesFromFirestore(type);
       setFirestoreCategories(categoriesData);
     } catch (_error) {
       toast({
@@ -947,9 +901,9 @@ const Admin = () => {
     setLoading(true);
     try {
       const [unverifiedData, importedData, downloadData, categoriesData] = await Promise.all([
-        getUnverifiedLeaderboardEntries(),
-        getImportedSRCRuns(),
-        getDownloadEntries(),
+        db.getUnverifiedLeaderboardEntries(),
+        db.getImportedSRCRuns(),
+        db.getDownloadEntries(),
         getCategoriesFromFirestore('regular')
       ]);
       setUnverifiedRuns(unverifiedData.filter(run => !run.importedFromSRC));
@@ -993,7 +947,7 @@ const Admin = () => {
 
   const fetchPlatforms = useCallback(async () => {
     try {
-      const platformsData = await getPlatformsFromFirestore();
+      const platformsData = await db.getPlatformsFromFirestore();
       setFirestorePlatforms(platformsData);
     } catch (_error) {
       toast({
@@ -1139,11 +1093,11 @@ const Admin = () => {
 
       // Update run data if needed (including player assignment), then verify
       if (Object.keys(updateData).length > 0) {
-        await updateLeaderboardEntry(runId, updateData);
+        await db.updateLeaderboardEntry(runId, updateData);
       }
 
       // Verify the run
-      const success = await updateRunVerificationStatus(runId, true, verifiedBy);
+      const success = await db.updateRunVerificationStatus(runId, true, verifiedBy);
       if (success) {
         toast({
           title: "Run Verified",
@@ -1169,7 +1123,7 @@ const Admin = () => {
 
   const handleReject = async (runId: string) => {
     try {
-      const success = await deleteLeaderboardEntry(runId);
+      const success = await db.deleteLeaderboardEntry(runId);
       if (success) {
         toast({
           title: "Run Rejected and Removed",
@@ -1257,7 +1211,7 @@ const Admin = () => {
         updateData.comment = finalForm.comment.trim();
       }
 
-      const success = await updateLeaderboardEntry(editingImportedRun.id, updateData);
+      const success = await db.updateLeaderboardEntry(editingImportedRun.id, updateData);
       if (success) {
         toast({
           title: "Run Updated",
@@ -1387,7 +1341,7 @@ const Admin = () => {
 
     setClearingImportedRuns(true);
     try {
-      const result = await deleteAllImportedSRCRuns();
+      const result = await db.deleteAllImportedSRCRuns();
       
       if (result.errors.length > 0) {
         // Check if there are permission errors
@@ -1452,7 +1406,7 @@ const Admin = () => {
   //   return await prepareRunForVerification(
   //     run,
   //     getCategoriesFromFirestore,
-  //     getPlatformsFromFirestore,
+  //     db.getPlatformsFromFirestore,
   //     getLevels
   //   );
   // };
@@ -1494,14 +1448,16 @@ const Admin = () => {
     const verifiedBy = currentUser.displayName || currentUser.email || currentUser.uid;
 
     try {
+      // Dynamic import to avoid circular dependency
+      const { batchVerifyRuns } = await import("@/lib/data/runFieldService");
       // Use optimized batch verification service
       const result = await batchVerifyRuns(
         unverifiedImported,
         verifiedBy,
-        updateRunVerificationStatus,
-        updateLeaderboardEntry,
+        db.updateRunVerificationStatus,
+        db.updateLeaderboardEntry,
         getCategoriesFromFirestore,
-        getPlatformsFromFirestore,
+        db.getPlatformsFromFirestore,
         getLevels,
         20, // Process 20 runs in parallel
         (_processed, _total) => {
@@ -1607,14 +1563,16 @@ const Admin = () => {
     const verifiedBy = currentUser.displayName || currentUser.email || currentUser.uid;
 
     try {
+      // Dynamic import to avoid circular dependency
+      const { batchVerifyRuns } = await import("@/lib/data/runFieldService");
       // Use optimized batch verification service
       const result = await batchVerifyRuns(
         unverifiedImported,
         verifiedBy,
-        updateRunVerificationStatus,
-        updateLeaderboardEntry,
+        db.updateRunVerificationStatus,
+        db.updateLeaderboardEntry,
         getCategoriesFromFirestore,
-        getPlatformsFromFirestore,
+        db.getPlatformsFromFirestore,
         getLevels,
         20, // Process 20 runs in parallel
         (_processed, _total) => {
@@ -1687,7 +1645,7 @@ const Admin = () => {
 
       for (const run of runsToDelete) {
         try {
-          const success = await deleteLeaderboardEntry(run.id);
+          const success = await db.deleteLeaderboardEntry(run.id);
           if (success) {
             deletedCount++;
           } else {
@@ -1789,7 +1747,7 @@ const Admin = () => {
         ),
       };
       
-      const success = await addDownloadEntry(downloadEntry);
+      const success = await db.addDownloadEntry(downloadEntry);
       if (success) {
         toast({
           title: "Download Added",
@@ -1824,7 +1782,7 @@ const Admin = () => {
       return;
     }
     try {
-      const success = await deleteDownloadEntryDb(downloadId);
+      const success = await db.deleteDownloadEntryDb(downloadId);
       if (success) {
         toast({
           title: "Download Deleted",
@@ -1847,7 +1805,7 @@ const Admin = () => {
     if (reorderingDownload) return;
     setReorderingDownload(downloadId);
     try {
-      const success = await moveDownloadUp(downloadId);
+      const success = await db.moveDownloadUp(downloadId);
       if (success) {
         await fetchDownloadEntries();
       } else {
@@ -1872,7 +1830,7 @@ const Admin = () => {
     if (reorderingDownload) return;
     setReorderingDownload(downloadId);
     try {
-      const success = await moveDownloadDown(downloadId);
+      const success = await db.moveDownloadDown(downloadId);
       if (success) {
         await fetchDownloadEntries();
       } else {
@@ -1907,7 +1865,7 @@ const Admin = () => {
     
     setAddingCategory(true);
     try {
-      const result = await addCategory(newCategoryName.trim(), categoryLeaderboardType);
+      const result = await db.addCategory(newCategoryName.trim(), categoryLeaderboardType);
       if (result) {
         toast({
           title: "Category Added",
@@ -1953,7 +1911,7 @@ const Admin = () => {
       const subcategories = currentCategory?.subcategories || [];
       const srcCategoryId = editingCategorySrcId.trim() || null;
       
-      const success = await updateCategory(editingCategory.id, editingCategoryName.trim(), subcategories, srcCategoryId);
+      const success = await db.updateCategory(editingCategory.id, editingCategoryName.trim(), subcategories, srcCategoryId);
       if (success) {
         toast({
           title: "Category Updated",
@@ -1989,7 +1947,7 @@ const Admin = () => {
       return;
     }
     try {
-      const success = await deleteCategory(categoryId);
+      const success = await db.deleteCategory(categoryId);
       if (success) {
         toast({
           title: "Category Deleted",
@@ -2011,7 +1969,7 @@ const Admin = () => {
   const handleMoveCategoryUp = async (categoryId: string) => {
     setReorderingCategory(categoryId);
     try {
-      const success = await moveCategoryUp(categoryId);
+      const success = await db.moveCategoryUp(categoryId);
       if (success) {
         await fetchCategories(categoryLeaderboardType);
       } else {
@@ -2035,7 +1993,7 @@ const Admin = () => {
   const handleMoveCategoryDown = async (categoryId: string) => {
     setReorderingCategory(categoryId);
     try {
-      const success = await moveCategoryDown(categoryId);
+      const success = await db.moveCategoryDown(categoryId);
       if (success) {
         await fetchCategories(categoryLeaderboardType);
       } else {
@@ -2133,7 +2091,7 @@ const Admin = () => {
       };
       
       const updatedSubcategories = [...existingSubcategories, newSubcategory];
-      const success = await updateCategory(selectedCategoryForSubcategories.id, selectedCategoryForSubcategories.name, updatedSubcategories);
+      const success = await db.updateCategory(selectedCategoryForSubcategories.id, selectedCategoryForSubcategories.name, updatedSubcategories);
       
       if (success) {
         toast({
@@ -2193,7 +2151,7 @@ const Admin = () => {
           : s
       );
       
-      const success = await updateCategory(selectedCategoryForSubcategories.id, selectedCategoryForSubcategories.name, updatedSubcategories);
+      const success = await db.updateCategory(selectedCategoryForSubcategories.id, selectedCategoryForSubcategories.name, updatedSubcategories);
       
       if (success) {
         toast({
@@ -2235,7 +2193,7 @@ const Admin = () => {
       const existingSubcategories = currentCategory?.subcategories || [];
       const updatedSubcategories = existingSubcategories.filter(s => s.id !== subcategoryId);
       
-      const success = await updateCategory(selectedCategoryForSubcategories.id, selectedCategoryForSubcategories.name, updatedSubcategories);
+      const success = await db.updateCategory(selectedCategoryForSubcategories.id, selectedCategoryForSubcategories.name, updatedSubcategories);
       
       if (success) {
         toast({
@@ -2281,7 +2239,7 @@ const Admin = () => {
       updatedSubcategories[index].order = prevOrder;
       updatedSubcategories[index - 1].order = currentOrder;
       
-      const success = await updateCategory(selectedCategoryForSubcategories.id, selectedCategoryForSubcategories.name, updatedSubcategories);
+      const success = await db.updateCategory(selectedCategoryForSubcategories.id, selectedCategoryForSubcategories.name, updatedSubcategories);
       
       if (success) {
         await fetchCategories(categoryLeaderboardType);
@@ -2325,7 +2283,7 @@ const Admin = () => {
       updatedSubcategories[index].order = nextOrder;
       updatedSubcategories[index + 1].order = currentOrder;
       
-      const success = await updateCategory(selectedCategoryForSubcategories.id, selectedCategoryForSubcategories.name, updatedSubcategories);
+      const success = await db.updateCategory(selectedCategoryForSubcategories.id, selectedCategoryForSubcategories.name, updatedSubcategories);
       
       if (success) {
         await fetchCategories(categoryLeaderboardType);
@@ -2354,7 +2312,7 @@ const Admin = () => {
     
     setUpdatingSubcategory(true);
     try {
-      const success = await updateCategory(
+      const success = await db.updateCategory(
         selectedCategoryForSubcategories.id,
         selectedCategoryForSubcategories.name,
         selectedCategoryForSubcategories.subcategories,
@@ -2441,7 +2399,7 @@ const Admin = () => {
       }
       
       const updatedSubcategories = [...existingSubcategories, ...newSubcategories];
-      const success = await updateCategory(selectedCategoryForSubcategories.id, selectedCategoryForSubcategories.name, updatedSubcategories);
+      const success = await db.updateCategory(selectedCategoryForSubcategories.id, selectedCategoryForSubcategories.name, updatedSubcategories);
       
       if (success) {
         toast({
@@ -2476,7 +2434,7 @@ const Admin = () => {
     }
     setAddingPlatform(true);
     try {
-      const platformId = await addPlatform(newPlatformName.trim());
+      const platformId = await db.addPlatform(newPlatformName.trim());
       if (platformId) {
         toast({
           title: "Platform Added",
@@ -2515,7 +2473,7 @@ const Admin = () => {
     
     setUpdatingPlatform(true);
     try {
-      const success = await updatePlatform(editingPlatform.id, editingPlatformName.trim());
+      const success = await db.updatePlatform(editingPlatform.id, editingPlatformName.trim());
       if (success) {
         toast({
           title: "Platform Updated",
@@ -2543,7 +2501,7 @@ const Admin = () => {
       return;
     }
     try {
-      const success = await deletePlatform(platformId);
+      const success = await db.deletePlatform(platformId);
       if (success) {
         toast({
           title: "Platform Deleted",
@@ -2565,7 +2523,7 @@ const Admin = () => {
   const handleMovePlatformUp = async (platformId: string) => {
     setReorderingPlatform(platformId);
     try {
-      const success = await movePlatformUp(platformId);
+      const success = await db.movePlatformUp(platformId);
       if (success) {
         await fetchPlatforms();
       } else {
@@ -2589,7 +2547,7 @@ const Admin = () => {
   const handleMovePlatformDown = async (platformId: string) => {
     setReorderingPlatform(platformId);
     try {
-      const success = await movePlatformDown(platformId);
+      const success = await db.movePlatformDown(platformId);
       if (success) {
         await fetchPlatforms();
       } else {
@@ -2617,7 +2575,7 @@ const Admin = () => {
     }
     setAddingLevel(true);
     try {
-      const levelId = await addLevel(newLevelName.trim());
+      const levelId = await db.addLevel(newLevelName.trim());
       if (levelId) {
         toast({
           title: "Level Added",
@@ -2656,7 +2614,7 @@ const Admin = () => {
     
     setUpdatingLevel(true);
     try {
-      const success = await updateLevel(editingLevel.id, editingLevelName.trim());
+      const success = await db.updateLevel(editingLevel.id, editingLevelName.trim());
       if (success) {
         toast({
           title: "Level Updated",
@@ -2684,7 +2642,7 @@ const Admin = () => {
       return;
     }
     try {
-      const success = await deleteLevel(levelId);
+      const success = await db.deleteLevel(levelId);
       if (success) {
         toast({
           title: "Level Deleted",
@@ -2706,7 +2664,7 @@ const Admin = () => {
   const handleMoveLevelUp = async (levelId: string) => {
     setReorderingLevel(levelId);
     try {
-      const success = await moveLevelUp(levelId);
+      const success = await db.moveLevelUp(levelId);
       if (success) {
         await fetchLevels();
       } else {
@@ -2730,7 +2688,7 @@ const Admin = () => {
   const handleMoveLevelDown = async (levelId: string) => {
     setReorderingLevel(levelId);
     try {
-      const success = await moveLevelDown(levelId);
+      const success = await db.moveLevelDown(levelId);
       if (success) {
         await fetchLevels();
       } else {
@@ -2768,9 +2726,9 @@ const Admin = () => {
     try {
       let player = null;
       if (adminSearchType === "displayName") {
-        player = await getPlayerByDisplayName(adminUserInput.trim());
+        player = await db.getPlayerByDisplayName(adminUserInput.trim());
       } else {
-        player = await getPlayerByUid(adminUserInput.trim());
+        player = await db.getPlayerByUid(adminUserInput.trim());
       }
 
       if (player) {
@@ -2801,7 +2759,7 @@ const Admin = () => {
   const handleSetAdminStatus = async (uid: string, isAdmin: boolean) => {
     setSettingAdmin(true);
     try {
-      const success = await setPlayerAdminStatus(uid, isAdmin);
+      const success = await db.setPlayerAdminStatus(uid, isAdmin);
       if (success) {
         toast({
           title: "Success",
@@ -2833,7 +2791,7 @@ const Admin = () => {
   const fetchPlayers = useCallback(async () => {
     setLoadingPlayers(true);
     try {
-      const players = await getAllPlayers(playersSortBy, playersSortOrder);
+      const players = await db.getAllPlayers(playersSortBy, playersSortOrder);
       setAllPlayers(players);
     } catch (_error) {
       toast({
@@ -2858,7 +2816,7 @@ const Admin = () => {
       const checkDuplicates = async () => {
         setLoadingDuplicates(true);
         try {
-          const duplicates = await findDuplicateRuns();
+          const duplicates = await db.findDuplicateRuns();
           setDuplicateRuns(duplicates);
         } catch (_error: any) {
           // Don't show toast on auto-check, only on manual check
@@ -2889,7 +2847,7 @@ const Admin = () => {
     
     setSavingPlayer(true);
     try {
-      const success = await updatePlayer(editingPlayer.id, editingPlayerForm);
+      const success = await db.updatePlayer(editingPlayer.id, editingPlayerForm);
       if (success) {
         toast({
           title: "Success",
@@ -2922,7 +2880,7 @@ const Admin = () => {
     
     setDeletingPlayerId(playerToDelete.id);
     try {
-      const result = await deletePlayer(playerToDelete.id, deletePlayerRuns);
+      const result = await db.deletePlayer(playerToDelete.id, deletePlayerRuns);
       if (result.success) {
         toast({
           title: "User Deleted",
@@ -3003,7 +2961,7 @@ const Admin = () => {
       
       // Try to find player by display name first (if provided)
       if (manualRun.playerUsername.trim()) {
-        const player = await getPlayerByDisplayName(manualRun.playerUsername.trim());
+        const player = await db.getPlayerByDisplayName(manualRun.playerUsername.trim());
         if (player) {
           playerId = player.uid;
           // Use the player's displayName from database if found
@@ -3018,7 +2976,7 @@ const Admin = () => {
       
       // If not found by display name, try to find by playerName
       if (!playerId && manualRun.playerName.trim()) {
-        const player = await getPlayerByDisplayName(manualRun.playerName.trim());
+        const player = await db.getPlayerByDisplayName(manualRun.playerName.trim());
         if (player) {
           playerId = player.uid;
         }
@@ -3070,7 +3028,7 @@ const Admin = () => {
         }
       }
       
-      const result = await addLeaderboardEntry(entry);
+      const result = await db.addLeaderboardEntry(entry);
       if (result) {
         toast({
           title: "Run Added",
@@ -3328,7 +3286,7 @@ const Admin = () => {
                     onClick={async () => {
                       setLoadingDuplicates(true);
                       try {
-                        const duplicates = await findDuplicateRuns();
+                        const duplicates = await db.findDuplicateRuns();
                         setDuplicateRuns(duplicates);
                         if (duplicates.length === 0) {
                           toast({
@@ -3379,7 +3337,7 @@ const Admin = () => {
                         
                         setRemovingDuplicates(true);
                         try {
-                          const result = await removeDuplicateRuns(duplicateRuns);
+                          const result = await db.removeDuplicateRuns(duplicateRuns);
                           if (result.errors.length > 0) {
                             toast({
                               title: "Removal Complete with Errors",
@@ -4919,7 +4877,7 @@ const Admin = () => {
                                       try {
                                         const currentCategory = allCategoriesForSRCLinking.find(c => c.id === linkedCategory.id);
                                         const subcategories = currentCategory?.subcategories || [];
-                                        await updateCategory(linkedCategory.id, linkedCategory.name, subcategories, null);
+                                        await db.updateCategory(linkedCategory.id, linkedCategory.name, subcategories, null);
                                         toast({
                                           title: "Unlinked",
                                           description: `Category "${linkedCategory.name}" has been unlinked from SRC category.`,
@@ -4954,7 +4912,7 @@ const Admin = () => {
                                       const targetCategory = allCategoriesForSRCLinking.find(c => c.id === categoryId);
                                       if (!targetCategory) return;
                                       const subcategories = targetCategory.subcategories || [];
-                                      await updateCategory(categoryId, targetCategory.name, subcategories, category.id);
+                                      await db.updateCategory(categoryId, targetCategory.name, subcategories, category.id);
                                       toast({
                                         title: "Linked",
                                         description: `Category "${targetCategory.name}" has been linked to SRC category "${category.name}".`,
@@ -6237,7 +6195,7 @@ const Admin = () => {
                                       onChange={async (e) => {
                                         const disabled = !e.target.checked;
                                         try {
-                                          const success = await updateLevelCategoryDisabled(
+                                          const success = await db.updateLevelCategoryDisabled(
                                             level.id,
                                             category.id,
                                             disabled
@@ -7027,7 +6985,7 @@ const Admin = () => {
                       // Run in background - don't block UI
                       setTimeout(async () => {
                         try {
-                          const result = await backfillPointsForAllRuns();
+                          const result = await db.backfillPointsForAllRuns();
                           if (result.errors.length > 0) {
                             toast({
                               title: "Recalculation Complete with Errors",
@@ -7713,7 +7671,7 @@ const Admin = () => {
                       }
                     }
 
-                    const success = await updateLeaderboardEntry(editingImportedRun.id, updateData);
+                    const success = await db.updateLeaderboardEntry(editingImportedRun.id, updateData);
                     if (success) {
                       toast({
                         title: "Run Verified",
