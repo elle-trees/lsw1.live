@@ -70,28 +70,32 @@ const SubmitRun = () => {
         setAvailableLevels(fetchedLevels);
         setAvailablePlatforms(fetchedPlatforms);
         
-        // Set default category if empty - use functional update to avoid reading formData
+        // Batch all form data updates in a single setFormData call to avoid visual reload
         setFormData(prev => {
+          let updates: Partial<typeof prev> = {};
+          
+          // Set default category if empty
           if (fetchedCategories.length > 0 && !prev.category) {
-            return { ...prev, category: fetchedCategories[0].id };
+            updates.category = fetchedCategories[0].id;
           } else if (fetchedCategories.length === 0) {
-            return { ...prev, category: "" };
+            updates.category = "";
           }
-          return prev;
+          
+          // Set default level if empty
+          if (fetchedLevels.length > 0 && (leaderboardType === 'individual-level' || leaderboardType === 'community-golds') && !prev.level) {
+            updates.level = fetchedLevels[0].id;
+          } else if (leaderboardType === 'regular') {
+            updates.level = "";
+          }
+          
+          // Only update if there are changes to avoid unnecessary re-renders
+          return Object.keys(updates).length > 0 ? { ...prev, ...updates } : prev;
         });
         
-        // Set default level if empty - use functional update to avoid reading formData
-        setFormData(prev => {
-          if (fetchedLevels.length > 0 && (leaderboardType === 'individual-level' || leaderboardType === 'community-golds') && !prev.level) {
-            return { ...prev, level: fetchedLevels[0].id };
-          } else if (leaderboardType === 'regular') {
-            return { ...prev, level: "" };
-          }
-          return prev;
-        });
+        // Set loading to false after all state updates are complete
+        setLoadingData(false);
       } catch (_error) {
         // Silent fail
-      } finally {
         setLoadingData(false);
       }
     };
@@ -520,32 +524,23 @@ const SubmitRun = () => {
                       />
                     </div>
                   </div>
-                  <div>
-                    {loadingData ? (
-                      <div className="animate-fade-in">
-                        <Skeleton className="h-5 w-24 mb-2" />
-                        <Skeleton className="h-10 w-full" />
-                      </div>
-                    ) : (
-                      <div className="animate-fade-in">
-                        <Label htmlFor="runType" className="text-sm font-semibold mb-1.5">Run Type *</Label>
-                        <Select value={formData.runType} onValueChange={(value) => handleSelectChange("runType", value)}>
-                          <SelectTrigger className="bg-[hsl(240,21%,18%)] border-[hsl(235,13%,30%)] h-10 text-sm hover:border-[hsl(var(--mocha-mauve))] transition-colors">
-                            <SelectValue placeholder="Select run type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {runTypes.map((type) => (
-                              <SelectItem key={type.id} value={type.id} className="text-sm">
-                                <div className="flex items-center gap-2">
-                                  {type.id === 'solo' ? <User className="h-4 w-4" /> : <Users className="h-4 w-4" />}
-                                  {type.name}
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
+                  <div className="animate-fade-in">
+                    <Label htmlFor="runType" className="text-sm font-semibold mb-1.5">Run Type *</Label>
+                    <Select value={formData.runType} onValueChange={(value) => handleSelectChange("runType", value)}>
+                      <SelectTrigger className="bg-[hsl(240,21%,18%)] border-[hsl(235,13%,30%)] h-10 text-sm hover:border-[hsl(var(--mocha-mauve))] transition-colors">
+                        <SelectValue placeholder="Select run type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {runTypes.map((type) => (
+                          <SelectItem key={type.id} value={type.id} className="text-sm">
+                            <div className="flex items-center gap-2">
+                              {type.id === 'solo' ? <User className="h-4 w-4" /> : <Users className="h-4 w-4" />}
+                              {type.name}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
                 {formData.runType === 'co-op' && (
@@ -564,17 +559,7 @@ const SubmitRun = () => {
                 )}
 
                 {/* Category Selection - Buttons for all types */}
-                {loadingData ? (
-                  <div className="animate-fade-in">
-                    <Skeleton className="h-5 w-32 mb-2" />
-                    <div className="flex gap-2 overflow-x-auto">
-                      <Skeleton className="h-10 w-24 flex-shrink-0" />
-                      <Skeleton className="h-10 w-24 flex-shrink-0" />
-                      <Skeleton className="h-10 w-24 flex-shrink-0" />
-                      <Skeleton className="h-10 w-24 flex-shrink-0" />
-                    </div>
-                  </div>
-                ) : availableCategories.length > 0 ? (
+                {availableCategories.length > 0 ? (
                   <div className="animate-fade-in">
                     <Label className="text-sm font-semibold mb-2 block flex items-center gap-2">
                       {leaderboardType === 'individual-level' ? (
@@ -697,67 +682,49 @@ const SubmitRun = () => {
 
                 {/* Level Selection for ILs and Community Golds */}
                 {(leaderboardType === 'individual-level' || leaderboardType === 'community-golds') && (
-                  <div>
-                    {loadingData ? (
-                      <div className="animate-fade-in">
-                        <Skeleton className="h-5 w-24 mb-2" />
-                        <Skeleton className="h-10 w-full" />
-                      </div>
-                    ) : (
-                      <div className="animate-fade-in">
-                        <Label htmlFor="level" className="text-sm font-semibold mb-1.5 flex items-center gap-2">
-                          <Sparkles className="h-3.5 w-3.5 text-[#cba6f7]" />
-                          Level *
-                        </Label>
-                        <Select value={formData.level} onValueChange={(value) => handleSelectChange("level", value)}>
-                          <SelectTrigger className="bg-gradient-to-br from-[hsl(240,21%,18%)] to-[hsl(240,21%,16%)] border-[hsl(235,13%,30%)] h-10 text-sm hover:border-[#cba6f7] hover:bg-gradient-to-br hover:from-[hsl(240,21%,20%)] hover:to-[hsl(240,21%,18%)] transition-all duration-300 hover:shadow-lg hover:shadow-[#cba6f7]/20">
-                            <SelectValue placeholder="Select level" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availableLevels.map((level) => (
-                              <SelectItem key={level.id} value={level.id} className="text-sm">
-                                {level.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <p className="text-xs text-[hsl(222,15%,60%)] mt-1">
-                          {leaderboardType === 'individual-level' 
-                            ? "Select the level for this Individual Level run"
-                            : "Select the level for this Community Gold run"}
-                        </p>
-                      </div>
-                    )}
+                  <div className="animate-fade-in">
+                    <Label htmlFor="level" className="text-sm font-semibold mb-1.5 flex items-center gap-2">
+                      <Sparkles className="h-3.5 w-3.5 text-[#cba6f7]" />
+                      Level *
+                    </Label>
+                    <Select value={formData.level} onValueChange={(value) => handleSelectChange("level", value)}>
+                      <SelectTrigger className="bg-gradient-to-br from-[hsl(240,21%,18%)] to-[hsl(240,21%,16%)] border-[hsl(235,13%,30%)] h-10 text-sm hover:border-[#cba6f7] hover:bg-gradient-to-br hover:from-[hsl(240,21%,20%)] hover:to-[hsl(240,21%,18%)] transition-all duration-300 hover:shadow-lg hover:shadow-[#cba6f7]/20">
+                        <SelectValue placeholder="Select level" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableLevels.map((level) => (
+                          <SelectItem key={level.id} value={level.id} className="text-sm">
+                            {level.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-[hsl(222,15%,60%)] mt-1">
+                      {leaderboardType === 'individual-level' 
+                        ? "Select the level for this Individual Level run"
+                        : "Select the level for this Community Gold run"}
+                    </p>
                   </div>
                 )}
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    {loadingData ? (
-                      <div className="animate-fade-in">
-                        <Skeleton className="h-5 w-20 mb-2" />
-                        <Skeleton className="h-10 w-full" />
-                      </div>
-                    ) : (
-                      <div className="animate-fade-in">
-                        <Label htmlFor="platform" className="text-sm font-semibold mb-1.5">Platform *</Label>
-                        <Select value={formData.platform} onValueChange={(value) => handleSelectChange("platform", value)}>
-                          <SelectTrigger className="bg-[hsl(240,21%,18%)] border-[hsl(235,13%,30%)] h-10 text-sm hover:border-[hsl(var(--mocha-mauve))] transition-colors">
-                            <SelectValue placeholder="Select platform" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availablePlatforms.map((platform) => (
-                              <SelectItem key={platform.id} value={platform.id} className="text-sm">
-                                <div className="flex items-center gap-2">
-                                  <Gamepad2 className="h-4 w-4" />
-                                  {platform.name}
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
+                  <div className="animate-fade-in">
+                    <Label htmlFor="platform" className="text-sm font-semibold mb-1.5">Platform *</Label>
+                    <Select value={formData.platform} onValueChange={(value) => handleSelectChange("platform", value)}>
+                      <SelectTrigger className="bg-[hsl(240,21%,18%)] border-[hsl(235,13%,30%)] h-10 text-sm hover:border-[hsl(var(--mocha-mauve))] transition-colors">
+                        <SelectValue placeholder="Select platform" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availablePlatforms.map((platform) => (
+                          <SelectItem key={platform.id} value={platform.id} className="text-sm">
+                            <div className="flex items-center gap-2">
+                              <Gamepad2 className="h-4 w-4" />
+                              {platform.name}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
