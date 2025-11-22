@@ -87,7 +87,8 @@ import {
 } from "./data/firestore/runs";
 
 import {
-  getLeaderboardEntriesFirestore
+  getLeaderboardEntriesFirestore,
+  getLeaderboardEntryByIdFirestore
 } from "./data/firestore/leaderboards";
 
 import {
@@ -165,21 +166,6 @@ import {
 } from "./data/firestore/src-imports";
 
 import { LeaderboardEntry, Category, Platform } from "@/types/database";
-
-// Helper to fix missing function
-const getLeaderboardEntryByIdFirestore = async (id: string): Promise<LeaderboardEntry | null> => {
-  if (!db) return null;
-  try {
-    const docRef = doc(db, "leaderboardEntries", id);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() } as LeaderboardEntry;
-    }
-    return null;
-  } catch (_error) {
-    return null;
-  }
-};
 
 const defaultCategories = [
   { name: "Any%" },
