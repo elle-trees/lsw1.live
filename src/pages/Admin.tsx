@@ -1318,7 +1318,7 @@ const Admin = () => {
       
       // Fetch ALL categories (regular and IL) for linking
       const [regularCats, ilCats] = await Promise.all([
-        db.        db.getCategoriesFromFirestore('regular'),
+        db.getCategoriesFromFirestore('regular'),
         db.getCategoriesFromFirestore('individual-level')
       ]);
       setAllCategoriesForSRCLinking([...regularCats, ...ilCats]);
@@ -1782,7 +1782,7 @@ const Admin = () => {
       return;
     }
     try {
-      const success = await db.deleteDownloadEntryDb(downloadId);
+      const success = await db.deleteDownloadEntry(downloadId);
       if (success) {
         toast({
           title: "Download Deleted",
