@@ -64,7 +64,13 @@ import {
   getGameDetailsConfig,
   updateGameDetailsConfig,
 } from "@/lib/db";
-import { importSRCRuns, type ImportResult } from "@/lib/speedruncom/importService";
+// Dynamic import to avoid circular dependency at module initialization
+type ImportResult = {
+  imported: number;
+  skipped: number;
+  unmatchedPlayers: Map<string, { player1?: string; player2?: string }>;
+  errors: string[];
+};
 import { fetchCategoryVariables, getLSWGameId, fetchCategories as fetchSRCCategories, type SRCCategory } from "@/lib/speedruncom";
 import { useUploadThing } from "@/lib/uploadthing";
 import { LeaderboardEntry, DownloadEntry, Category, Level, Subcategory, PointsConfig, GameDetailsConfig, GameDetailsHeaderLink } from "@/types/database";
@@ -1286,7 +1292,8 @@ const Admin = () => {
         description: "Fetching runs from speedrun.com...",
       });
 
-      // Use the new import service
+      // Dynamic import to avoid circular dependency at module initialization
+      const { importSRCRuns } = await import("@/lib/speedruncom/importService");
       const result: ImportResult = await importSRCRuns((progress) => {
         setImportProgress(progress);
       });
