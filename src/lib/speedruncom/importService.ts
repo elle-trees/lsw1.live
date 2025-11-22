@@ -12,7 +12,7 @@ import {
   type SRCRun,
 } from "../speedruncom";
 // Import directly from firestore files to avoid circular dependency with @/lib/db
-import { getCategoriesFirestore } from "../data/firestore/categories";
+import { getCategoriesFirestore, addCategoryFirestore } from "../data/firestore/categories";
 import { getPlatformsFirestore } from "../data/firestore/platforms";
 import { getLevelsFirestore } from "../data/firestore/levels";
 import { getExistingSRCRunIdsFirestore, runAutoclaimingForAllUsersFirestore } from "../data/firestore/src-imports";
@@ -821,8 +821,6 @@ export async function syncCategoriesFromSRC(): Promise<{ created: number; errors
       return result;
     }
     
-    const { addCategory } = await import("../db");
-    
     for (const srcCat of srcCategories) {
       if (!srcCat.id || !srcCat.name) continue;
       
@@ -837,8 +835,8 @@ export async function syncCategoriesFromSRC(): Promise<{ created: number; errors
           // Determine leaderboard type
           const leaderboardType = srcCat.type === 'per-level' ? 'individual-level' : 'regular';
           
-          // Create category
-          await addCategory(srcCat.name, leaderboardType, srcCat.id);
+          // Create category - use firestore function directly to avoid circular dependency
+          await addCategoryFirestore(srcCat.name, leaderboardType, srcCat.id);
           result.created++;
         } catch (error) {
           result.errors.push(`Failed to create category "${srcCat.name}": ${error instanceof Error ? error.message : String(error)}`);
