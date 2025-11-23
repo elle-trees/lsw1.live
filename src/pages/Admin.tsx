@@ -3259,17 +3259,6 @@ const Admin = () => {
   return (
     <div className="min-h-screen bg-[#1e1e2e] text-ctp-text py-4 sm:py-6 overflow-x-hidden">
       <div className="max-w-7xl mx-auto px-2 sm:px-4 w-full">
-        <div className="text-center mb-8 animate-fade-in">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <ShieldAlert className="h-6 w-6 text-[#f2cdcd]" />
-            <h1 className="text-3xl md:text-4xl font-bold text-[#f2cdcd]">
-            Admin Panel
-          </h1>
-          </div>
-          <p className="text-base text-ctp-subtext1 max-w-3xl mx-auto animate-fade-in-delay">
-            Review and manage submitted speedruns and site resources.
-          </p>
-        </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="flex w-full mb-6 p-0.5 gap-1 overflow-x-auto overflow-y-hidden scrollbar-hide" style={{ minWidth: 'max-content' }}>

@@ -404,15 +404,6 @@ const UserSettings = () => {
   return (
     <div className="min-h-screen bg-[#1e1e2e] text-ctp-text py-8 overflow-x-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full">
-        <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold mb-4 flex items-center justify-center gap-2">
-            <Settings className="h-8 w-8 text-[#cba6f7]" />
-            User Settings
-          </h1>
-          <p className="text-[hsl(222,15%,60%)] max-w-2xl mx-auto">
-            Manage your profile, account details, and preferences.
-          </p>
-        </div>
 
         {/* Profile Settings and Claim Runs - Side by Side */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">

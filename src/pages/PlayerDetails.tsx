@@ -276,12 +276,6 @@ const PlayerDetails = () => {
           </Button>
         </div>
 
-        <div className="mb-8 animate-fade-in-delay">
-          <h1 className="text-4xl font-bold mb-2">
-            <span style={{ color: player.nameColor || 'inherit' }}>{player.displayName}</span>'s Profile
-          </h1>
-          <p className="text-ctp-overlay0 text-lg">View all runs and achievements</p>
-        </div>
 
         <PlayerProfile 
           playerName={player.displayName || "Unknown Player"} 

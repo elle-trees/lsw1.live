@@ -238,17 +238,6 @@ const PointsLeaderboard = () => {
   return (
     <div className="min-h-screen bg-[#1e1e2e] text-[hsl(220,17%,92%)] py-6 overflow-x-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full">
-        <div className="text-center mb-8 animate-fade-in">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <LegoStudIcon size={48} color="#fab387" />
-            <h1 className="text-3xl md:text-4xl font-bold text-[#fab387]">
-              Studs Leaderboard
-            </h1>
-          </div>
-          <p className="text-base text-ctp-subtext1 max-w-3xl mx-auto animate-fade-in-delay">
-            Top players ranked by their total studs earned from verified runs.
-          </p>
-        </div>
 
         <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
           <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">

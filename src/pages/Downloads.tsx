@@ -30,18 +30,6 @@ const Downloads = () => {
   return (
     <div className="min-h-screen bg-[#1e1e2e] text-[hsl(220,17%,92%)] py-8 overflow-x-hidden">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 w-full">
-        {/* Animated Header */}
-        <div className="text-center mb-8 animate-fade-in">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Download className="h-6 w-6 text-[#cba6f7]" />
-            <h1 className="text-3xl md:text-4xl font-bold text-[#cba6f7]">
-            Downloads & Resources
-          </h1>
-          </div>
-          <p className="text-base text-ctp-subtext1 max-w-3xl mx-auto animate-fade-in-delay">
-            Find useful tools, guides, and save files to help with your speedrunning journey.
-          </p>
-        </div>
 
         {loading ? (
           <div className="flex justify-center items-center py-16" />
