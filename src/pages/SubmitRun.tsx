@@ -338,7 +338,7 @@ const SubmitRun = () => {
   };
 
   return (
-    <FadeIn className="min-h-screen bg-[#1e1e2e] text-ctp-text py-6 overflow-x-hidden">
+    <div className="min-h-screen bg-[#1e1e2e] text-ctp-text py-6 overflow-x-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full">
 
         {!currentUser ? (
@@ -876,7 +876,7 @@ const SubmitRun = () => {
           </FadeIn>
         )}
       </div>
-    </FadeIn>
+    </div>
   );
 };
 

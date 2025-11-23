@@ -44,6 +44,20 @@ const UserSettings = () => {
   const [unclaimedLeaderboardType, setUnclaimedLeaderboardType] = useState<'regular' | 'individual-level' | 'community-golds'>('regular');
   const { startUpload, isUploading } = useUploadThing("profilePicture");
 
+  const fetchUnclaimedSRCRuns = useCallback(async (srcUsername: string) => {
+    if (!srcUsername || !currentUser) return;
+    setLoadingSRCUnclaimed(true);
+    try {
+      const runs = await getUnclaimedRunsBySRCUsername(srcUsername);
+      const trulyUnclaimed = runs.filter(run => run.playerId !== currentUser.uid);
+      setUnclaimedSRCRuns(trulyUnclaimed);
+    } catch (_error) {
+      // Silent fail
+    } finally {
+      setLoadingSRCUnclaimed(false);
+    }
+  }, [currentUser]);
+
   useEffect(() => {
     if (!authLoading) {
       if (!currentUser) {
@@ -108,20 +122,6 @@ const UserSettings = () => {
       fetchPlayerData();
     }
   }, [currentUser, authLoading, navigate, toast, fetchUnclaimedSRCRuns]);
-
-  const fetchUnclaimedSRCRuns = useCallback(async (srcUsername: string) => {
-    if (!srcUsername || !currentUser) return;
-    setLoadingSRCUnclaimed(true);
-    try {
-      const runs = await getUnclaimedRunsBySRCUsername(srcUsername);
-      const trulyUnclaimed = runs.filter(run => run.playerId !== currentUser.uid);
-      setUnclaimedSRCRuns(trulyUnclaimed);
-    } catch (_error) {
-      // Silent fail
-    } finally {
-      setLoadingSRCUnclaimed(false);
-    }
-  }, [currentUser]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
