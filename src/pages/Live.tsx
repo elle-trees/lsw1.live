@@ -114,34 +114,54 @@ const Live = () => {
               const originalTwitchUsername = player.twitchUsername.trim();
               const twitchUsernameLower = originalTwitchUsername.toLowerCase();
               
-              // Check thumbnail first - most reliable indicator
+              // Check thumbnail - most reliable indicator of live stream
+              // Try both HEAD and GET methods for better compatibility
               let hasValidThumbnail = false;
-              try {
-                const thumbnailController = new AbortController();
-                const thumbnailTimeoutId = setTimeout(() => thumbnailController.abort(), 5000);
-                
-                const thumbnailUrl = `https://static-cdn.jtvnw.net/previews-ttv/live_user_${twitchUsernameLower}-320x180.jpg`;
-                const thumbnailResponse = await fetch(`${thumbnailUrl}?t=${Date.now()}`, { 
-                  method: 'HEAD',
-                  cache: 'no-cache',
-                  signal: thumbnailController.signal
-                });
-                
-                clearTimeout(thumbnailTimeoutId);
-                
-                if (thumbnailResponse.ok && thumbnailResponse.status === 200) {
-                  const contentType = thumbnailResponse.headers.get('content-type');
-                  const contentLength = thumbnailResponse.headers.get('content-length');
-                  if (contentType?.startsWith('image/') && (!contentLength || parseInt(contentLength) > 0)) {
-                    hasValidThumbnail = true;
+              const thumbnailUrl = `https://static-cdn.jtvnw.net/previews-ttv/live_user_${twitchUsernameLower}-320x180.jpg`;
+              
+              // Try HEAD first (lighter), fallback to GET if needed
+              for (const method of ['HEAD', 'GET'] as const) {
+                try {
+                  const thumbnailController = new AbortController();
+                  const thumbnailTimeoutId = setTimeout(() => thumbnailController.abort(), 5000);
+                  
+                  const thumbnailResponse = await fetch(`${thumbnailUrl}?t=${Date.now()}`, { 
+                    method,
+                    cache: 'no-cache',
+                    signal: thumbnailController.signal
+                  });
+                  
+                  clearTimeout(thumbnailTimeoutId);
+                  
+                  if (thumbnailResponse.ok && thumbnailResponse.status === 200) {
+                    const contentType = thumbnailResponse.headers.get('content-type');
+                    if (contentType?.startsWith('image/')) {
+                      // For HEAD, check content-length; for GET, check blob size
+                      if (method === 'HEAD') {
+                        const contentLength = thumbnailResponse.headers.get('content-length');
+                        if (contentLength && parseInt(contentLength) > 0) {
+                          hasValidThumbnail = true;
+                          break;
+                        }
+                      } else {
+                        const blob = await thumbnailResponse.blob();
+                        if (blob.size > 0) {
+                          hasValidThumbnail = true;
+                          break;
+                        }
+                      }
+                    }
+                  }
+                } catch (error) {
+                  // Try next method or continue
+                  if (method === 'GET') {
+                    // Both methods failed
+                    break;
                   }
                 }
-              } catch {
-                // Thumbnail check failed, skip this player
-                return null;
               }
 
-              // If no valid thumbnail, skip this player
+              // Require valid thumbnail - if we can't verify, skip this player
               if (!hasValidThumbnail) {
                 return null;
               }
@@ -175,31 +195,41 @@ const Live = () => {
                 // Status check failed, but thumbnail exists, so continue
               }
 
-              // Fetch viewer count - required for display
+              // Fetch viewer count - required for display, with retries
               let viewerCount: number | undefined;
-              try {
-                const viewerController = new AbortController();
-                const viewerTimeoutId = setTimeout(() => viewerController.abort(), 5000);
-                
-                const viewerResponse = await fetch(
-                  `https://decapi.me/twitch/viewercount/${twitchUsernameLower}`,
-                  { signal: viewerController.signal }
-                );
-                
-                clearTimeout(viewerTimeoutId);
-                
-                if (viewerResponse.ok) {
-                  const viewerText = await viewerResponse.text().trim();
-                  const parsedViewers = parseInt(viewerText, 10);
-                  if (!isNaN(parsedViewers) && parsedViewers >= 0) {
-                    viewerCount = parsedViewers;
+              const maxRetries = 2;
+              
+              for (let attempt = 0; attempt <= maxRetries && viewerCount === undefined; attempt++) {
+                try {
+                  const viewerController = new AbortController();
+                  const viewerTimeoutId = setTimeout(() => viewerController.abort(), 5000);
+                  
+                  const viewerResponse = await fetch(
+                    `https://decapi.me/twitch/viewercount/${twitchUsernameLower}`,
+                    { signal: viewerController.signal }
+                  );
+                  
+                  clearTimeout(viewerTimeoutId);
+                  
+                  if (viewerResponse.ok) {
+                    const viewerText = await viewerResponse.text().trim();
+                    const parsedViewers = parseInt(viewerText, 10);
+                    if (!isNaN(parsedViewers) && parsedViewers >= 0) {
+                      viewerCount = parsedViewers;
+                      break; // Success, exit retry loop
+                    }
+                  }
+                } catch (error) {
+                  // Try again if we have retries left
+                  if (attempt < maxRetries) {
+                    // Small delay before retry
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    continue;
                   }
                 }
-              } catch {
-                // Viewer count fetch failed
               }
 
-              // Only return runner if we have both thumbnail and viewer count
+              // Only return runner if we have both thumbnail AND viewer count
               if (hasValidThumbnail && viewerCount !== undefined) {
                 return {
                   uid: player.uid,
