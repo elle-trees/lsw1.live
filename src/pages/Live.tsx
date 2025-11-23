@@ -202,11 +202,6 @@ const Live = () => {
                   <Radio className={`h-4 w-4 mr-2 ${isLive ? 'animate-pulse' : ''}`} />
                   {isLive === null ? 'Checking...' : isLive ? 'Live' : 'Offline'}
                 </Badge>
-                {isLive === false && liveRunners.length === 0 && !checkingRunners && (
-                  <p className="text-sm text-ctp-subtext1 mt-3">
-                    No runners are live, time to hit the start streaming button!
-                  </p>
-                )}
               </div>
             </div>
 
