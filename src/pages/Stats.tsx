@@ -538,6 +538,83 @@ const Stats = () => {
   }, [stats, wrProgressionLeaderboardType, wrProgressionCategory, wrProgressionPlatform, wrProgressionRunType, wrProgressionLevel]);
 
 
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8 animate-fade-in">
+        <div className="mb-8 animate-slide-up">
+          <Skeleton className="h-10 w-64 mb-2" />
+          <Skeleton className="h-5 w-96" />
+        </div>
+
+        {/* Overview Cards Skeletons */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i} className="animate-slide-up" style={{ animationDelay: `${i * 0.1}s` }}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-4 rounded" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-24 mb-2" />
+                <Skeleton className="h-4 w-40" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Tab Buttons Skeleton */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 mb-4 p-0 gap-0 bg-ctp-surface0/50 rounded-none border border-ctp-surface1">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-10 w-full rounded-none" />
+          ))}
+        </div>
+
+        {/* Content Skeleton */}
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card className="animate-slide-up-delay">
+            <CardHeader>
+              <Skeleton className="h-6 w-48 mb-2" />
+              <Skeleton className="h-4 w-64" />
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <Skeleton className="h-4 w-32" />
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-6 w-16" />
+                      <Skeleton className="h-5 w-12" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="animate-slide-up-delay-2">
+            <CardHeader>
+              <Skeleton className="h-6 w-48 mb-2" />
+              <Skeleton className="h-4 w-64" />
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <Skeleton className="h-4 w-32" />
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-5 w-12" />
+                      <Skeleton className="h-5 w-10" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   if (!stats) {
     return (
       <div className="container mx-auto px-4 py-8">
