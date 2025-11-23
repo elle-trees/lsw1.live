@@ -409,10 +409,10 @@ export function GameDetails({ className }: GameDetailsProps) {
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="max-w-[1920px] mx-auto w-full">
             <div className="flex items-start justify-between min-w-0 w-full py-3">
-          {/* Game Details Section - Left Side */}
-          <div className="flex items-start gap-2 sm:gap-4 lg:gap-5 min-w-0 flex-shrink flex-1">
-            {isVisible ? (
-              <div className="flex items-end gap-2 sm:gap-4 lg:gap-5 min-w-0 flex-shrink flex-1">
+              {/* Game Details Section - Left Side */}
+              <div className="flex items-start gap-2 sm:gap-4 lg:gap-5 min-w-0 flex-shrink flex-1">
+                {isVisible ? (
+                  <div className="flex items-end gap-2 sm:gap-4 lg:gap-5 min-w-0 flex-shrink flex-1">
                 {/* Game Cover Image */}
                 {config.coverImageUrl && (
                   <div className="flex-shrink-0">
@@ -515,13 +515,13 @@ export function GameDetails({ className }: GameDetailsProps) {
                     </nav>
                   )}
                 </div>
+                  </div>
+                ) : null}
               </div>
-            ) : null}
-          </div>
-          
-          {/* Mobile Menu Button - Shown on all screens except xl and above */}
-          <div className="flex items-center gap-2 xl:gap-3 flex-shrink-0">
-            {/* Mobile Menu Sheet */}
+              
+              {/* Mobile Menu Button - Shown on all screens except xl and above */}
+              <div className="flex items-center gap-2 xl:gap-3 flex-shrink-0">
+                {/* Mobile Menu Sheet */}
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
                 <Button 
@@ -721,9 +721,9 @@ export function GameDetails({ className }: GameDetailsProps) {
                   Sign In
                 </Button>
               )}
+              </div>
             </div>
           </div>
-        </div>
         </div>
       </header>
       <LoginModal open={isLoginOpen} onOpenChange={setIsLoginOpen} />
