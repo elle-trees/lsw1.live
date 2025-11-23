@@ -252,8 +252,8 @@ const Leaderboards = () => {
             onClick={() => startTransition(() => setLeaderboardType('regular'))}
             className={`button-click-animation h-auto py-2 sm:py-3 px-2 sm:px-4 rounded-none transition-all duration-200 ${
               leaderboardType === 'regular' 
-                ? "bg-[#f9e2af] text-[#11111b] shadow-sm" 
-                : "text-ctp-text"
+                ? "bg-[#f9e2af] text-[#11111b] shadow-sm hover:bg-[#f9e2af]" 
+                : "text-ctp-text hover:bg-transparent"
             } ${isPending ? 'opacity-70' : ''}`}
           >
             <div className="flex items-center justify-center gap-2">
@@ -267,8 +267,8 @@ const Leaderboards = () => {
             onClick={() => startTransition(() => setLeaderboardType('individual-level'))}
             className={`button-click-animation h-auto py-2 sm:py-3 px-2 sm:px-4 rounded-none transition-all duration-200 ${
               leaderboardType === 'individual-level' 
-                ? "bg-[#f9e2af] text-[#11111b] shadow-sm" 
-                : "text-ctp-text"
+                ? "bg-[#f9e2af] text-[#11111b] shadow-sm hover:bg-[#f9e2af]" 
+                : "text-ctp-text hover:bg-transparent"
             } ${isPending ? 'opacity-70' : ''}`}
           >
             <div className="flex items-center justify-center gap-2">
@@ -282,8 +282,8 @@ const Leaderboards = () => {
             onClick={() => startTransition(() => setLeaderboardType('community-golds'))}
             className={`button-click-animation h-auto py-2 sm:py-3 px-2 sm:px-4 rounded-none transition-all duration-200 ${
               leaderboardType === 'community-golds' 
-                ? "bg-[#f9e2af] text-[#11111b] shadow-sm" 
-                : "text-ctp-text"
+                ? "bg-[#f9e2af] text-[#11111b] shadow-sm hover:bg-[#f9e2af]" 
+                : "text-ctp-text hover:bg-transparent"
             } ${isPending ? 'opacity-70' : ''}`}
           >
             <div className="flex items-center justify-center gap-2">
@@ -457,6 +457,7 @@ const Leaderboards = () => {
             <AnimatedCard 
               className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl mb-6 rounded-none overflow-hidden"
               delay={0.25}
+              hover={false}
             >
           <CardHeader className="bg-gradient-to-r from-ctp-base to-ctp-mantle border-b border-ctp-surface1 py-4">
             <CardTitle className="flex items-center gap-2 text-lg font-bold">
@@ -552,6 +553,7 @@ const Leaderboards = () => {
         <AnimatedCard 
           className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl rounded-none overflow-hidden"
           delay={0.3}
+          hover={false}
         >
           <CardHeader className="bg-gradient-to-r from-ctp-base to-ctp-mantle border-b border-ctp-surface1 py-4">
             <CardTitle className="flex items-center gap-2 text-lg text-[#a6e3a1]">
