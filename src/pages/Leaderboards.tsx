@@ -252,8 +252,8 @@ const Leaderboards = () => {
             onClick={() => startTransition(() => setLeaderboardType('regular'))}
             className={`button-click-animation h-auto py-2 sm:py-3 px-2 sm:px-4 rounded-none transition-all duration-200 ${
               leaderboardType === 'regular' 
-                ? "bg-[#f9e2af] text-[#11111b] shadow-sm hover:bg-[#f9e2af]" 
-                : "text-ctp-text hover:bg-transparent"
+                ? "bg-[#f9e2af] text-[#11111b] shadow-sm hover:bg-[#f9e2af] hover:text-[#11111b]" 
+                : "text-ctp-text hover:bg-transparent hover:text-ctp-text"
             } ${isPending ? 'opacity-70' : ''}`}
           >
             <div className="flex items-center justify-center gap-2">
@@ -267,8 +267,8 @@ const Leaderboards = () => {
             onClick={() => startTransition(() => setLeaderboardType('individual-level'))}
             className={`button-click-animation h-auto py-2 sm:py-3 px-2 sm:px-4 rounded-none transition-all duration-200 ${
               leaderboardType === 'individual-level' 
-                ? "bg-[#f9e2af] text-[#11111b] shadow-sm hover:bg-[#f9e2af]" 
-                : "text-ctp-text hover:bg-transparent"
+                ? "bg-[#f9e2af] text-[#11111b] shadow-sm hover:bg-[#f9e2af] hover:text-[#11111b]" 
+                : "text-ctp-text hover:bg-transparent hover:text-ctp-text"
             } ${isPending ? 'opacity-70' : ''}`}
           >
             <div className="flex items-center justify-center gap-2">
@@ -282,8 +282,8 @@ const Leaderboards = () => {
             onClick={() => startTransition(() => setLeaderboardType('community-golds'))}
             className={`button-click-animation h-auto py-2 sm:py-3 px-2 sm:px-4 rounded-none transition-all duration-200 ${
               leaderboardType === 'community-golds' 
-                ? "bg-[#f9e2af] text-[#11111b] shadow-sm hover:bg-[#f9e2af]" 
-                : "text-ctp-text hover:bg-transparent"
+                ? "bg-[#f9e2af] text-[#11111b] shadow-sm hover:bg-[#f9e2af] hover:text-[#11111b]" 
+                : "text-ctp-text hover:bg-transparent hover:text-ctp-text"
             } ${isPending ? 'opacity-70' : ''}`}
           >
             <div className="flex items-center justify-center gap-2">
