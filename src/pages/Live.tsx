@@ -107,66 +107,17 @@ const Live = () => {
           return;
         }
 
-        // Check each player's Twitch stream status, verify thumbnail exists, and get viewer count
+        // Check each player's Twitch stream status and get viewer count
         const liveStatusChecks = await Promise.all(
           validPlayers.map(async (player) => {
             try {
               const originalTwitchUsername = player.twitchUsername.trim();
               const twitchUsernameLower = originalTwitchUsername.toLowerCase();
               
-              // Check thumbnail - most reliable indicator of live stream
-              // Try both HEAD and GET methods for better compatibility
-              let hasValidThumbnail = false;
-              const thumbnailUrl = `https://static-cdn.jtvnw.net/previews-ttv/live_user_${twitchUsernameLower}-320x180.jpg`;
+              console.log(`[Live] Checking: ${originalTwitchUsername} (${twitchUsernameLower})`);
               
-              // Try HEAD first (lighter), fallback to GET if needed
-              for (const method of ['HEAD', 'GET'] as const) {
-                try {
-                  const thumbnailController = new AbortController();
-                  const thumbnailTimeoutId = setTimeout(() => thumbnailController.abort(), 5000);
-                  
-                  const thumbnailResponse = await fetch(`${thumbnailUrl}?t=${Date.now()}`, { 
-                    method,
-                    cache: 'no-cache',
-                    signal: thumbnailController.signal
-                  });
-                  
-                  clearTimeout(thumbnailTimeoutId);
-                  
-                  if (thumbnailResponse.ok && thumbnailResponse.status === 200) {
-                    const contentType = thumbnailResponse.headers.get('content-type');
-                    if (contentType?.startsWith('image/')) {
-                      // For HEAD, check content-length; for GET, check blob size
-                      if (method === 'HEAD') {
-                        const contentLength = thumbnailResponse.headers.get('content-length');
-                        if (contentLength && parseInt(contentLength) > 0) {
-                          hasValidThumbnail = true;
-                          break;
-                        }
-                      } else {
-                        const blob = await thumbnailResponse.blob();
-                        if (blob.size > 0) {
-                          hasValidThumbnail = true;
-                          break;
-                        }
-                      }
-                    }
-                  }
-                } catch (error) {
-                  // Try next method or continue
-                  if (method === 'GET') {
-                    // Both methods failed
-                    break;
-                  }
-                }
-              }
-
-              // Require valid thumbnail - if we can't verify, skip this player
-              if (!hasValidThumbnail) {
-                return null;
-              }
-
-              // Verify stream is actually live via status check
+              // First, check if stream is explicitly offline
+              let isExplicitlyOffline = false;
               try {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 5000);
@@ -180,33 +131,39 @@ const Live = () => {
                 
                 if (statusResponse.ok) {
                   const statusData = await statusResponse.text().trim().toLowerCase();
-                  const isExplicitlyOffline = statusData === 'offline' || 
-                                             statusData === 'false' ||
-                                             statusData === '0' ||
-                                             statusData === '' ||
-                                             statusData.match(/^(offline|false|0|error|not found|channel not found)$/i);
-                  
-                  // Skip if explicitly offline
-                  if (isExplicitlyOffline) {
-                    return null;
-                  }
+                  isExplicitlyOffline = statusData === 'offline' || 
+                                       statusData === 'false' ||
+                                       statusData === '0' ||
+                                       statusData === '' ||
+                                       statusData.match(/^(offline|false|0|error|not found|channel not found)$/i);
                 }
               } catch {
-                // Status check failed, but thumbnail exists, so continue
+                // Status check failed, continue (not explicitly offline)
               }
+              
+              // Skip if explicitly offline
+              if (isExplicitlyOffline) {
+                console.log(`[Live] ${twitchUsernameLower} is explicitly offline, skipping`);
+                return null;
+              }
+              
+              console.log(`[Live] ${twitchUsernameLower} is not offline, fetching viewer count...`);
 
               // Fetch viewer count - required for display, with retries
               let viewerCount: number | undefined;
-              const maxRetries = 2;
+              const maxRetries = 3;
               
               for (let attempt = 0; attempt <= maxRetries && viewerCount === undefined; attempt++) {
                 try {
                   const viewerController = new AbortController();
-                  const viewerTimeoutId = setTimeout(() => viewerController.abort(), 5000);
+                  const viewerTimeoutId = setTimeout(() => viewerController.abort(), 8000);
                   
                   const viewerResponse = await fetch(
                     `https://decapi.me/twitch/viewercount/${twitchUsernameLower}`,
-                    { signal: viewerController.signal }
+                    { 
+                      signal: viewerController.signal,
+                      cache: 'no-cache'
+                    }
                   );
                   
                   clearTimeout(viewerTimeoutId);
@@ -216,21 +173,29 @@ const Live = () => {
                     const parsedViewers = parseInt(viewerText, 10);
                     if (!isNaN(parsedViewers) && parsedViewers >= 0) {
                       viewerCount = parsedViewers;
-                      break; // Success, exit retry loop
+                      break;
+                    }
+                  } else if (viewerResponse.status === 429) {
+                    // Rate limited - wait longer before retry
+                    if (attempt < maxRetries) {
+                      await new Promise(resolve => setTimeout(resolve, 2000));
+                      continue;
                     }
                   }
                 } catch (error) {
-                  // Try again if we have retries left
                   if (attempt < maxRetries) {
-                    // Small delay before retry
-                    await new Promise(resolve => setTimeout(resolve, 500));
+                    // Exponential backoff
+                    const delay = Math.min(500 * Math.pow(2, attempt), 2000);
+                    await new Promise(resolve => setTimeout(resolve, delay));
                     continue;
                   }
                 }
               }
 
-              // Only return runner if we have both thumbnail AND viewer count
-              if (hasValidThumbnail && viewerCount !== undefined) {
+              // If we have viewer count, the stream is live - show it
+              // Don't require thumbnail verification - Twitch thumbnails work or the img tag handles errors
+              if (viewerCount !== undefined) {
+                console.log(`[Live] ✓ ${originalTwitchUsername} - viewer count: ${viewerCount}, adding to live runners`);
                 return {
                   uid: player.uid,
                   displayName: player.displayName,
@@ -241,6 +206,7 @@ const Live = () => {
                 };
               }
 
+              console.log(`[Live] ✗ ${twitchUsernameLower} - viewer count unavailable after retries, skipping`);
               return null;
             } catch (error: any) {
               // Silently skip on error
