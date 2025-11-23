@@ -703,6 +703,7 @@ const Stats = () => {
               {((stats.runsByRunType.coOp / stats.verifiedRuns) * 100).toFixed(1)}% of runs
             </p>
           </CardContent>
+          </FadeIn>
         </Card>
       </div>
 
