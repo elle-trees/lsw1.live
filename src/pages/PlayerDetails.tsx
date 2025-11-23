@@ -462,18 +462,19 @@ const PlayerDetails = () => {
                   const categoryButtons = categoriesWithRuns.length > 0 ? (
                     <div className="mb-4">
                       <div className="flex w-full p-1 gap-2 overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-thumb-ctp-surface1 scrollbar-track-transparent pb-3" style={{ minWidth: 'max-content' }}>
-                        {categoriesWithRuns.map((category) => {
+                        {categoriesWithRuns.map((category, index) => {
                           const isSelected = selectedCategory === category.id;
                           return (
                             <Button
                               key={category.id}
                               variant={isSelected ? "default" : "outline"}
                               onClick={() => setSelectedCategory(category.id)}
-                              className={`button-click-animation whitespace-nowrap px-4 py-2 h-9 text-sm font-medium transition-all duration-200 ${
+                              className={`button-click-animation category-button-animate whitespace-nowrap px-4 py-2 h-9 text-sm font-medium transition-all duration-200 ${
                                 isSelected
                                   ? "bg-[#94e2d5] text-[#11111b] hover:bg-[#94e2d5]/90 border-transparent shadow-sm"
                                   : "bg-ctp-surface0 text-ctp-text border-ctp-surface1 hover:bg-ctp-surface1 hover:text-ctp-text hover:border-[#94e2d5]/50"
                               }`}
+                              style={{ animationDelay: `${index * 50}ms` }}
                             >
                               {category.name}
                             </Button>
@@ -487,18 +488,19 @@ const PlayerDetails = () => {
                   const subcategoryButtons = leaderboardType === 'regular' && availableSubcategories.length > 0 ? (
                     <div className="mb-6">
                       <div className="flex w-full p-1 gap-2 overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-thumb-ctp-surface1 scrollbar-track-transparent pb-3" style={{ minWidth: 'max-content' }}>
-                        {availableSubcategories.map((subcategory) => {
+                        {availableSubcategories.map((subcategory, index) => {
                           const isSelected = selectedSubcategory === subcategory.id;
                           return (
                             <Button
                               key={subcategory.id}
                               variant={isSelected ? "default" : "outline"}
                               onClick={() => setSelectedSubcategory(subcategory.id)}
-                              className={`button-click-animation whitespace-nowrap px-4 py-2 h-8 text-xs sm:text-sm font-medium transition-all duration-200 ${
+                              className={`button-click-animation category-button-animate whitespace-nowrap px-4 py-2 h-8 text-xs sm:text-sm font-medium transition-all duration-200 ${
                                 isSelected
                                   ? "bg-[#cba6f7] text-[#11111b] hover:bg-[#cba6f7]/90 border-transparent shadow-sm"
                                   : "bg-ctp-surface0 text-ctp-text border-ctp-surface1 hover:bg-ctp-surface1 hover:text-ctp-text hover:border-[#cba6f7]/50"
                               }`}
+                              style={{ animationDelay: `${index * 50}ms` }}
                             >
                               {subcategory.name}
                             </Button>

@@ -352,11 +352,12 @@ const Leaderboards = () => {
                             <Button 
                               variant={isSelected ? "default" : "outline"}
                               onClick={() => setSelectedCategory(category.id)}
-                              className={`button-click-animation whitespace-nowrap px-4 py-2 h-9 text-sm font-medium transition-all duration-200 ${
+                              className={`button-click-animation category-button-animate whitespace-nowrap px-4 py-2 h-9 text-sm font-medium transition-all duration-200 ${
                                 isSelected 
                                   ? "bg-[#94e2d5] text-[#11111b] border-transparent shadow-sm" 
                                   : "bg-ctp-surface0 text-ctp-text border-ctp-surface1"
                               }`}
+                              style={{ animationDelay: `${index * 50}ms` }}
                             >
                               {category.name}
                             </Button>
@@ -413,7 +414,7 @@ const Leaderboards = () => {
                             initial="hidden"
                             animate="visible"
                           >
-                              {availableSubcategories.map((subcategory) => {
+                              {availableSubcategories.map((subcategory, index) => {
                                 const isSelected = selectedSubcategory === subcategory.id;
                                 return (
                                 <motion.div
@@ -423,11 +424,12 @@ const Leaderboards = () => {
                                   <Button 
                                     variant={isSelected ? "default" : "outline"}
                                     onClick={() => setSelectedSubcategory(subcategory.id)}
-                                    className={`button-click-animation whitespace-nowrap px-4 py-2 h-8 text-xs sm:text-sm font-medium transition-all duration-200 ${
+                                    className={`button-click-animation category-button-animate whitespace-nowrap px-4 py-2 h-8 text-xs sm:text-sm font-medium transition-all duration-200 ${
                                       isSelected 
                                         ? "bg-[#cba6f7] text-[#11111b] border-transparent shadow-sm" 
                                         : "bg-ctp-surface0 text-ctp-text border-ctp-surface1"
                                     }`}
+                                    style={{ animationDelay: `${index * 50}ms` }}
                                   >
                                     {subcategory.name}
                                   </Button>
