@@ -17,6 +17,7 @@ interface LiveRunner {
   twitchUsername: string;
   nameColor?: string;
   profilePicture?: string;
+  viewerCount?: number;
 }
 
 const Live = () => {
@@ -95,15 +96,41 @@ const Live = () => {
           return;
         }
 
-        // Check each player's Twitch stream status
+        // Check each player's Twitch stream status and get viewer count
         const liveStatusChecks = await Promise.all(
           players.map(async (player) => {
             try {
-              const response = await fetch(`https://decapi.me/twitch/status/${player.twitchUsername}`);
-              if (response.ok) {
-                const data = await response.text();
-                const trimmedData = data.trim().toLowerCase();
-                return trimmedData === 'live' ? player : null;
+              const statusResponse = await fetch(`https://decapi.me/twitch/status/${player.twitchUsername}`);
+              if (statusResponse.ok) {
+                const statusData = await statusResponse.text();
+                const trimmedStatus = statusData.trim().toLowerCase();
+                
+                if (trimmedStatus === 'live') {
+                  // Fetch viewer count
+                  let viewerCount: number | undefined;
+                  try {
+                    const viewerResponse = await fetch(`https://decapi.me/twitch/viewercount/${player.twitchUsername}`);
+                    if (viewerResponse.ok) {
+                      const viewerText = await viewerResponse.text();
+                      const parsedViewers = parseInt(viewerText.trim(), 10);
+                      if (!isNaN(parsedViewers)) {
+                        viewerCount = parsedViewers;
+                      }
+                    }
+                  } catch (_viewerError) {
+                    // Viewer count is optional, continue without it
+                  }
+                  
+                  const liveRunner: LiveRunner = {
+                    uid: player.uid,
+                    displayName: player.displayName,
+                    twitchUsername: player.twitchUsername,
+                    nameColor: player.nameColor,
+                    profilePicture: player.profilePicture,
+                    viewerCount,
+                  };
+                  return liveRunner;
+                }
               }
               return null;
             } catch (_error) {
@@ -303,22 +330,44 @@ const Live = () => {
                                 <p className="text-xs text-ctp-overlay0 truncate">@{runner.twitchUsername}</p>
                               </div>
                             </div>
-                            <div className="relative" style={{ paddingBottom: '56.25%' }}>
-                              <iframe
-                                src={`https://player.twitch.tv/?channel=${runner.twitchUsername}&parent=${parentDomain}&autoplay=false&muted=true`}
-                                className="absolute top-0 left-0 w-full h-full"
-                                title={`${runner.displayName} Twitch Stream`}
-                                style={{ border: 'none' }}
-                                allowFullScreen
-                                allow="autoplay; fullscreen"
+                            <div className="relative group" style={{ paddingBottom: '56.25%' }}>
+                              <img
+                                src={`https://static-cdn.jtvnw.net/previews-ttv/live_user_${runner.twitchUsername}-640x360.jpg?t=${Date.now()}`}
+                                alt={`${runner.displayName} stream thumbnail`}
+                                className="absolute top-0 left-0 w-full h-full object-cover"
+                                onError={(e) => {
+                                  // Fallback to a placeholder or error image
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = `https://via.placeholder.com/640x360/9147ff/ffffff?text=${encodeURIComponent(runner.displayName)}`;
+                                }}
                               />
+                              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
+                              <div className="absolute top-2 right-2">
+                                <Badge variant="default" className="bg-red-600 text-white border-0 shadow-lg">
+                                  <Radio className="h-3 w-3 mr-1.5 animate-pulse" />
+                                  Live
+                                </Badge>
+                              </div>
+                              {runner.viewerCount !== undefined && (
+                                <div className="absolute bottom-2 left-2">
+                                  <Badge variant="secondary" className="bg-black/70 text-white border-0 backdrop-blur-sm">
+                                    <span className="text-xs">
+                                      {runner.viewerCount.toLocaleString()} viewer{runner.viewerCount !== 1 ? 's' : ''}
+                                    </span>
+                                  </Badge>
+                                </div>
+                              )}
                             </div>
-                            <div className="mt-3 flex items-center justify-center">
-                              <Badge variant="default" className="bg-gradient-to-r from-[#89b4fa] to-[#74c7ec] text-white border-0">
-                                <Radio className="h-3 w-3 mr-1.5 animate-pulse" />
-                                Live
-                              </Badge>
-                            </div>
+                            {runner.viewerCount !== undefined && (
+                              <div className="mt-3 flex items-center justify-center">
+                                <Badge variant="outline" className="text-xs border-[hsl(235,13%,30%)] bg-[hsl(235,13%,15%)]">
+                                  <span className="font-semibold">{runner.viewerCount.toLocaleString()}</span>
+                                  <span className="ml-1 text-ctp-subtext1">
+                                    {runner.viewerCount === 1 ? 'viewer' : 'viewers'}
+                                  </span>
+                                </Badge>
+                              </div>
+                            )}
                           </a>
                         </CardContent>
                       </AnimatedCard>
