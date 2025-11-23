@@ -369,45 +369,8 @@ const SubmitRun = () => {
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-4">
-                  {/* Leaderboard Type Buttons Skeleton */}
-                  <FadeIn delay={0}>
-                    <Skeleton className="h-5 w-32 mb-2 rounded-none" />
-                    <div className="grid grid-cols-3 p-0.5 gap-1 bg-ctp-surface0/50 rounded-none border border-ctp-surface1">
-                      {[1, 2, 3].map((i) => (
-                        <Skeleton key={i} className="h-10 w-full rounded-none" />
-                      ))}
-                    </div>
-                  </FadeIn>
-
-                  {/* Form Fields Skeletons */}
-                  <FadeIn delay={0.05}>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <Skeleton className="h-4 w-24 rounded-none" />
-                        <Skeleton className="h-10 w-full rounded-none" />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Skeleton className="h-4 w-32 rounded-none" />
-                        <Skeleton className="h-10 w-full rounded-none" />
-                      </div>
-                    </div>
-                  </FadeIn>
-
-                  <FadeIn delay={0.1}>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <Skeleton className="h-4 w-20 rounded-none" />
-                        <Skeleton className="h-10 w-full rounded-none" />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Skeleton className="h-4 w-24 rounded-none" />
-                        <Skeleton className="h-10 w-full rounded-none" />
-                      </div>
-                    </div>
-                  </FadeIn>
-
                   {/* Category Buttons Skeleton */}
-                  <FadeIn delay={0.15}>
+                  <FadeIn delay={0}>
                     <Skeleton className="h-4 w-32 mb-2 rounded-none" />
                     <div className="flex w-full p-1 gap-2 overflow-x-auto overflow-y-hidden pb-3">
                       {[...Array(5)].map((_, index) => (
@@ -420,37 +383,13 @@ const SubmitRun = () => {
                     </div>
                   </FadeIn>
 
-                  {/* Platform and Video Fields Skeleton */}
-                  <FadeIn delay={0.2}>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <Skeleton className="h-4 w-20 rounded-none" />
-                        <Skeleton className="h-10 w-full rounded-none" />
-                      </div>
-                    </div>
-                  </FadeIn>
-
-                  <FadeIn delay={0.25}>
-                    <div className="space-y-1.5">
-                      <Skeleton className="h-4 w-28 rounded-none" />
-                      <Skeleton className="h-10 w-full rounded-none" />
-                      <Skeleton className="h-3 w-64 rounded-none" />
-                    </div>
-                  </FadeIn>
-
-                  {/* Comment Field Skeleton */}
-                  <FadeIn delay={0.3}>
-                    <div className="space-y-1.5">
-                      <Skeleton className="h-4 w-28 rounded-none" />
-                      <Skeleton className="h-24 w-full rounded-none" />
-                      <Skeleton className="h-3 w-56 rounded-none" />
-                    </div>
-                  </FadeIn>
-
-                  {/* Submit Button Skeleton */}
-                  <FadeIn delay={0.35}>
-                    <div className="pt-2">
-                      <Skeleton className="h-12 w-full rounded-none" />
+                  {/* Subcategory Buttons Skeleton (if applicable) */}
+                  <FadeIn delay={0.1}>
+                    <Skeleton className="h-4 w-32 mb-2 rounded-none" />
+                    <div className="flex gap-2 overflow-x-auto">
+                      <Skeleton className="h-9 w-28 flex-shrink-0 rounded-none" />
+                      <Skeleton className="h-9 w-28 flex-shrink-0 rounded-none" />
+                      <Skeleton className="h-9 w-28 flex-shrink-0 rounded-none" />
                     </div>
                   </FadeIn>
                 </div>

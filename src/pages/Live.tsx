@@ -240,113 +240,111 @@ const Live = () => {
 
         {/* Live Runners Section - Only show when official stream is offline */}
         {isLive === false && (
-          <>
-            {checkingRunners ? (
-              <FadeIn className="mt-8" delay={0.2}>
-                <AnimatedCard className="bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl" hover={false}>
-                  <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
-                    <div className="flex items-center gap-2 text-xl text-[#f38ba8]">
-                      <Radio className="h-5 w-5" />
-                      <span>Community Streams</span>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {[1, 2, 3].map((i) => (
-                        <AnimatedCard 
-                          key={i}
-                          className="bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)]"
-                          hover={false}
-                          delay={i * 0.1}
-                        >
-                          <CardContent className="p-4">
+          <FadeIn className="mt-8" delay={0.2}>
+            <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
+              <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
+                <div className="flex items-center gap-2 text-xl text-[#f38ba8]">
+                  <Radio className="h-5 w-5" />
+                  <span>Community Streams</span>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                {checkingRunners && liveRunners.length === 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[1, 2, 3].map((i) => (
+                      <AnimatedCard 
+                        key={i}
+                        className="bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)]"
+                        hover={false}
+                        delay={i * 0.1}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-3 mb-3">
+                            <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
+                            <div className="flex-1 min-w-0 space-y-2">
+                              <Skeleton className="h-4 w-24 rounded-none" />
+                              <Skeleton className="h-3 w-20 rounded-none" />
+                            </div>
+                          </div>
+                          <div className="relative" style={{ paddingBottom: '56.25%' }}>
+                            <Skeleton className="absolute top-0 left-0 w-full h-full rounded-none" />
+                          </div>
+                          <div className="mt-3 flex items-center justify-center">
+                            <Skeleton className="h-6 w-16 rounded-none" />
+                          </div>
+                        </CardContent>
+                      </AnimatedCard>
+                    ))}
+                  </div>
+                ) : liveRunners.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {liveRunners.map((runner, index) => (
+                      <AnimatedCard 
+                        key={runner.uid} 
+                        className="bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] hover:border-[#f38ba8]/50 transition-all duration-300"
+                        delay={index * 0.1}
+                      >
+                        <CardContent className="p-4">
+                          <a 
+                            href={`https://www.twitch.tv/${runner.twitchUsername}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block"
+                          >
                             <div className="flex items-center gap-3 mb-3">
-                              <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
-                              <div className="flex-1 min-w-0 space-y-2">
-                                <Skeleton className="h-4 w-24 rounded-none" />
-                                <Skeleton className="h-3 w-20 rounded-none" />
+                              <Avatar className="h-10 w-10 flex-shrink-0">
+                                <AvatarImage src={runner.profilePicture || `https://api.dicebear.com/7.x/lorelei-neutral/svg?seed=${runner.displayName}`} />
+                                <AvatarFallback>{runner.displayName.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <Link
+                                  to={`/player/${runner.uid}`}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="font-semibold text-base hover:opacity-80 transition-opacity block truncate"
+                                  style={{ color: runner.nameColor || '#cba6f7' }}
+                                >
+                                  {runner.displayName}
+                                </Link>
+                                <p className="text-xs text-ctp-overlay0 truncate">@{runner.twitchUsername}</p>
                               </div>
                             </div>
                             <div className="relative" style={{ paddingBottom: '56.25%' }}>
-                              <Skeleton className="absolute top-0 left-0 w-full h-full rounded-none" />
+                              <iframe
+                                src={`https://player.twitch.tv/?channel=${runner.twitchUsername}&parent=${parentDomain}&autoplay=false&muted=true`}
+                                className="absolute top-0 left-0 w-full h-full"
+                                title={`${runner.displayName} Twitch Stream`}
+                                style={{ border: 'none' }}
+                                allowFullScreen
+                                allow="autoplay; fullscreen"
+                              />
                             </div>
                             <div className="mt-3 flex items-center justify-center">
-                              <Skeleton className="h-6 w-16 rounded-none" />
+                              <Badge variant="default" className="bg-gradient-to-r from-[#89b4fa] to-[#74c7ec] text-white border-0">
+                                <Radio className="h-3 w-3 mr-1.5 animate-pulse" />
+                                Live
+                              </Badge>
                             </div>
-                          </CardContent>
-                        </AnimatedCard>
-                      ))}
+                          </a>
+                        </CardContent>
+                      </AnimatedCard>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="flex flex-col items-center gap-3">
+                      <Radio className="h-12 w-12 text-ctp-subtext1 opacity-50" />
+                      <div>
+                        <h3 className="text-base font-semibold mb-1 text-ctp-text">No runners are live</h3>
+                        <p className="text-sm text-ctp-subtext1">
+                          Time to hit the start streaming button!
+                        </p>
+                      </div>
                     </div>
-                  </CardContent>
-                </AnimatedCard>
-              </FadeIn>
-            ) : liveRunners.length > 0 ? (
-              <FadeIn className="mt-8" delay={0.2}>
-                <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
-                  <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
-                    <div className="flex items-center gap-2 text-xl text-[#f38ba8]">
-                      <Radio className="h-5 w-5" />
-                      <span>Community Streams</span>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {liveRunners.map((runner, index) => (
-                        <AnimatedCard 
-                          key={runner.uid} 
-                          className="bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] hover:border-[#f38ba8]/50 transition-all duration-300"
-                          delay={index * 0.1}
-                        >
-                          <CardContent className="p-4">
-                            <a 
-                              href={`https://www.twitch.tv/${runner.twitchUsername}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="block"
-                            >
-                              <div className="flex items-center gap-3 mb-3">
-                                <Avatar className="h-10 w-10 flex-shrink-0">
-                                  <AvatarImage src={runner.profilePicture || `https://api.dicebear.com/7.x/lorelei-neutral/svg?seed=${runner.displayName}`} />
-                                  <AvatarFallback>{runner.displayName.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1 min-w-0">
-                                  <Link
-                                    to={`/player/${runner.uid}`}
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="font-semibold text-base hover:opacity-80 transition-opacity block truncate"
-                                    style={{ color: runner.nameColor || '#cba6f7' }}
-                                  >
-                                    {runner.displayName}
-                                  </Link>
-                                  <p className="text-xs text-ctp-overlay0 truncate">@{runner.twitchUsername}</p>
-                                </div>
-                              </div>
-                              <div className="relative" style={{ paddingBottom: '56.25%' }}>
-                                <iframe
-                                  src={`https://player.twitch.tv/?channel=${runner.twitchUsername}&parent=${parentDomain}&autoplay=false&muted=true`}
-                                  className="absolute top-0 left-0 w-full h-full"
-                                  title={`${runner.displayName} Twitch Stream`}
-                                  style={{ border: 'none' }}
-                                  allowFullScreen
-                                  allow="autoplay; fullscreen"
-                                />
-                              </div>
-                              <div className="mt-3 flex items-center justify-center">
-                                <Badge variant="default" className="bg-gradient-to-r from-[#89b4fa] to-[#74c7ec] text-white border-0">
-                                  <Radio className="h-3 w-3 mr-1.5 animate-pulse" />
-                                  Live
-                                </Badge>
-                              </div>
-                            </a>
-                          </CardContent>
-                        </AnimatedCard>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </FadeIn>
-            ) : null}
-          </>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </FadeIn>
         )}
       </div>
     </div>
