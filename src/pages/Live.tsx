@@ -96,11 +96,14 @@ const Live = () => {
         });
 
         if (validPlayers.length === 0) {
+          console.log('[Live] No players with valid Twitch usernames found');
           setLiveRunners([]);
           setHasCheckedOnce(true);
           setCheckingRunners(false);
           return;
         }
+
+        console.log(`[Live] Checking ${validPlayers.length} players for live streams:`, validPlayers.map(p => p.twitchUsername));
 
         // Check each player's stream status - only include if live
         const liveStatusChecks = await Promise.all(
@@ -109,30 +112,81 @@ const Live = () => {
               const twitchUsername = player.twitchUsername!.trim();
               const twitchUsernameLower = twitchUsername.toLowerCase();
               
-              // Check if stream is live using status endpoint
+              // Check if stream is live using multiple methods for reliability
               const controller = new AbortController();
-              const timeoutId = setTimeout(() => controller.abort(), 5000);
+              const timeoutId = setTimeout(() => controller.abort(), 10000);
               
-              const statusResponse = await fetch(
-                `https://decapi.me/twitch/status/${twitchUsernameLower}`,
-                { signal: controller.signal }
-              );
+              let isLive = false;
+              
+              // Method 1: Try status endpoint
+              try {
+                const statusResponse = await fetch(
+                  `https://decapi.me/twitch/status/${twitchUsernameLower}`,
+                  { 
+                    signal: controller.signal,
+                    cache: 'no-cache',
+                    headers: {
+                      'Cache-Control': 'no-cache'
+                    }
+                  }
+                );
+                
+                if (statusResponse.ok) {
+                  const statusText = await statusResponse.text();
+                  const status = statusText.trim().toLowerCase();
+                  console.log(`[Live] Status check for ${twitchUsername}: "${statusText}" -> "${status}"`);
+                  
+                  if (status === 'live') {
+                    isLive = true;
+                  }
+                } else {
+                  console.warn(`[Live] Status API returned ${statusResponse.status} for ${twitchUsername}`);
+                }
+              } catch (fetchError) {
+                console.warn(`[Live] Failed to fetch status for ${twitchUsername}:`, fetchError);
+              }
+              
+              // Method 2: If status didn't confirm live, try uptime endpoint as fallback
+              // Uptime returns "offline" when not live, or a time string when live
+              if (!isLive) {
+                try {
+                  const uptimeResponse = await fetch(
+                    `https://decapi.me/twitch/uptime/${twitchUsernameLower}`,
+                    { 
+                      signal: controller.signal,
+                      cache: 'no-cache',
+                      headers: {
+                        'Cache-Control': 'no-cache'
+                      }
+                    }
+                  );
+                  
+                  if (uptimeResponse.ok) {
+                    const uptimeText = await uptimeResponse.text();
+                    const uptime = uptimeText.trim().toLowerCase();
+                    console.log(`[Live] Uptime check for ${twitchUsername}: "${uptimeText}"`);
+                    
+                    // If uptime is not "offline" and contains time info, stream is likely live
+                    if (uptime !== 'offline' && uptime !== '' && !uptime.includes('error') && !uptime.includes('not found')) {
+                      // Check if it looks like a time string (contains numbers and time units)
+                      if (/\d/.test(uptime) && (uptime.includes('h') || uptime.includes('m') || uptime.includes('s') || uptime.includes(':'))) {
+                        isLive = true;
+                        console.log(`[Live] Stream confirmed live via uptime for ${twitchUsername}`);
+                      }
+                    }
+                  }
+                } catch (uptimeError) {
+                  console.warn(`[Live] Failed to fetch uptime for ${twitchUsername}:`, uptimeError);
+                }
+              }
               
               clearTimeout(timeoutId);
               
-              if (!statusResponse.ok) {
-                // If status check fails, stream is not live
+              if (!isLive) {
                 return null;
               }
               
-              const statusText = await statusResponse.text();
-              const status = statusText.trim().toLowerCase();
-              
-              // Only proceed if stream is confirmed live
-              // Strictly check for "live" - reject anything else (offline, empty, error messages, etc.)
-              if (status !== 'live') {
-                return null;
-              }
+              console.log(`[Live] Stream confirmed live for ${twitchUsername}`);
               
               // Stream is confirmed live - get viewer count
               let viewerCount: number | undefined;
@@ -199,6 +253,7 @@ const Live = () => {
         );
 
         const live = liveStatusChecks.filter((runner): runner is LiveRunner => runner !== null);
+        console.log(`[Live] Found ${live.length} live streams:`, live.map(r => r.twitchUsername));
         setLiveRunners(live);
         setHasCheckedOnce(true);
       } catch (error) {
