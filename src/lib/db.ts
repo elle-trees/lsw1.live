@@ -370,7 +370,7 @@ export const runTypes = [
 ];
 
 // Real-time subscription functions (synchronous, so exported directly)
-export { subscribeToRecentRuns, subscribeToUnverifiedRuns, subscribeToLeaderboardEntry, subscribeToLeaderboardEntries } from "./db/runs";
+export { subscribeToRecentRuns, subscribeToUnverifiedRuns, subscribeToLeaderboardEntry, subscribeToLeaderboardEntries, subscribeToPlayerRuns, subscribeToPlayerPendingRuns } from "./db/runs";
 export { subscribeToUnreadUserNotifications, subscribeToUserNotifications } from "./db/notifications";
-export { subscribeToPlayersByPoints } from "./db/players";
+export { subscribeToPlayersByPoints, subscribeToPlayer } from "./db/players";
 

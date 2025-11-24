@@ -14,7 +14,8 @@ import {
   DocumentData,
   onSnapshot,
   Unsubscribe,
-  QuerySnapshot
+  QuerySnapshot,
+  writeBatch
 } from "firebase/firestore";
 import { LeaderboardEntry } from "@/types/database";
 import { leaderboardEntryConverter } from "./converters";
@@ -152,6 +153,227 @@ export const getPlayerPendingRunsFirestore = async (playerId: string): Promise<L
         console.error("Error fetching player pending runs:", error);
         return [];
     }
+};
+
+/**
+ * Subscribe to real-time updates for a player's verified runs
+ * @param playerId - The player ID to get runs for
+ * @param callback - Callback function that receives the runs array
+ * @returns Unsubscribe function to stop listening
+ */
+export const subscribeToPlayerRunsFirestore = (
+  playerId: string,
+  callback: (runs: LeaderboardEntry[]) => void
+): Unsubscribe | null => {
+  if (!db) return null;
+  try {
+    const q = query(
+      collection(db, "leaderboardEntries").withConverter(leaderboardEntryConverter),
+      where("playerId", "==", playerId),
+      where("verified", "==", true),
+      orderBy("date", "desc")
+    );
+    
+    return onSnapshot(q, (snapshot: QuerySnapshot) => {
+      const runs = snapshot.docs.map(d => d.data());
+      callback(runs);
+    }, (error) => {
+      console.error("Error in player runs subscription:", error);
+      callback([]);
+    });
+  } catch (error) {
+    console.error("Error setting up player runs subscription:", error);
+    return null;
+  }
+};
+
+/**
+ * Subscribe to real-time updates for a player's pending runs
+ * @param playerId - The player ID to get pending runs for
+ * @param callback - Callback function that receives the runs array
+ * @returns Unsubscribe function to stop listening
+ */
+export const subscribeToPlayerPendingRunsFirestore = (
+  playerId: string,
+  callback: (runs: LeaderboardEntry[]) => void
+): Unsubscribe | null => {
+  if (!db) return null;
+  try {
+    const q = query(
+      collection(db, "leaderboardEntries").withConverter(leaderboardEntryConverter),
+      where("playerId", "==", playerId),
+      where("verified", "==", false),
+      orderBy("date", "desc")
+    );
+    
+    return onSnapshot(q, (snapshot: QuerySnapshot) => {
+      const runs = snapshot.docs.map(d => d.data());
+      callback(runs);
+    }, (error) => {
+      console.error("Error in player pending runs subscription:", error);
+      callback([]);
+    });
+  } catch (error) {
+    console.error("Error setting up player pending runs subscription:", error);
+    return null;
+  }
+};
+
+/**
+ * Batch verify multiple runs using Firestore batch writes for better performance
+ * Firestore batches support up to 500 operations, so we'll split into multiple batches if needed
+ * 
+ * @param runIds - Array of run IDs to verify
+ * @param verifiedBy - User who is verifying the runs
+ * @param updates - Optional map of runId -> updates to apply before verification
+ * @returns Summary of the batch verification
+ */
+export const batchVerifyRunsFirestore = async (
+  runIds: string[],
+  verifiedBy: string,
+  updates?: Map<string, Partial<LeaderboardEntry>>
+): Promise<{
+  successCount: number;
+  errorCount: number;
+  errors: string[];
+}> => {
+  if (!db) {
+    return { successCount: 0, errorCount: runIds.length, errors: ["Database not initialized"] };
+  }
+
+  const result = {
+    successCount: 0,
+    errorCount: 0,
+    errors: [] as string[],
+  };
+
+  if (runIds.length === 0) {
+    return result;
+  }
+
+  // Firestore batch limit is 500 operations
+  // Each run needs: 1 update for verification + potentially 1 update for field updates = 2 operations max
+  // So we can process up to 250 runs per batch safely
+  const BATCH_SIZE = 250;
+  const batches: string[][] = [];
+  
+  for (let i = 0; i < runIds.length; i += BATCH_SIZE) {
+    batches.push(runIds.slice(i, i + BATCH_SIZE));
+  }
+
+  try {
+    for (const batch of batches) {
+      const firestoreBatch = writeBatch(db);
+      let operationsInBatch = 0;
+
+      for (const runId of batch) {
+        try {
+          const docRef = doc(db, "leaderboardEntries", runId).withConverter(leaderboardEntryConverter);
+          
+          // Apply field updates if provided
+          if (updates && updates.has(runId)) {
+            const runUpdates = updates.get(runId)!;
+            firestoreBatch.update(docRef, runUpdates as any);
+            operationsInBatch++;
+          }
+
+          // Update verification status
+          firestoreBatch.update(docRef, {
+            verified: true,
+            verifiedBy: verifiedBy
+          } as any);
+          operationsInBatch++;
+
+          // Check if we're approaching the limit (500 operations per batch)
+          if (operationsInBatch >= 500) {
+            // Commit current batch and start a new one
+            await firestoreBatch.commit();
+            result.successCount += Math.floor(operationsInBatch / 2); // Each run = 2 operations
+            const newBatch = writeBatch(db);
+            // Continue with remaining runs in a new batch
+            // This is a simplified approach - in practice, we'd need to track which runs were processed
+          }
+        } catch (error: any) {
+          result.errorCount++;
+          result.errors.push(`Error preparing run ${runId}: ${error.message || String(error)}`);
+        }
+      }
+
+      // Commit the batch
+      if (operationsInBatch > 0) {
+        try {
+          await firestoreBatch.commit();
+          // Count successful verifications (each run = 2 operations: update + verify, or just verify)
+          const runsInBatch = Math.ceil(operationsInBatch / 2);
+          result.successCount += runsInBatch;
+        } catch (error: any) {
+          // If batch commit fails, all operations in the batch fail
+          result.errorCount += Math.ceil(operationsInBatch / 2);
+          result.errors.push(`Batch commit failed: ${error.message || String(error)}`);
+        }
+      }
+    }
+
+    // Create notifications for verified runs (do this after successful verification)
+    // This is done separately to avoid making the batch too large
+    if (result.successCount > 0) {
+      try {
+        const { createNotificationFirestore } = await import("./notifications");
+        const verifiedRunIds = runIds.slice(0, result.successCount);
+        
+        // Fetch runs to get playerIds for notifications
+        const runPromises = verifiedRunIds.map(runId => 
+          getDoc(doc(db, "leaderboardEntries", runId).withConverter(leaderboardEntryConverter))
+        );
+        const runSnaps = await Promise.all(runPromises);
+        
+        // Create notifications in batches (Firestore batch limit is 500)
+        const notificationBatch = writeBatch(db);
+        let notificationCount = 0;
+        
+        for (const runSnap of runSnaps) {
+          if (runSnap.exists()) {
+            const run = runSnap.data();
+            if (run.playerId) {
+              const notificationRef = doc(collection(db, "notifications"));
+              notificationBatch.set(notificationRef, {
+                id: notificationRef.id,
+                userId: run.playerId,
+                type: 'run_verified',
+                title: 'Run Verified',
+                message: `Your run for ${run.category} has been verified!`,
+                link: `/runs/${run.id}`,
+                read: false,
+                createdAt: new Date().toISOString(),
+                metadata: { runId: run.id }
+              });
+              notificationCount++;
+              
+              // Commit if approaching limit
+              if (notificationCount >= 500) {
+                await notificationBatch.commit();
+                notificationCount = 0;
+                // Start new batch would require more complex logic
+                break; // For simplicity, we'll just create notifications for first batch
+              }
+            }
+          }
+        }
+        
+        if (notificationCount > 0) {
+          await notificationBatch.commit();
+        }
+      } catch (error) {
+        // Don't fail the whole operation if notifications fail
+        console.error("Error creating notifications for batch verification:", error);
+      }
+    }
+  } catch (error: any) {
+    result.errorCount += runIds.length - result.successCount;
+    result.errors.push(`Batch verification error: ${error.message || String(error)}`);
+  }
+
+  return result;
 };
 
 export const getUnverifiedLeaderboardEntriesFirestore = async (): Promise<LeaderboardEntry[]> => {

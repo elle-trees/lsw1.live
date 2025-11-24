@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { PlayerProfile } from "@/components/PlayerProfile";
 import { ArrowLeft, Trophy, User, Users, Clock, Star, Gem, CheckCircle, Gamepad2, Sparkles, MapPin, ExternalLink, Check } from "lucide-react";
 import { PrefetchLink } from "@/components/PrefetchLink";
-import { getPlayerRuns, getPlayerByUid, getCategories, getPlatforms, getPlayerPendingRuns, getLevels, getCategoriesFromFirestore, getUnclaimedRunsBySRCUsername, claimRun, runTypes } from "@/lib/db";
+import { getCategories, getPlatforms, getLevels, getCategoriesFromFirestore, getUnclaimedRunsBySRCUsername, claimRun, runTypes, subscribeToPlayer, subscribeToPlayerRuns, subscribeToPlayerPendingRuns } from "@/lib/db";
+import type { Unsubscribe } from "firebase/firestore";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import LegoStudIcon from "@/components/icons/LegoStudIcon";
 import { Player, LeaderboardEntry, Category } from "@/types/database";
@@ -42,103 +43,123 @@ const PlayerDetails = () => {
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const isOwnProfile = currentUser?.uid === playerId;
 
+  // Set up real-time listeners for player data and runs
   useEffect(() => {
-    const fetchPlayerData = async () => {
-      if (!playerId) return;
+    if (!playerId || playerId.trim() === "") {
+      setPlayer(null);
+      setPlayerRuns([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    const unsubscribes: (Unsubscribe | null)[] = [];
+    let isMounted = true;
+
+    (async () => {
+      // Set up real-time listener for player data
+      const { subscribeToPlayer } = await import("@/lib/db/players");
+      if (!isMounted) return;
       
-      // Prevent accessing unclaimed player profiles (empty/null playerId)
-      if (!playerId || playerId.trim() === "") {
-        setPlayer(null);
-        setPlayerRuns([]);
-        setLoading(false);
-        return;
-      }
-      
-      setLoading(true);
-      try {
-        // Fetch player and runs first (most important data)
-        const [fetchedPlayer, fetchedRuns] = await Promise.all([
-          getPlayerByUid(playerId),
-          getPlayerRuns(playerId)
-        ]);
+      const unsubPlayer = subscribeToPlayer(playerId, (playerData) => {
+        if (!isMounted) return;
         
         // Double-check: if player is still unclaimed, don't show profile
-        if (!fetchedPlayer || !fetchedPlayer.uid || fetchedPlayer.uid.trim() === "") {
+        if (!playerData || !playerData.uid || playerData.uid.trim() === "") {
           setPlayer(null);
           setPlayerRuns([]);
           setLoading(false);
           return;
         }
         
-        setPlayer(fetchedPlayer);
-        setPlayerRuns(fetchedRuns);
-        
-        // Fetch static data (categories, platforms, levels) in parallel - these can load after main content
-        // This allows the page to render faster while these load
-        Promise.all([
-          getCategoriesFromFirestore('regular'),
-          getCategoriesFromFirestore('individual-level'),
-          getCategoriesFromFirestore('community-golds'),
-          getPlatforms(),
-          getLevels()
-        ]).then(([regularCategories, ilCategories, cgCategories, fetchedPlatforms, fetchedLevels]) => {
-          // Combine all categories
-          const fetchedCategories = [...regularCategories, ...ilCategories, ...cgCategories];
-          
-          setCategories(fetchedCategories);
-          setPlatforms(fetchedPlatforms);
-          setLevels(fetchedLevels);
-          
-          // Initialize filter defaults
-          if (fetchedPlatforms.length > 0) {
-            setSelectedPlatform(fetchedPlatforms[0].id);
-          }
-          if (runTypes.length > 0) {
-            setSelectedRunType(runTypes[0].id);
-          }
-          if (fetchedLevels.length > 0) {
-            setSelectedLevel(fetchedLevels[0].id);
-          }
-        }).catch(() => {
-          // Silent fail for static data - page can still function
-        });
-        
-        // Set loading to false early so main content can render
+        setPlayer(playerData);
         setLoading(false);
-        
-        // Only fetch pending runs and unclaimed runs if viewing own profile
-        // Fetch these in parallel and after main content loads (non-blocking)
-        if (currentUser && currentUser.uid && currentUser.uid === playerId) {
-          setLoadingPendingRuns(true);
-          
-          // Fetch pending and unclaimed runs in parallel
-          const pendingRunsPromise = getPlayerPendingRuns(playerId).catch(() => []);
-          const unclaimedRunsPromise = fetchedPlayer.srcUsername 
-            ? getUnclaimedRunsBySRCUsername(fetchedPlayer.srcUsername).catch(() => [])
-            : Promise.resolve([]);
-          
-          const [fetchedPending, fetchedUnclaimed] = await Promise.all([
-            pendingRunsPromise,
-            unclaimedRunsPromise
-          ]);
-          
-          setPendingRuns(fetchedPending || []);
-          setUnclaimedRuns(fetchedUnclaimed || []);
-          setLoadingPendingRuns(false);
-        } else {
-          // Clear pending runs and unclaimed runs if not own profile
-          setPendingRuns([]);
-          setUnclaimedRuns([]);
-        }
-      } catch (error) {
-        // Error handling - player data fetch failed
-        setPlayer(null);
-        setPlayerRuns([]);
-        setLoading(false);
-      }
-    };
+      });
+      if (unsubPlayer) unsubscribes.push(unsubPlayer);
 
-    fetchPlayerData();
+      // Set up real-time listener for player runs
+      const { subscribeToPlayerRuns } = await import("@/lib/db/runs");
+      if (!isMounted) return;
+      
+      const unsubRuns = subscribeToPlayerRuns(playerId, (runs) => {
+        if (!isMounted) return;
+        setPlayerRuns(runs);
+      });
+      if (unsubRuns) unsubscribes.push(unsubRuns);
+
+      // Set up real-time listener for pending runs (only for own profile)
+      if (currentUser && currentUser.uid && currentUser.uid === playerId) {
+        const { subscribeToPlayerPendingRuns } = await import("@/lib/db/runs");
+        if (!isMounted) return;
+        
+        setLoadingPendingRuns(true);
+        const unsubPending = subscribeToPlayerPendingRuns(playerId, (runs) => {
+          if (!isMounted) return;
+          setPendingRuns(runs || []);
+          setLoadingPendingRuns(false);
+        });
+        if (unsubPending) unsubscribes.push(unsubPending);
+
+        // Fetch unclaimed runs (this still needs polling as it's a complex query)
+        const { getPlayerByUid, getUnclaimedRunsBySRCUsername } = await import("@/lib/db");
+        getPlayerByUid(playerId).then((playerData) => {
+          if (!isMounted || !playerData) return;
+          if (playerData.srcUsername) {
+            getUnclaimedRunsBySRCUsername(playerData.srcUsername)
+              .then((unclaimed) => {
+                if (!isMounted) return;
+                setUnclaimedRuns(unclaimed || []);
+              })
+              .catch(() => {
+                if (!isMounted) return;
+                setUnclaimedRuns([]);
+              });
+          } else {
+            setUnclaimedRuns([]);
+          }
+        }).catch(() => {});
+      } else {
+        setPendingRuns([]);
+        setUnclaimedRuns([]);
+      }
+    })();
+
+    // Fetch static data (categories, platforms, levels) - these don't need real-time
+    Promise.all([
+      getCategoriesFromFirestore('regular'),
+      getCategoriesFromFirestore('individual-level'),
+      getCategoriesFromFirestore('community-golds'),
+      getPlatforms(),
+      getLevels()
+    ]).then(([regularCategories, ilCategories, cgCategories, fetchedPlatforms, fetchedLevels]) => {
+      if (!isMounted) return;
+      // Combine all categories
+      const fetchedCategories = [...regularCategories, ...ilCategories, ...cgCategories];
+      
+      setCategories(fetchedCategories);
+      setPlatforms(fetchedPlatforms);
+      setLevels(fetchedLevels);
+      
+      // Initialize filter defaults
+      if (fetchedPlatforms.length > 0) {
+        setSelectedPlatform(fetchedPlatforms[0].id);
+      }
+      if (runTypes.length > 0) {
+        setSelectedRunType(runTypes[0].id);
+      }
+      if (fetchedLevels.length > 0) {
+        setSelectedLevel(fetchedLevels[0].id);
+      }
+    }).catch(() => {
+      // Silent fail for static data - page can still function
+    });
+
+    return () => {
+      isMounted = false;
+      unsubscribes.forEach(unsub => {
+        if (unsub) unsub();
+      });
+    };
   }, [playerId, currentUser]);
 
   // Update selected category when leaderboard type changes

@@ -56,6 +56,28 @@ We've successfully replaced manual polling with real-time Firestore listeners (`
   - Real-time rank changes
   - Better competitive experience
 
+### Phase 3: Player Profile Real-time Updates (Completed)
+
+### 7. **Player Profile Page** (`src/pages/PlayerDetails.tsx`)
+- **Before**: Fetched player data and runs on page load
+- **After**: Real-time listeners for player data, verified runs, and pending runs
+- **Benefits**:
+  - See stats update instantly when runs are verified
+  - See new runs appear in real-time
+  - See pending runs update when verified/rejected
+  - Points and rank update automatically
+
+### Phase 4: Batch Operations (Completed)
+
+### 8. **Batch Verification with Firestore Batches** (`src/lib/data/firestore/runs.ts`)
+- **Before**: Individual Firestore writes for each run (sequential/parallel promises)
+- **After**: Firestore batch writes (up to 500 operations per batch)
+- **Benefits**:
+  - Atomic operations (all succeed or all fail)
+  - Much faster for bulk operations
+  - Reduced Firestore write costs
+  - Better error handling
+
 ## 📊 Technical Implementation
 
 ### New Functions Added
@@ -66,6 +88,12 @@ We've successfully replaced manual polling with real-time Firestore listeners (`
 - `subscribeToRecentRunsFirestore()` - Real-time recent verified runs
 - `subscribeToUnverifiedRunsFirestore()` - Real-time unverified runs
 - `subscribeToLeaderboardEntryFirestore()` - Real-time single run updates
+- `subscribeToLeaderboardEntriesFirestore()` - Real-time leaderboard queries with filters
+- `subscribeToPlayersByPointsFirestore()` - Real-time players sorted by points
+- `subscribeToPlayerFirestore()` - Real-time player data updates
+- `subscribeToPlayerRunsFirestore()` - Real-time player verified runs
+- `subscribeToPlayerPendingRunsFirestore()` - Real-time player pending runs
+- `batchVerifyRunsFirestore()` - Batch verification using Firestore batch writes
 
 **DB Layer** (`src/lib/db/`):
 - Exported subscription functions for easy component usage

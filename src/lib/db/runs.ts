@@ -12,7 +12,9 @@ import {
   deleteAllLeaderboardEntriesFirestore,
   subscribeToRecentRunsFirestore,
   subscribeToUnverifiedRunsFirestore,
-  subscribeToLeaderboardEntryFirestore
+  subscribeToLeaderboardEntryFirestore,
+  subscribeToPlayerRunsFirestore,
+  subscribeToPlayerPendingRunsFirestore
 } from "../data/firestore/runs";
 
 import {
@@ -94,5 +96,19 @@ export const subscribeToLeaderboardEntries = (
   subcategoryId?: string
 ): Unsubscribe | null => {
   return subscribeToLeaderboardEntriesFirestore(callback, categoryId, platformId, runType, includeObsolete, leaderboardType, levelId, subcategoryId);
+};
+
+export const subscribeToPlayerRuns = (
+  playerId: string,
+  callback: (runs: LeaderboardEntry[]) => void
+): Unsubscribe | null => {
+  return subscribeToPlayerRunsFirestore(playerId, callback);
+};
+
+export const subscribeToPlayerPendingRuns = (
+  playerId: string,
+  callback: (runs: LeaderboardEntry[]) => void
+): Unsubscribe | null => {
+  return subscribeToPlayerPendingRunsFirestore(playerId, callback);
 };
 

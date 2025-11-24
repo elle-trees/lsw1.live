@@ -34,6 +34,36 @@ export const getPlayerByUidFirestore = async (uid: string): Promise<Player | nul
   }
 };
 
+/**
+ * Subscribe to real-time updates for a specific player
+ * @param uid - The player UID to subscribe to
+ * @param callback - Callback function that receives the player or null if not found
+ * @returns Unsubscribe function to stop listening
+ */
+export const subscribeToPlayerFirestore = (
+  uid: string,
+  callback: (player: Player | null) => void
+): Unsubscribe | null => {
+  if (!db) return null;
+  try {
+    const playerDocRef = doc(db, "players", uid).withConverter(playerConverter);
+    
+    return onSnapshot(playerDocRef, (snapshot) => {
+      if (snapshot.exists()) {
+        callback(snapshot.data());
+      } else {
+        callback(null);
+      }
+    }, (error) => {
+      console.error("Error in player subscription:", error);
+      callback(null);
+    });
+  } catch (error) {
+    console.error("Error setting up player subscription:", error);
+    return null;
+  }
+};
+
 export const createPlayerFirestore = async (player: Player): Promise<string | null> => {
   if (!db) return null;
   try {

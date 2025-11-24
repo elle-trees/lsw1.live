@@ -11,7 +11,8 @@ import {
   updatePlayerFirestore,
   deletePlayerFirestore,
   getPlayersByPointsFirestore,
-  subscribeToPlayersByPointsFirestore
+  subscribeToPlayersByPointsFirestore,
+  subscribeToPlayerFirestore
 } from "../data/firestore/players";
 
 import { db } from "@/lib/firebase";
@@ -37,6 +38,13 @@ export const subscribeToPlayersByPoints = (
   limitCount: number = 100
 ): Unsubscribe | null => {
   return subscribeToPlayersByPointsFirestore(callback, limitCount);
+};
+
+export const subscribeToPlayer = (
+  uid: string,
+  callback: (player: Player | null) => void
+): Unsubscribe | null => {
+  return subscribeToPlayerFirestore(uid, callback);
 };
 
 /**
