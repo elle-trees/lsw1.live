@@ -303,10 +303,10 @@ const PointsLeaderboard = () => {
                   <Table>
                     <TableHeader>
                       <TableRow className="border-b border-ctp-surface1/50 hover:bg-transparent bg-ctp-surface0/50">
-                        <TableHead className="py-3 pl-3 pr-1 text-left text-sm font-semibold text-ctp-text whitespace-nowrap w-16">Rank</TableHead>
-                        <TableHead className="py-3 pl-1 pr-2 text-left text-sm font-semibold text-ctp-text min-w-[200px]">Player</TableHead>
-                        <TableHead className="py-3 px-2 text-left text-sm font-semibold text-ctp-text hidden sm:table-cell whitespace-nowrap w-24">Runs</TableHead>
-                        <TableHead className="py-3 px-2 text-right text-sm font-semibold text-ctp-text whitespace-nowrap">Studs</TableHead>
+                        <TableHead className="py-5 pl-4 pr-2 text-left text-sm font-semibold text-ctp-text whitespace-nowrap w-20">Rank</TableHead>
+                        <TableHead className="py-5 pl-2 pr-4 text-left text-sm font-semibold text-ctp-text min-w-[200px]">Player</TableHead>
+                        <TableHead className="py-5 px-4 text-left text-sm font-semibold text-ctp-text hidden sm:table-cell whitespace-nowrap w-24">Runs</TableHead>
+                        <TableHead className="py-5 pl-4 pr-8 text-right text-sm font-semibold text-ctp-text whitespace-nowrap">Studs</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -321,22 +321,22 @@ const PointsLeaderboard = () => {
                             onClick={() => handlePlayerClick(player)}
                             className="border-b border-ctp-surface1/20 cursor-pointer transition-colors duration-50 hover:bg-ctp-surface0"
                           >
-                            <TableCell className="py-2.5 pl-3 pr-1">
+                            <TableCell className="py-5 pl-4 pr-2">
                               <div className="flex items-center gap-1.5">
                                 {rank === 1 ? (
-                                  <LegoStudIcon size={28} color="#0055BF" />
+                                  <LegoStudIcon size={40} color="#0055BF" />
                                 ) : rank === 2 ? (
-                                  <LegoStudIcon size={28} color="#FFD700" />
+                                  <LegoStudIcon size={40} color="#FFD700" />
                                 ) : rank === 3 ? (
-                                  <LegoStudIcon size={28} color="#C0C0C0" />
+                                  <LegoStudIcon size={40} color="#C0C0C0" />
                                 ) : (
-                                  <span className="font-semibold text-sm text-ctp-text w-7 h-7 flex items-center justify-center">
+                                  <span className="font-semibold text-base text-ctp-text w-10 h-10 flex items-center justify-center">
                                     #{rank}
                                   </span>
                                 )}
                               </div>
                             </TableCell>
-                            <TableCell className="py-2.5 pl-1 pr-2 min-w-[200px]">
+                            <TableCell className="py-5 pl-2 pr-4 min-w-[200px]">
                               <PrefetchLink 
                                 to={`/player/${player.uid}`} 
                                 params={{ playerId: player.uid }}
@@ -344,18 +344,18 @@ const PointsLeaderboard = () => {
                                 style={{ color: player.nameColor || '#cba6f7' }}
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                <span className="font-semibold text-sm whitespace-nowrap">{displayName}</span>
+                                <span className="font-semibold text-base whitespace-nowrap">{displayName}</span>
                               </PrefetchLink>
                             </TableCell>
-                            <TableCell className="py-2.5 px-2 hidden sm:table-cell">
-                              <span className="text-sm text-ctp-subtext1">
+                            <TableCell className="py-5 px-4 hidden sm:table-cell">
+                              <span className="text-base text-ctp-subtext1">
                                 {player.totalRuns || 0} verified run{player.totalRuns !== 1 ? 's' : ''}
                               </span>
                             </TableCell>
-                            <TableCell className="py-2.5 px-2 text-right">
-                              <div className="flex items-center gap-2 justify-end">
-                                <LegoStudIcon size={20} color="#fab387" />
-                                <span className="text-sm font-semibold text-[#fab387]">
+                            <TableCell className="py-5 pl-4 pr-8 text-right">
+                              <div className="flex items-center gap-3 justify-end">
+                                <LegoStudIcon size={32} color="#fab387" />
+                                <span className="text-xl font-semibold text-[#fab387]">
                                   {formatPoints(points)}
                                 </span>
                               </div>

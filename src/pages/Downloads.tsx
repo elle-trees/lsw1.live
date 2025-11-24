@@ -46,15 +46,15 @@ const Downloads = () => {
             </CardContent>
           </AnimatedCard>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {downloadEntries.map((entry) => (
               <Card
                 key={entry.id}
-                className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl rounded-none overflow-hidden hover:border-ctp-surface2 transition-colors duration-200"
+                className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl rounded-none overflow-hidden hover:border-ctp-surface2 transition-colors duration-200 flex flex-col"
               >
-                <CardContent className="p-6">
+                <CardContent className="p-6 flex flex-col flex-grow">
                   {entry.imageUrl && (
-                    <div className="relative w-full h-48 rounded-none overflow-hidden mb-4 border border-ctp-surface1">
+                    <div className="relative w-full h-80 rounded-none overflow-hidden mb-4 border border-ctp-surface1">
                       <img 
                         src={entry.imageUrl} 
                         alt={entry.name}
@@ -65,7 +65,7 @@ const Downloads = () => {
                   <CardTitle className="text-xl font-semibold mb-3 text-ctp-text">
                     {entry.name}
                   </CardTitle>
-                  <p className="text-ctp-subtext1 text-sm mb-6 leading-relaxed">
+                  <p className="text-ctp-subtext1 text-sm mb-6 leading-relaxed flex-grow">
                     {entry.description}
                   </p>
                   <Button 
