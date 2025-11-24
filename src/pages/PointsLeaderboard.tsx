@@ -305,7 +305,7 @@ const PointsLeaderboard = () => {
                       <TableRow className="border-b border-ctp-surface1/50 hover:bg-transparent bg-ctp-surface0/50">
                         <TableHead className="py-5 pl-4 pr-2 text-left text-sm font-semibold text-ctp-text whitespace-nowrap w-20">Rank</TableHead>
                         <TableHead className="py-5 pl-2 pr-4 text-left text-sm font-semibold text-ctp-text min-w-[200px]">Player</TableHead>
-                        <TableHead className="py-5 px-4 text-left text-sm font-semibold text-ctp-text hidden sm:table-cell whitespace-nowrap w-24">Runs</TableHead>
+                        <TableHead className="py-5 px-4 text-left text-sm font-semibold text-ctp-text hidden sm:table-cell whitespace-nowrap">Runs</TableHead>
                         <TableHead className="py-5 pl-4 pr-8 text-right text-sm font-semibold text-ctp-text whitespace-nowrap">Studs</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -348,7 +348,7 @@ const PointsLeaderboard = () => {
                               </PrefetchLink>
                             </TableCell>
                             <TableCell className="py-5 px-4 hidden sm:table-cell">
-                              <span className="text-base text-ctp-subtext1">
+                              <span className="text-base text-ctp-subtext1 whitespace-nowrap">
                                 {player.totalRuns || 0} verified run{player.totalRuns !== 1 ? 's' : ''}
                               </span>
                             </TableCell>
@@ -383,13 +383,8 @@ const PointsLeaderboard = () => {
         </AnimatedCard>
 
         {/* Studs System Explanation Accordion */}
-        <AnimatedCard 
-          className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl rounded-none overflow-hidden mt-6"
-          delay={0.2}
-          hover={false}
-        >
-          <CardContent className="p-0">
-            <Accordion type="single" collapsible className="w-full">
+        <FadeIn className="mt-8" delay={0.2}>
+          <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="studs-system" className="border-[hsl(235,13%,30%)]">
               <AccordionTrigger className="text-[#fab387] hover:text-[#fab387]/80 px-4 py-6">
                 <div className="flex items-center gap-2">
@@ -457,8 +452,7 @@ const PointsLeaderboard = () => {
               </AccordionContent>
             </AccordionItem>
           </Accordion>
-          </CardContent>
-        </AnimatedCard>
+        </FadeIn>
 
         {/* Studs Breakdown Dialog */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
