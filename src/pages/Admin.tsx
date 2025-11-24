@@ -1121,9 +1121,24 @@ const Admin = () => {
     const runToVerify = run || [...unverifiedRuns, ...importedSRCRuns].find(r => r.id === runId);
     if (!runToVerify) return;
 
+    const verifiedBy = currentUser.displayName || currentUser.email || currentUser.uid;
+    
+    // Optimistic update: Update UI immediately
+    const optimisticRun: LeaderboardEntry = {
+      ...runToVerify,
+      verified: true,
+      verifiedBy: verifiedBy,
+    };
+    
+    // Update local state optimistically
+    if (unverifiedRuns.some(r => r.id === runId)) {
+      setUnverifiedRuns(prev => prev.filter(r => r.id !== runId));
+    }
+    if (importedSRCRuns.some(r => r.id === runId)) {
+      setImportedSRCRuns(prev => prev.map(r => r.id === runId ? optimisticRun : r));
+    }
+
     try {
-      const verifiedBy = currentUser.displayName || currentUser.email || currentUser.uid;
-      
       // Collect all updates needed (category/platform/level from dialog or existing values)
       const updateData: Partial<LeaderboardEntry> = {};
       
@@ -1166,11 +1181,26 @@ const Admin = () => {
         setVerifyingRunCategory("");
         setVerifyingRunPlatform("");
         setVerifyingRunLevel("");
+        // Refresh to get server state (rank, points, etc.)
         await refreshAllRunData();
       } else {
+        // Rollback optimistic update on failure
+        if (unverifiedRuns.some(r => r.id === runId)) {
+          setUnverifiedRuns(prev => [...prev, runToVerify]);
+        }
+        if (importedSRCRuns.some(r => r.id === runId)) {
+          setImportedSRCRuns(prev => prev.map(r => r.id === runId ? runToVerify : r));
+        }
         throw new Error("Failed to update verification status.");
       }
     } catch (error: any) {
+      // Rollback optimistic update on error
+      if (unverifiedRuns.some(r => r.id === runId)) {
+        setUnverifiedRuns(prev => [...prev, runToVerify]);
+      }
+      if (importedSRCRuns.some(r => r.id === runId)) {
+        setImportedSRCRuns(prev => prev.map(r => r.id === runId ? runToVerify : r));
+      }
       toast({
         title: "Error",
         description: error.message || "Failed to verify run.",

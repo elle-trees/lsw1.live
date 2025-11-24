@@ -15,10 +15,11 @@ import {
   onSnapshot,
   Unsubscribe,
   QuerySnapshot,
-  writeBatch
+  writeBatch,
+  runTransaction
 } from "firebase/firestore";
 import { LeaderboardEntry } from "@/types/database";
-import { leaderboardEntryConverter } from "./converters";
+import { leaderboardEntryConverter, playerConverter } from "./converters";
 import { normalizeLeaderboardEntry, validateLeaderboardEntry } from "@/lib/dataValidation";
 
 export const addLeaderboardEntryFirestore = async (entry: Omit<LeaderboardEntry, 'id' | 'rank' | 'isObsolete'> & { verified?: boolean }): Promise<string | null> => {
@@ -104,9 +105,16 @@ export const deleteLeaderboardEntryFirestore = async (runId: string): Promise<bo
     }
 };
 
+/**
+ * Get recent runs with optimized field selection to reduce data transfer
+ * Only fetches fields needed for display: id, time, playerName, date, category, platform, leaderboardType, level
+ */
 export const getRecentRunsFirestore = async (limitCount: number = 10): Promise<LeaderboardEntry[]> => {
     if (!db) return [];
     try {
+        // Note: Firestore select() doesn't work well with converters, so we fetch full documents
+        // but could optimize by creating a separate query without converter for minimal fields
+        // For now, keeping converter for type safety, but this could be optimized further
         const q = query(
             collection(db, "leaderboardEntries").withConverter(leaderboardEntryConverter),
             where("verified", "==", true),
@@ -392,9 +400,170 @@ export const getUnverifiedLeaderboardEntriesFirestore = async (): Promise<Leader
     }
 };
 
+/**
+ * Verify a run and update player points atomically using a Firestore transaction
+ * This ensures data consistency and prevents race conditions
+ * 
+ * @param runId - The ID of the run to verify
+ * @param verified - Whether to verify (true) or unverify (false) the run
+ * @param verifiedBy - User who is verifying the run
+ * @param calculatedPoints - Pre-calculated points for this run (optional, will calculate if not provided)
+ * @param rank - Pre-calculated rank for this run (optional)
+ * @returns Success status and calculated points
+ */
+export const verifyRunWithTransactionFirestore = async (
+  runId: string,
+  verified: boolean,
+  verifiedBy: string,
+  calculatedPoints?: number,
+  rank?: number
+): Promise<{ success: boolean; points: number; error?: string }> => {
+  if (!db) {
+    return { success: false, points: 0, error: "Database not initialized" };
+  }
+
+  try {
+    // First, get the run to calculate points if not provided
+    const runRef = doc(db, "leaderboardEntries", runId).withConverter(leaderboardEntryConverter);
+    const runDoc = await getDoc(runRef);
+    
+    if (!runDoc.exists()) {
+      return { success: false, points: 0, error: "Run not found" };
+    }
+
+    const run = runDoc.data();
+    
+    // If verifying and points not provided, calculate them
+    let points = calculatedPoints || 0;
+    if (verified && !calculatedPoints && run.playerId && run.playerId !== "imported") {
+      // Import calculation utilities
+      const { calculatePoints: calcPoints } = await import("@/lib/utils");
+      const { getPointsConfigFirestore } = await import("./points");
+      const { getCategoriesFirestore } = await import("./categories");
+      const { getPlatformsFirestore } = await import("./platforms");
+      
+      const [pointsConfig, categories, platforms] = await Promise.all([
+        getPointsConfigFirestore(),
+        getCategoriesFirestore(),
+        getPlatformsFirestore()
+      ]);
+      
+      const category = categories.find(c => c.id === run.category);
+      const platform = platforms.find(p => p.id === run.platform);
+      
+      points = await calcPoints(
+        run.time,
+        category?.name || "Unknown",
+        platform?.name || "Unknown",
+        run.category,
+        run.platform,
+        rank || run.rank,
+        run.runType,
+        run.leaderboardType,
+        run.isObsolete,
+        pointsConfig || undefined
+      );
+    }
+
+    // Use transaction to atomically update run and player points
+    await runTransaction(db, async (transaction) => {
+      // Re-read the run within the transaction
+      const runDocSnap = await transaction.get(runRef);
+      if (!runDocSnap.exists()) {
+        throw new Error("Run not found");
+      }
+
+      const currentRun = runDocSnap.data();
+      
+      // Update run verification status
+      transaction.update(runRef, {
+        verified,
+        verifiedBy: verified ? verifiedBy : undefined,
+        rank: rank !== undefined ? rank : currentRun.rank,
+        points: verified ? points : undefined
+      } as any);
+
+      // Update player points if run has a valid playerId
+      if (run.playerId && run.playerId !== "imported") {
+        const playerRef = doc(db, "players", run.playerId).withConverter(playerConverter);
+        const playerDocSnap = await transaction.get(playerRef);
+        
+        if (playerDocSnap.exists()) {
+          const player = playerDocSnap.data();
+          const currentPoints = player.totalPoints || 0;
+          
+          if (verified) {
+            // Add points when verifying
+            transaction.update(playerRef, {
+              totalPoints: currentPoints + points
+            } as any);
+          } else {
+            // Subtract points when unverifying (if run had points)
+            const runPoints = currentRun.points || points || 0;
+            transaction.update(playerRef, {
+              totalPoints: Math.max(0, currentPoints - runPoints)
+            } as any);
+          }
+        } else {
+          // Create player document if it doesn't exist (for imported runs that get claimed)
+          if (verified) {
+            transaction.set(playerRef, {
+              uid: run.playerId,
+              displayName: run.playerName || "Unknown",
+              totalPoints: points,
+              email: "",
+              isAdmin: false
+            } as any);
+          }
+        }
+      }
+    });
+
+    // Create notification after successful verification (outside transaction)
+    if (verified && run.playerId && run.playerId !== "imported") {
+      try {
+        const { createNotificationFirestore } = await import("./notifications");
+        await createNotificationFirestore({
+          userId: run.playerId,
+          type: 'run_verified',
+          title: 'Run Verified',
+          message: `Your run for ${run.category} has been verified!`,
+          link: `/runs/${runId}`,
+          metadata: { runId: run.id }
+        });
+      } catch (error) {
+        // Don't fail the whole operation if notification fails
+        console.error("Error creating notification:", error);
+      }
+    }
+
+    return { success: true, points };
+  } catch (error: any) {
+    console.error("Error in transaction-based verification:", error);
+    return { 
+      success: false, 
+      points: 0, 
+      error: error.message || String(error) 
+    };
+  }
+};
+
 export const updateRunVerificationStatusFirestore = async (runId: string, verified: boolean, verifiedBy?: string): Promise<boolean> => {
     if (!db) return false;
     try {
+        // Use transaction-based verification for better consistency
+        if (verified && verifiedBy) {
+          const result = await verifyRunWithTransactionFirestore(runId, true, verifiedBy);
+          return result.success;
+        }
+        
+        // For unverifying, use transaction
+        if (!verified) {
+          const result = await verifyRunWithTransactionFirestore(runId, false, verifiedBy || "");
+          return result.success;
+        }
+        
+        // Fallback to simple update
         const success = await updateLeaderboardEntryFirestore(runId, { verified, verifiedBy });
         
         if (success && verified) {

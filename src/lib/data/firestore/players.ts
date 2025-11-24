@@ -291,6 +291,11 @@ export const deletePlayerFirestore = async (uid: string, deleteRuns: boolean = f
     }
 };
 
+/**
+ * Get players by points with optimized query
+ * Note: Using converter for type safety, but could be optimized with select() for minimal fields
+ * if we create a separate query function without converter
+ */
 export const getPlayersByPointsFirestore = async (limitCount: number = 100): Promise<Player[]> => {
     if (!db) return [];
     try {

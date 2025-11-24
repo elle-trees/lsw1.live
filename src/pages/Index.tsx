@@ -90,23 +90,39 @@ const Index = () => {
     const fetchStats = async () => {
       setStatsLoading(true);
       try {
-        const verifiedRuns = await getAllVerifiedRuns();
-        const totalRuns = verifiedRuns.length;
-        setTotalVerifiedRuns(totalRuns);
+        // Use optimized aggregation queries for better performance
+        const { getVerifiedRunsStatsFirestore } = await import("@/lib/data/firestore/stats");
+        const { count, totalTime: totalSeconds } = await getVerifiedRunsStatsFirestore();
         
-        const totalSeconds = verifiedRuns.reduce((sum, run) => {
-          return sum + parseTimeToSeconds(run.time);
-        }, 0);
+        setTotalVerifiedRuns(count);
         const formattedTime = formatTimeWithDays(totalSeconds);
         setTotalTime(formattedTime);
         
         // Cache stats for instant navigation
         pageCache.set(CACHE_KEY_STATS, {
-          totalVerifiedRuns: totalRuns,
+          totalVerifiedRuns: count,
           totalTime: formattedTime,
         }, 1000 * 60 * 10); // 10 minutes
       } catch (_error) {
-        // Silent fail
+        // Fallback to old method if aggregation queries fail
+        try {
+          const verifiedRuns = await getAllVerifiedRuns();
+          const totalRuns = verifiedRuns.length;
+          setTotalVerifiedRuns(totalRuns);
+          
+          const totalSeconds = verifiedRuns.reduce((sum, run) => {
+            return sum + parseTimeToSeconds(run.time);
+          }, 0);
+          const formattedTime = formatTimeWithDays(totalSeconds);
+          setTotalTime(formattedTime);
+          
+          pageCache.set(CACHE_KEY_STATS, {
+            totalVerifiedRuns: totalRuns,
+            totalTime: formattedTime,
+          }, 1000 * 60 * 10);
+        } catch (fallbackError) {
+          // Silent fail
+        }
       } finally {
         setStatsLoading(false);
       }

@@ -29,7 +29,8 @@ export async function GET(request: Request) {
     
     const text = await response.text();
     
-    // Return the text response with CORS headers
+    // Return the text response with CORS headers and caching
+    // Cache for 15 seconds (viewercount changes frequently)
     return new Response(text, {
       status: 200,
       headers: {
@@ -37,7 +38,7 @@ export async function GET(request: Request) {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
-        'Cache-Control': 'no-cache',
+        'Cache-Control': 'public, s-maxage=15, stale-while-revalidate=30',
       },
     });
   } catch (error) {

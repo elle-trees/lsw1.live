@@ -3,21 +3,30 @@
  * https://github.com/speedruncomorg/api
  */
 
+import { srcRateLimiter } from "./rateLimiter";
+
 const SPEEDRUNCOM_API_BASE = "https://www.speedrun.com/api/v1";
 
 /**
- * Generic API fetch helper with error handling
+ * Generic API fetch helper with error handling and rate limiting
  */
 async function fetchSRCAPI<T>(endpoint: string): Promise<T> {
-  try {
-    const response = await fetch(`${SPEEDRUNCOM_API_BASE}${endpoint}`);
+  return srcRateLimiter.execute(async () => {
+    const response = await fetch(`${SPEEDRUNCOM_API_BASE}${endpoint}`, {
+      headers: {
+        'User-Agent': 'lsw1.dev/1.0',
+      },
+    });
+    
     if (!response.ok) {
-      throw new Error(`SRC API error: ${response.statusText}`);
+      // Include status code in error for retry logic
+      const error: any = new Error(`SRC API error: ${response.statusText}`);
+      error.status = response.status;
+      throw error;
     }
+    
     return await response.json();
-  } catch (error) {
-    throw error;
-  }
+  });
 }
 
 export interface SRCGame {
