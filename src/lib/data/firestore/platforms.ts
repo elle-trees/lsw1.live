@@ -68,10 +68,10 @@ export const deletePlatformFirestore = async (id: string): Promise<boolean> => {
   }
 };
 
-export const movePlatformUpFirestore = async (id: string): Promise<boolean> => {
+export const movePlatformUpFirestore = async (_id: string): Promise<boolean> => {
     return false;
 };
 
-export const movePlatformDownFirestore = async (id: string): Promise<boolean> => {
+export const movePlatformDownFirestore = async (_id: string): Promise<boolean> => {
     return false;
 };

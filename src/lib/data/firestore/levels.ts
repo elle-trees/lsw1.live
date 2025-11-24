@@ -84,10 +84,10 @@ export const updateLevelCategoryDisabledFirestore = async (levelId: string, cate
   }
 };
 
-export const moveLevelUpFirestore = async (id: string): Promise<boolean> => {
+export const moveLevelUpFirestore = async (_id: string): Promise<boolean> => {
     return false;
 };
 
-export const moveLevelDownFirestore = async (id: string): Promise<boolean> => {
+export const moveLevelDownFirestore = async (_id: string): Promise<boolean> => {
     return false;
 };

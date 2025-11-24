@@ -10,8 +10,7 @@ import {
   where,
   orderBy,
   limit,
-  writeBatch,
-  getDoc
+  writeBatch
 } from "firebase/firestore";
 import { Notification } from "@/types/notifications";
 

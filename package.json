@@ -71,13 +71,11 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@dyad-sh/react-vite-component-tagger": "^0.8.0",
     "@eslint/js": "^9.9.0",
     "@tailwindcss/typography": "^0.5.15",
     "@types/node": "^22.5.5",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react": "^5.1.1",
     "@vitejs/plugin-react-swc": "^3.9.0",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.9.0",
@@ -89,10 +87,10 @@
     "rollup-plugin-visualizer": "^6.0.5",
     "shadcn": "^3.5.0",
     "tailwindcss": "^3.4.11",
-    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
     "vite": "npm:rolldown-vite@latest",
+    "vite-plugin-checker": "^0.11.0",
     "vite-plugin-compression": "^0.5.1",
     "vite-plugin-pwa": "^1.1.0"
   },

@@ -53,7 +53,7 @@ export function usePrefetchOnHover(to: string) {
  * Useful for prefetching player/run details when they're visible in the viewport
  */
 export function usePrefetchVisible(
-  items: Array<{ id: string; type: "player" | "run" }>
+  _items: Array<{ id: string; type: "player" | "run" }>
 ) {
   const prefetchedIds = useRef<Set<string>>(new Set());
 

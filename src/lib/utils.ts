@@ -106,7 +106,7 @@ async function getPointsConfigCached(): Promise<PointsConfig> {
     cachedPointsConfig = await getPointsConfigFirestore();
     configCacheTime = now;
     return cachedPointsConfig;
-  } catch (error) {
+  } catch (_error) {
     // Return default config on error
     return {
       id: "default",

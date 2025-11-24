@@ -62,7 +62,7 @@ const Live = () => {
           // If response is unexpected, default to offline for safety
           setIsLive(false);
         }
-      } catch (_error) {
+      } catch {
         // Default to offline on error
         setIsLive(false);
       }

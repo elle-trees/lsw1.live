@@ -4,6 +4,7 @@ import path from "path";
 import { visualizer } from "rollup-plugin-visualizer";
 import viteCompression from "vite-plugin-compression";
 import { VitePWA } from "vite-plugin-pwa";
+import checker from "vite-plugin-checker";
 
 export default defineConfig(({ mode }) => {
   // Always read from environment variable, fallback to 8080
@@ -28,9 +29,13 @@ export default defineConfig(({ mode }) => {
         'firebase/auth',
         'firebase/firestore',
         'lucide-react',
+        'framer-motion',
+        'date-fns',
       ],
       // Exclude dependencies from pre-bundling (let them be handled by the bundler)
       exclude: ['recharts'], // Large library, better to code-split
+      // Force optimization for better dev experience
+      force: false, // Set to true to force re-optimization when needed
     },
     server: {
       host: host,
@@ -45,6 +50,19 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       react(),
+      // Type checking in dev mode only (faster than tsc watch)
+      !isProduction && checker({
+        typescript: {
+          tsconfigPath: "./tsconfig.app.json",
+          buildMode: false, // Only check in dev, not during build
+        },
+        eslint: {
+          lintCommand: 'eslint "./src/**/*.{ts,tsx}"',
+          dev: {
+            logLevel: ['error', 'warning'],
+          },
+        },
+      }),
       // PWA plugin - enables Progressive Web App features
       VitePWA({
         registerType: "autoUpdate",
@@ -161,6 +179,12 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 600,
       // Minify CSS
       cssMinify: true,
+      // Enable minification (Rolldown handles this efficiently)
+      minify: 'esbuild', // Use esbuild for faster minification
+      // Optimize build output
+      emptyOutDir: true,
+      // Reduce build output verbosity
+      assetsInlineLimit: 4096, // Inline assets smaller than 4KB
       // Optimize chunking strategy
       rollupOptions: {
         output: {
@@ -174,21 +198,21 @@ export default defineConfig(({ mode }) => {
             return 'assets/[name]-[hash][extname]';
           },
           manualChunks: (id) => {
-            // Separate vendor chunks for better caching
+            // Separate vendor chunks for better caching and parallel loading
             if (id.includes('node_modules')) {
               // Firebase and related - large dependency, separate for better caching
               if (id.includes('firebase')) {
                 return 'vendor-firebase';
               }
-              // React and React DOM - core framework
+              // React and React DOM - core framework (most frequently used)
               if (id.includes('react-dom') || id.includes('react/')) {
                 return 'vendor-react';
               }
-              // Radix UI components - large UI library
+              // Radix UI components - large UI library (used across many pages)
               if (id.includes('@radix-ui')) {
                 return 'vendor-radix';
               }
-              // Recharts (only used on Stats page) - large charting library
+              // Recharts (only used on Stats page) - large charting library, lazy load
               if (id.includes('recharts')) {
                 return 'vendor-recharts';
               }
@@ -200,15 +224,19 @@ export default defineConfig(({ mode }) => {
               if (id.includes('@tanstack/react-query')) {
                 return 'vendor-query';
               }
-              // Framer Motion - animation library (can be large)
+              // Framer Motion - animation library (can be large, used selectively)
               if (id.includes('framer-motion')) {
                 return 'vendor-animations';
               }
-              // Uploadthing - file upload library
+              // Uploadthing - file upload library (only on specific pages)
               if (id.includes('uploadthing') || id.includes('@uploadthing')) {
                 return 'vendor-upload';
               }
-              // Other large dependencies
+              // Form libraries (react-hook-form, zod, etc.) - used on submit/settings pages
+              if (id.includes('react-hook-form') || id.includes('@hookform') || id.includes('zod')) {
+                return 'vendor-forms';
+              }
+              // Icon and utility libraries
               if (id.includes('lucide-react') || id.includes('date-fns')) {
                 return 'vendor-utils';
               }
