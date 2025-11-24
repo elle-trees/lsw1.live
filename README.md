@@ -1,21 +1,26 @@
 # lsw1.dev
 
-A modern, fast, speedrunning leaderboard platform for LEGO Star Wars: The Video Game. Built with React, TypeScript, and Vite as an alternative to traditional database sites. Makes heavy use of shadcn components and rolldown-vite.
+A modern, fast, speedrunning leaderboard platform built with React, TypeScript, and Vite as an open-source and ad-free alternative to traditional database sites like Speedrun.com. Runs can be mass imported from SRC using the public API (see our working WR progression graph!). As an example, this project is currently set up to mirror the Speedrun.com leaderboards for LEGO Star Wars: The Video Game. The site is designed to be easily configured using the admin page at runtime with minimal code edits or rebuilding required. A fork or branch with significant improvements to the code structure and multi-game support is planned.
 
 ## Features
 
+### Homepage
+- **Verified runs and total time** - Track the total number of verified runs and time the game has been played.
+- **Recent Runs** - View the most recently submitted runs.
+- **Game Details** - Game details are part of the site header.
+
 ### Leaderboards
 - **Full Game Leaderboards** - Track runs across different categories (Any%, 100%, Free Play, etc.)
-- **Individual Level Runs** - Separate leaderboards for each level with different categories
-- **Community Golds** - Community Gold splits leaderboard for each category and level
-- **Platform filtering** - PC, PS2, Xbox, GameCube. The leaderboard is filtered by platform by default.
+- **Individual Level Runs** - Separate leaderboards for each level with different categories.
+- **Community Golds** - Community Gold splits leaderboard for each category and level.
+- **Platform Filtering** - PC, PS2, Xbox, GameCube. The leaderboard is filtered by platform by default.
 - **Run Types** - Solo and Co-op runs. Solo runs are default.
 - **Filtering** - Filter by category, platform, run type, and level for ILs and CGs.
 - **Real-time Rankings** - Automatic rank calculation with stud icons for top 3 positions.
 - **Pagination** - Paginated leaderboards, points leaderboard, and admin views for easier viewing of large tables.
 
 ### Points System
-- **Balanced Points System** Points system rewards totals runs submitted and Top 3 across all categories.
+- **"Balanced" Points System** - Points system rewards total runs submitted and Top 3 across all categories.
 - **Points Leaderboard** - Top players ranked by total points.
 
 ### User Profiles
@@ -44,6 +49,13 @@ A modern, fast, speedrunning leaderboard platform for LEGO Star Wars: The Video 
 - **Organized Resources** - Tools, guides, save files, and more.
 - **File Uploads** - Support for both file uploads using uploadthing and external links.
 - **Categories** - Organize downloads by category.
+- **Images** - Downloads can have an image attached to them.
+
+### Stats
+- **Overview** - An overview of all the major statistics.
+- **WR Progression** - A fully featured WR progression graph that allows looking at the WR progression in any category, run type, and leaderboard type. Works with mass importing runs from SRC to import the full history.
+- **Recent WRs** - A table showing the most recent WRs by date.
+- **Longest WRs** - A table showing the longest WRs by period of time, allows filtering by oldest currently held records.
 
 ### Admin Panel
 - **Run Management** - Verify, reject, or delete runs.
@@ -65,7 +77,6 @@ A modern, fast, speedrunning leaderboard platform for LEGO Star Wars: The Video 
 - **Download Management** - Add and organize downloads using uploadthing (tools, guides, save files).
 - **Admin Management** - Add or remove admin privileges.
 - **Points Backfill** - Recalculate points for all verified runs.
-- **Verified Runs with Invalid Data** - View and edit verified runs that have missing or incorrect data.
 
 ### Design & UX
 - **Catppuccin Mocha** - Beautiful, consistent pastel color scheme throughout
@@ -94,12 +105,12 @@ A modern, fast, speedrunning leaderboard platform for LEGO Star Wars: The Video 
 
 ### High Priority
 - [ ] Create API documentation.
-- [ ] Implement notification system for run verification.
 - [ ] Add more robust error handling for speedrun.com API rate limits.
+- [ ] Overhaul the codebase to handle multi-game support.
 
 ## Contributing
 
-This project is designed to be forked for other speedrunning communities. The codebase is structured to be easily adaptable to different games and leaderboard structures.
+This project is designed to be forked for other speedrunning communities. The codebase is structured to be easily adaptable to different games and leaderboard structures and is configurable with GUI tools on the admin page similarly to Speedrun.com.
 
 ## Credits
 
@@ -109,7 +120,7 @@ This project is designed to be forked for other speedrunning communities. The co
 - [Rolldown](https://rolldown.rs) - Fast Rust-based bundler for JavaScript
 - [Oxc](https://oxc.rs) - A collection of JavaScript tools written in Rust
 - [Vercel](https://vercel.com) - Deployment and hosting
-- [Firebase](https://firebase.google.com) - Authentation and storage
+- [Firebase](https://firebase.google.com) - Authentication and storage
 - [uploadthing](https://uploadthing.com) - File uploading
 
 **Design**
