@@ -11,8 +11,9 @@ import { getCategoryName, getPlatformName } from "@/lib/dataValidation";
 import { calculatePoints } from "@/lib/utils";
 import LegoStudIcon from "@/components/icons/LegoStudIcon";
 import { FadeIn } from "@/components/ui/fade-in";
-import { motion } from "framer-motion";
-import { fadeSlideUpVariants, transitions } from "@/lib/animations";
+import { AnimatedCard } from "@/components/ui/animated-card";
+import { PrefetchLink } from "@/components/PrefetchLink";
+import { Skeleton } from "@/components/ui/skeleton";
 import { pageCache } from "@/lib/pageCache";
 
 const CACHE_KEY_PLAYERS = "points-leaderboard-players";
@@ -258,142 +259,137 @@ const PointsLeaderboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#1e1e2e] text-[hsl(220,17%,92%)] py-6 overflow-x-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full">
-
-        <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
-          <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
-            <CardTitle className="flex items-center gap-2 text-xl text-[#fab387]">
-              <span>
-                Top Players by Studs
-              </span>
+    <FadeIn className="min-h-screen bg-[#1e1e2e] text-ctp-text py-4 sm:py-6 overflow-x-hidden">
+      <div className="max-w-[1920px] mx-auto px-2 sm:px-4 lg:px-6 w-full">
+        <AnimatedCard 
+          className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl rounded-none overflow-hidden"
+          delay={0.1}
+          hover={false}
+        >
+          <CardHeader className="bg-gradient-to-r from-ctp-base to-ctp-mantle border-b border-ctp-surface1 py-4">
+            <CardTitle className="flex items-center gap-2 text-lg text-[#fab387]">
+              <LegoStudIcon size={24} color="#fab387" />
+              <span>Top Players by Studs</span>
+              {players.length > 0 && !loading && (
+                <span className="ml-auto text-sm font-normal text-ctp-subtext1">
+                  {players.length} {players.length === 1 ? 'player' : 'players'}
+                </span>
+              )}
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-6 sm:p-8">
+          <CardContent className="p-0">
             {loading ? (
-              <div className="py-12" />
+              <div className="space-y-2 py-6 px-4">
+                <Skeleton className="h-9 w-full" />
+                <Skeleton className="h-9 w-full" />
+                <Skeleton className="h-9 w-full" />
+                <Skeleton className="h-9 w-[90%]" />
+              </div>
             ) : players.length === 0 ? (
-              <div className="text-center py-16">
-                <Sparkles className="h-16 w-16 mx-auto mb-4 text-[hsl(222,15%,60%)] opacity-50" />
-                <p className="text-lg text-[hsl(222,15%,60%)]">
-                  No players with studs yet. Submit and verify runs to earn studs!
-                </p>
+              <div className="text-center py-12 px-4">
+                <div className="flex flex-col items-center gap-3">
+                  <Sparkles className="h-8 w-8 text-ctp-subtext1" />
+                  <div>
+                    <h3 className="text-base font-semibold mb-1 text-ctp-text">No players with studs yet</h3>
+                    <p className="text-sm text-ctp-subtext1">
+                      Submit and verify runs to earn studs!
+                    </p>
+                  </div>
+                </div>
               </div>
             ) : (
-              <>
-              <div className="space-y-4">
-                  {players.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((player, index) => {
-                  const rank = (currentPage - 1) * itemsPerPage + index + 1;
-                  const points = player.totalPoints || 0;
-                  const displayName = player.displayName || player.email?.split('@')[0] || "Unknown Player";
-                  
-                  return (
-                    <div
-                      key={player.uid}
-                      onClick={() => handlePlayerClick(player)}
-                      className="block group cursor-pointer"
-                    >
-                      <motion.div
-                        variants={fadeSlideUpVariants}
-                        initial="hidden"
-                        animate="visible"
-                        transition={{ ...transitions.spring, delay: index * 0.05 }}
-                        className={`relative overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl ${
-                          rank === 1
-                            ? "bg-gradient-to-br from-[#89b4fa]/20 via-[#89b4fa]/15 to-[#89b4fa]/10 border-2 border-[#89b4fa]/50 hover:border-[#89b4fa] hover:shadow-[#89b4fa]/40"
-                            : rank === 2
-                            ? "bg-gradient-to-br from-[#74c7ec]/20 via-[#74c7ec]/15 to-[#74c7ec]/10 border-2 border-[#74c7ec]/50 hover:border-[#74c7ec] hover:shadow-[#74c7ec]/40"
-                            : rank === 3
-                            ? "bg-gradient-to-br from-[#89dceb]/20 via-[#89dceb]/15 to-[#89dceb]/10 border-2 border-[#89dceb]/50 hover:border-[#89dceb] hover:shadow-[#89dceb]/40"
-                            : "bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border border-[hsl(235,13%,30%)] hover:border-[#fab387]/50 hover:shadow-[#fab387]/20"
-                        }`}
-                        style={{ animationDelay: `${index * 0.05}s` }}
-                      >
-                        {/* Animated background gradient on hover */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-[#fab387]/0 via-[#fab387]/10 to-[#fab387]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div>
+                <div className="overflow-x-auto scrollbar-custom">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-b border-ctp-surface1/50 hover:bg-transparent bg-ctp-surface0/50">
+                        <TableHead className="py-3 pl-3 pr-1 text-left text-sm font-semibold text-ctp-text whitespace-nowrap w-16">Rank</TableHead>
+                        <TableHead className="py-3 pl-1 pr-2 text-left text-sm font-semibold text-ctp-text min-w-[200px]">Player</TableHead>
+                        <TableHead className="py-3 px-2 text-left text-sm font-semibold text-ctp-text hidden sm:table-cell whitespace-nowrap w-24">Runs</TableHead>
+                        <TableHead className="py-3 px-2 text-right text-sm font-semibold text-ctp-text whitespace-nowrap">Studs</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {players.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((player, index) => {
+                        const rank = (currentPage - 1) * itemsPerPage + index + 1;
+                        const points = player.totalPoints || 0;
+                        const displayName = player.displayName || player.email?.split('@')[0] || "Unknown Player";
                         
-                        {/* Shine effect on hover */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                        
-                        <div className="relative flex items-center gap-6 p-6 sm:p-8">
-                          {/* Rank */}
-                          <div className="flex items-center gap-3 flex-shrink-0">
-                            {rank === 1 ? (
-                              <div className="relative">
-                                <div className="absolute inset-0 bg-[#0055BF]/30 blur-xl animate-pulse" />
-                                <LegoStudIcon size={56} color="#0055BF" className="relative" />
+                        return (
+                          <TableRow
+                            key={player.uid}
+                            onClick={() => handlePlayerClick(player)}
+                            className="border-b border-ctp-surface1/20 cursor-pointer transition-colors duration-50 hover:bg-ctp-surface0"
+                          >
+                            <TableCell className="py-2.5 pl-3 pr-1">
+                              <div className="flex items-center gap-1.5">
+                                {rank === 1 ? (
+                                  <LegoStudIcon size={28} color="#0055BF" />
+                                ) : rank === 2 ? (
+                                  <LegoStudIcon size={28} color="#FFD700" />
+                                ) : rank === 3 ? (
+                                  <LegoStudIcon size={28} color="#C0C0C0" />
+                                ) : (
+                                  <span className="font-semibold text-sm text-ctp-text w-7 h-7 flex items-center justify-center">
+                                    #{rank}
+                                  </span>
+                                )}
                               </div>
-                            ) : rank === 2 ? (
-                              <div className="relative">
-                                <div className="absolute inset-0 bg-[#FFD700]/30 blur-xl animate-pulse" />
-                                <LegoStudIcon size={56} color="#FFD700" className="relative" />
-                              </div>
-                            ) : rank === 3 ? (
-                              <div className="relative">
-                                <div className="absolute inset-0 bg-[#C0C0C0]/30 blur-xl animate-pulse" />
-                                <LegoStudIcon size={56} color="#C0C0C0" className="relative" />
-                              </div>
-                            ) : (
-                              <span className="font-bold text-2xl text-ctp-text w-14 h-14 flex items-center justify-center bg-gradient-to-br from-[hsl(240,21%,18%)] to-[hsl(235,19%,15%)] border border-[hsl(235,13%,30%)] group-hover:border-[#fab387]/50 transition-colors">
-                                #{rank}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Player Name */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-2">
-                              <span
-                                className="font-bold text-xl sm:text-2xl group-hover:scale-105 transition-transform duration-300"
-                                style={{ color: player.nameColor || "#cba6f7" }}
+                            </TableCell>
+                            <TableCell className="py-2.5 pl-1 pr-2 min-w-[200px]">
+                              <PrefetchLink 
+                                to={`/player/${player.uid}`} 
+                                params={{ playerId: player.uid }}
+                                className="inline-block"
+                                style={{ color: player.nameColor || '#cba6f7' }}
+                                onClick={(e) => e.stopPropagation()}
                               >
-                                {displayName}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-ctp-subtext1">
-                              <span className="bg-[hsl(240,21%,18%)] px-3 py-1 border border-[hsl(235,13%,30%)] group-hover:border-[#fab387]/50 transition-colors">
+                                <span className="font-semibold text-sm whitespace-nowrap">{displayName}</span>
+                              </PrefetchLink>
+                            </TableCell>
+                            <TableCell className="py-2.5 px-2 hidden sm:table-cell">
+                              <span className="text-sm text-ctp-subtext1">
                                 {player.totalRuns || 0} verified run{player.totalRuns !== 1 ? 's' : ''}
                               </span>
-                            </div>
-                          </div>
-
-                          {/* Studs */}
-                          <div className="text-right flex-shrink-0">
-                            <div className="flex items-center gap-2 justify-end mb-2">
-                              <div className="relative">
-                                <div className="absolute inset-0 bg-[#fab387]/20 blur-md group-hover:blur-lg transition-all duration-300" />
-                                <LegoStudIcon size={28} color="#fab387" className="group-hover:scale-125 group-hover:rotate-90 transition-all duration-300 relative z-10" />
+                            </TableCell>
+                            <TableCell className="py-2.5 px-2 text-right">
+                              <div className="flex items-center gap-2 justify-end">
+                                <LegoStudIcon size={20} color="#fab387" />
+                                <span className="text-sm font-semibold text-[#fab387]">
+                                  {formatPoints(points)}
+                                </span>
                               </div>
-                              <div className="text-3xl sm:text-4xl font-bold text-[#fab387] group-hover:scale-110 transition-transform duration-300 relative">
-                                <div className="absolute inset-0 bg-[#fab387]/10 blur-xl group-hover:blur-2xl transition-all duration-300" />
-                                <span className="relative z-10">{formatPoints(points)}</span>
-                              </div>
-                            </div>
-                            <div className="text-sm text-ctp-overlay0 uppercase tracking-wider font-semibold">studs</div>
-                          </div>
-                        </div>
-                      </motion.div>
-                    </div>
-                  );
-                })}
-              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
                 {players.length > itemsPerPage && (
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={Math.ceil(players.length / itemsPerPage)}
-                    onPageChange={setCurrentPage}
-                    itemsPerPage={itemsPerPage}
-                    totalItems={players.length}
-                  />
+                  <div className="px-4 pb-4 pt-2">
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={Math.ceil(players.length / itemsPerPage)}
+                      onPageChange={setCurrentPage}
+                      itemsPerPage={itemsPerPage}
+                      totalItems={players.length}
+                    />
+                  </div>
                 )}
-              </>
+              </div>
             )}
           </CardContent>
-        </Card>
+        </AnimatedCard>
 
         {/* Studs System Explanation Accordion */}
-        <div className="mt-8 animate-fade-in">
-          <Accordion type="single" collapsible className="w-full">
+        <AnimatedCard 
+          className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl rounded-none overflow-hidden mt-6"
+          delay={0.2}
+          hover={false}
+        >
+          <CardContent className="p-0">
+            <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="studs-system" className="border-[hsl(235,13%,30%)]">
               <AccordionTrigger className="text-[#fab387] hover:text-[#fab387]/80 px-4 py-6">
                 <div className="flex items-center gap-2">
@@ -461,7 +457,8 @@ const PointsLeaderboard = () => {
               </AccordionContent>
             </AccordionItem>
           </Accordion>
-        </div>
+          </CardContent>
+        </AnimatedCard>
 
         {/* Studs Breakdown Dialog */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -629,18 +626,7 @@ const PointsLeaderboard = () => {
           </DialogContent>
         </Dialog>
       </div>
-      
-      <style>{`
-        @keyframes spin-slow {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
-        }
-      `}</style>
-    </div>
+    </FadeIn>
   );
 };
 
