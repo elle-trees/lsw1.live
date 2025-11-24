@@ -17,7 +17,8 @@ import {
 
 import {
   getLeaderboardEntriesFirestore,
-  getLeaderboardEntryByIdFirestore
+  getLeaderboardEntryByIdFirestore,
+  subscribeToLeaderboardEntriesFirestore
 } from "../data/firestore/leaderboards";
 
 import { LeaderboardEntry } from "@/types/database";
@@ -80,5 +81,18 @@ export const subscribeToLeaderboardEntry = (
   callback: (run: LeaderboardEntry | null) => void
 ): Unsubscribe | null => {
   return subscribeToLeaderboardEntryFirestore(runId, callback);
+};
+
+export const subscribeToLeaderboardEntries = (
+  callback: (entries: LeaderboardEntry[]) => void,
+  categoryId?: string,
+  platformId?: string,
+  runType?: 'solo' | 'co-op',
+  includeObsolete?: boolean,
+  leaderboardType?: 'regular' | 'individual-level' | 'community-golds',
+  levelId?: string,
+  subcategoryId?: string
+): Unsubscribe | null => {
+  return subscribeToLeaderboardEntriesFirestore(callback, categoryId, platformId, runType, includeObsolete, leaderboardType, levelId, subcategoryId);
 };
 

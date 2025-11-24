@@ -2,6 +2,8 @@
 
 ## ✅ Implemented: Real-time Firestore Listeners
 
+### Phase 1: Core Real-time Updates (Completed)
+
 We've successfully replaced manual polling with real-time Firestore listeners (`onSnapshot`) in several key areas:
 
 ### 1. **Notifications Component** (`src/components/Notifications.tsx`)
@@ -35,6 +37,24 @@ We've successfully replaced manual polling with real-time Firestore listeners (`
   - See verification status changes instantly
   - Updates when run is claimed/edited
   - Better for collaborative admin workflows
+
+### Phase 2: Leaderboard Real-time Updates (Completed)
+
+### 5. **Leaderboards Page** (`src/pages/Leaderboards.tsx`)
+- **Before**: Fetched data on filter changes, polled on visibility change
+- **After**: Real-time listener that updates when runs are verified/added
+- **Benefits**:
+  - See new WRs and rank changes instantly
+  - No need to refresh when viewing leaderboards
+  - Real-time updates as admins verify runs
+
+### 6. **Points Leaderboard** (`src/pages/PointsLeaderboard.tsx`)
+- **Before**: Fetched players on page load, cached for 5 minutes
+- **After**: Real-time listener for players sorted by points
+- **Benefits**:
+  - See points updates instantly when runs are verified
+  - Real-time rank changes
+  - Better competitive experience
 
 ## 📊 Technical Implementation
 

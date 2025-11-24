@@ -369,3 +369,8 @@ export const runTypes = [
   { id: "co-op", name: "Co-op" },
 ];
 
+// Real-time subscription functions (synchronous, so exported directly)
+export { subscribeToRecentRuns, subscribeToUnverifiedRuns, subscribeToLeaderboardEntry, subscribeToLeaderboardEntries } from "./db/runs";
+export { subscribeToUnreadUserNotifications, subscribeToUserNotifications } from "./db/notifications";
+export { subscribeToPlayersByPoints } from "./db/players";
+

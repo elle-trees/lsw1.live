@@ -10,11 +10,14 @@ import {
   getAllPlayersFirestore,
   updatePlayerFirestore,
   deletePlayerFirestore,
-  getPlayersByPointsFirestore
+  getPlayersByPointsFirestore,
+  subscribeToPlayersByPointsFirestore
 } from "../data/firestore/players";
 
 import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import type { Unsubscribe } from "firebase/firestore";
+import type { Player } from "@/types/database";
 
 export const getPlayerByUid = getPlayerByUidFirestore;
 export const getPlayerByDisplayName = getPlayerByDisplayNameFirestore;
@@ -27,6 +30,14 @@ export const getAllPlayers = getAllPlayersFirestore;
 export const updatePlayer = updatePlayerFirestore;
 export const deletePlayer = deletePlayerFirestore;
 export const getPlayersByPoints = getPlayersByPointsFirestore;
+
+// Real-time subscriptions
+export const subscribeToPlayersByPoints = (
+  callback: (players: Player[]) => void,
+  limitCount: number = 100
+): Unsubscribe | null => {
+  return subscribeToPlayersByPointsFirestore(callback, limitCount);
+};
 
 /**
  * Set admin status for a player

@@ -11,7 +11,10 @@ import {
   orderBy,
   updateDoc,
   writeBatch,
-  getDoc
+  getDoc,
+  onSnapshot,
+  Unsubscribe,
+  QuerySnapshot
 } from "firebase/firestore";
 import { Player } from "@/types/database";
 import { playerConverter } from "./converters";
@@ -278,5 +281,38 @@ export const getPlayersByPointsFirestore = async (limitCount: number = 100): Pro
         console.error("Error fetching players by points:", error);
         return [];
     }
+};
+
+/**
+ * Subscribe to real-time updates for players sorted by points
+ * @param callback - Callback function that receives the players array
+ * @param limitCount - Maximum number of players to return (default: 100)
+ * @returns Unsubscribe function to stop listening
+ */
+export const subscribeToPlayersByPointsFirestore = (
+  callback: (players: Player[]) => void,
+  limitCount: number = 100
+): Unsubscribe | null => {
+  if (!db) return null;
+  try {
+    const q = query(
+      collection(db, "players").withConverter(playerConverter),
+      where("totalPoints", ">", 0),
+      firestoreLimit(limitCount)
+    );
+    
+    return onSnapshot(q, (snapshot: QuerySnapshot) => {
+      let players = snapshot.docs.map(d => d.data());
+      // Sort in memory (Firestore doesn't support sorting on multiple fields easily)
+      players.sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0));
+      callback(players);
+    }, (error) => {
+      console.error("Error in players by points subscription:", error);
+      callback([]);
+    });
+  } catch (error) {
+    console.error("Error setting up players by points subscription:", error);
+    return null;
+  }
 };
 

@@ -7,7 +7,10 @@ import {
   query, 
   where, 
   limit as firestoreLimit,
-  QueryConstraint
+  QueryConstraint,
+  onSnapshot,
+  Unsubscribe,
+  QuerySnapshot
 } from "firebase/firestore";
 import { LeaderboardEntry, Level, Player } from "@/types/database";
 import { leaderboardEntryConverter, playerConverter } from "./converters";
@@ -229,6 +232,220 @@ export const getLeaderboardEntryByIdFirestore = async (id: string): Promise<Lead
     }
     return null;
   } catch (_error) {
+    return null;
+  }
+};
+
+/**
+ * Helper function to process and filter leaderboard entries (shared between get and subscribe)
+ */
+const processLeaderboardEntries = async (
+  entries: LeaderboardEntry[],
+  leaderboardType?: 'regular' | 'individual-level' | 'community-golds',
+  subcategoryId?: string,
+  includeObsolete?: boolean
+): Promise<LeaderboardEntry[]> => {
+  // Filter entries
+  let filtered = entries.filter(entry => {
+    if (!entry.time) return false;
+    if (!entry.date) return false;
+    if (!entry.playerName && !entry.playerId) return false;
+    if (entry.verified !== true) return false;
+    
+    if (!leaderboardType || leaderboardType === 'regular') {
+      if ((entry.leaderboardType || 'regular') !== 'regular') return false;
+    }
+    
+    if (leaderboardType === 'individual-level') {
+      if (entry.leaderboardType !== 'individual-level') return false;
+      if (!entry.level) return false;
+    }
+
+    if (leaderboardType === 'community-golds') {
+      if (entry.leaderboardType !== 'community-golds') return false;
+      if (!entry.level) return false;
+    }
+
+    // Subcategory filter
+    if (leaderboardType === 'regular' && subcategoryId) {
+      if (subcategoryId === '__none__') {
+        if (entry.subcategory) return false;
+      } else {
+        if (entry.subcategory !== subcategoryId) return false;
+      }
+    }
+
+    return true;
+  });
+
+  // Sort by time
+  const sortByTime = (entries: LeaderboardEntry[]) => {
+    return entries
+      .map(entry => ({
+        entry,
+        totalSeconds: parseTimeToSeconds(entry.time) || Infinity
+      }))
+      .sort((a, b) => a.totalSeconds - b.totalSeconds)
+      .map(item => item.entry);
+  };
+  
+  let nonObsoleteEntries: LeaderboardEntry[] = [];
+  let obsoleteEntries: LeaderboardEntry[] = [];
+  
+  if (!includeObsolete) {
+    const playerBestRuns = new Map<string, LeaderboardEntry>();
+    
+    for (const entry of filtered) {
+      if (entry.isObsolete) continue;
+      
+      const playerId = entry.playerId || entry.playerName || "";
+      const player2Id = entry.runType === 'co-op' ? (entry.player2Name || "") : "";
+      const groupKey = `${playerId}_${player2Id}_${entry.category}_${entry.platform}_${entry.runType || 'solo'}_${entry.leaderboardType || 'regular'}_${entry.level || ''}`;
+      
+      const existing = playerBestRuns.get(groupKey);
+      if (!existing) {
+        playerBestRuns.set(groupKey, entry);
+      } else {
+        const existingTime = parseTimeToSeconds(existing.time) || Infinity;
+        const currentTime = parseTimeToSeconds(entry.time) || Infinity;
+        if (currentTime < existingTime) {
+          playerBestRuns.set(groupKey, entry);
+        }
+      }
+    }
+    
+    nonObsoleteEntries = Array.from(playerBestRuns.values());
+  } else {
+    nonObsoleteEntries = filtered.filter(e => !e.isObsolete);
+    obsoleteEntries = filtered.filter(e => e.isObsolete === true);
+  }
+  
+  const sortedNonObsolete = sortByTime(nonObsoleteEntries);
+  const sortedObsolete = sortByTime(obsoleteEntries);
+  
+  sortedNonObsolete.forEach((entry, index) => {
+    entry.rank = index + 1;
+  });
+  
+  sortedObsolete.forEach((entry, index) => {
+    entry.rank = sortedNonObsolete.length + index + 1;
+  });
+  
+  let result = includeObsolete 
+    ? [...sortedNonObsolete, ...sortedObsolete].slice(0, 200)
+    : sortedNonObsolete.slice(0, 200);
+
+  // Enrich with player data
+  if (!db) return result;
+  
+  const playerIds = new Set<string>();
+  result.forEach(entry => {
+    const isUnclaimed = entry.playerId === "imported" || entry.importedFromSRC === true;
+    if (!isUnclaimed && entry.playerId) {
+      playerIds.add(entry.playerId);
+    }
+    if (!isUnclaimed && entry.player2Id) {
+      playerIds.add(entry.player2Id);
+    }
+  });
+
+  if (playerIds.size > 0) {
+    const playerPromises = Array.from(playerIds).map(id => getDoc(doc(db, "players", id).withConverter(playerConverter)));
+    const playerSnaps = await Promise.all(playerPromises);
+    const playerMap = new Map<string, Player>();
+    
+    playerSnaps.forEach(snap => {
+      if (snap.exists()) {
+        playerMap.set(snap.id, snap.data());
+      }
+    });
+    
+    result = result.map(entry => {
+      if (entry.playerId && playerMap.has(entry.playerId)) {
+        const p = playerMap.get(entry.playerId)!;
+        if (p.displayName) entry.playerName = p.displayName;
+        if (p.nameColor) entry.nameColor = p.nameColor;
+      }
+      if (entry.player2Id && playerMap.has(entry.player2Id)) {
+        const p = playerMap.get(entry.player2Id)!;
+        if (p.displayName) entry.player2Name = p.displayName;
+        if (p.nameColor) entry.player2Color = p.nameColor;
+      }
+      return entry;
+    });
+  }
+
+  return result;
+};
+
+/**
+ * Subscribe to real-time updates for leaderboard entries
+ * @param callback - Callback function that receives the entries array
+ * @param categoryId - Optional category filter
+ * @param platformId - Optional platform filter
+ * @param runType - Optional run type filter
+ * @param includeObsolete - Whether to include obsolete runs
+ * @param leaderboardType - Type of leaderboard
+ * @param levelId - Optional level filter
+ * @param subcategoryId - Optional subcategory filter
+ * @returns Unsubscribe function to stop listening
+ */
+export const subscribeToLeaderboardEntriesFirestore = (
+  callback: (entries: LeaderboardEntry[]) => void,
+  categoryId?: string,
+  platformId?: string,
+  runType?: 'solo' | 'co-op',
+  includeObsolete?: boolean,
+  leaderboardType?: 'regular' | 'individual-level' | 'community-golds',
+  levelId?: string,
+  subcategoryId?: string
+): Unsubscribe | null => {
+  if (!db) return null;
+  
+  try {
+    const normalizedCategoryId = categoryId && categoryId !== "all" ? normalizeCategoryId(categoryId) : undefined;
+    const normalizedPlatformId = platformId && platformId !== "all" ? normalizePlatformId(platformId) : undefined;
+    const normalizedLevelId = levelId && levelId !== "all" ? normalizeLevelId(levelId) : undefined;
+    
+    const constraints: QueryConstraint[] = [
+      where("verified", "==", true),
+    ];
+
+    if (leaderboardType) {
+      constraints.push(where("leaderboardType", "==", leaderboardType));
+    }
+
+    if (normalizedLevelId && (leaderboardType === 'individual-level' || leaderboardType === 'community-golds')) {
+      constraints.push(where("level", "==", normalizedLevelId));
+    }
+
+    if (normalizedCategoryId) {
+      constraints.push(where("category", "==", normalizedCategoryId));
+    }
+
+    if (normalizedPlatformId) {
+      constraints.push(where("platform", "==", normalizedPlatformId));
+    }
+
+    if (runType && (runType === "solo" || runType === "co-op")) {
+      constraints.push(where("runType", "==", runType));
+    }
+    
+    const fetchLimit = 500;
+    constraints.push(firestoreLimit(fetchLimit));
+    
+    const q = query(collection(db, "leaderboardEntries").withConverter(leaderboardEntryConverter), ...constraints);
+    
+    return onSnapshot(q, async (snapshot: QuerySnapshot) => {
+      const entries = snapshot.docs.map(doc => doc.data());
+      const processed = await processLeaderboardEntries(entries, leaderboardType, subcategoryId, includeObsolete);
+      callback(processed);
+    }, (error) => {
+      console.error("Error in leaderboard subscription:", error);
+      callback([]);
+    });
+  } catch (error) {
+    console.error("Error setting up leaderboard subscription:", error);
     return null;
   }
 };

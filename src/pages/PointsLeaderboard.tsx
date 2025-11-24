@@ -6,7 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Sparkles, Info } from "lucide-react";
 import { Player, LeaderboardEntry } from "@/types/database";
 import { Pagination } from "@/components/Pagination";
-import { getPlayersByPoints, getPlayerRuns, getCategories, getPlatforms } from "@/lib/db";
+import { getPlayerRuns, getCategories, getPlatforms, subscribeToPlayersByPoints } from "@/lib/db";
+import type { Unsubscribe } from "firebase/firestore";
 import { getCategoryName, getPlatformName } from "@/lib/dataValidation";
 import { calculatePoints } from "@/lib/utils";
 import LegoStudIcon from "@/components/icons/LegoStudIcon";
@@ -38,90 +39,95 @@ const PointsLeaderboard = () => {
   const [platforms, setPlatforms] = useState<{ id: string; name: string }[]>(cachedPlatforms || []);
   const [recalculatedPoints, setRecalculatedPoints] = useState<Map<string, number>>(new Map());
 
-  useEffect(() => {
-    const fetchPlayers = async () => {
-      setLoading(true);
-      try {
-        const playersData = await getPlayersByPoints(100);
-        
-        // Additional deduplication by UID and displayName as a safety measure
-        // Also filter out "Unknown" players and unclaimed players
-        const uniquePlayers = new Map<string, Player>();
-        const seenUIDs = new Set<string>();
-        const seenNames = new Map<string, string>(); // name -> uid
-        
-        for (const player of playersData) {
-          if (!player.uid) continue;
-          
-          // Filter out "Unknown" players and unclaimed/temporary players
-          const displayNameLower = player.displayName?.toLowerCase().trim() || "";
-          if (displayNameLower === "unknown" || 
-              player.uid.startsWith("unclaimed_") || 
-              player.uid.startsWith("unlinked_") ||
-              player.uid === "imported") {
-            continue;
-          }
-          
-          // Check by UID first
-          if (seenUIDs.has(player.uid)) {
-            const existing = uniquePlayers.get(player.uid);
-            if (existing) {
-              const existingPoints = existing.totalPoints || 0;
-              const currentPoints = player.totalPoints || 0;
-              if (currentPoints > existingPoints) {
-                uniquePlayers.set(player.uid, player);
-              }
-            }
-            continue;
-          }
-          
-          // Check by displayName (case-insensitive)
-          if (displayNameLower) {
-            const existingUIDForName = seenNames.get(displayNameLower);
-            if (existingUIDForName && existingUIDForName !== player.uid) {
-              // Same name but different UID - treat as duplicate
-              const existingPlayer = uniquePlayers.get(existingUIDForName);
-              if (existingPlayer) {
-                const existingPoints = existingPlayer.totalPoints || 0;
-                const currentPoints = player.totalPoints || 0;
-                if (currentPoints > existingPoints) {
-                  uniquePlayers.delete(existingUIDForName);
-                  uniquePlayers.set(player.uid, player);
-                  seenNames.set(displayNameLower, player.uid);
-                }
-              }
-              continue;
-            }
-          }
-          
-          // New unique player
-          seenUIDs.add(player.uid);
-          if (displayNameLower) {
-            seenNames.set(displayNameLower, player.uid);
-          }
-          uniquePlayers.set(player.uid, player);
-        }
-        
-        // Convert back to array and sort by points
-        const deduplicatedPlayers = Array.from(uniquePlayers.values())
-          .filter(p => (p.totalPoints || 0) > 0) // Only include players with points
-          .sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0));
-        
-        setPlayers(deduplicatedPlayers);
-        // Cache the data for instant navigation
-        pageCache.set(CACHE_KEY_PLAYERS, deduplicatedPlayers, 1000 * 60 * 5); // 5 minutes
-      } catch (error) {
-        // Silent fail
-      } finally {
-        setLoading(false);
+  // Helper function to deduplicate and filter players
+  const processPlayers = (playersData: Player[]): Player[] => {
+    const uniquePlayers = new Map<string, Player>();
+    const seenUIDs = new Set<string>();
+    const seenNames = new Map<string, string>(); // name -> uid
+    
+    for (const player of playersData) {
+      if (!player.uid) continue;
+      
+      // Filter out "Unknown" players and unclaimed/temporary players
+      const displayNameLower = player.displayName?.toLowerCase().trim() || "";
+      if (displayNameLower === "unknown" || 
+          player.uid.startsWith("unclaimed_") || 
+          player.uid.startsWith("unlinked_") ||
+          player.uid === "imported") {
+        continue;
       }
-    };
-
-    // Only fetch if not in cache
-    if (!cachedPlayers) {
-      fetchPlayers();
+      
+      // Check by UID first
+      if (seenUIDs.has(player.uid)) {
+        const existing = uniquePlayers.get(player.uid);
+        if (existing) {
+          const existingPoints = existing.totalPoints || 0;
+          const currentPoints = player.totalPoints || 0;
+          if (currentPoints > existingPoints) {
+            uniquePlayers.set(player.uid, player);
+          }
+        }
+        continue;
+      }
+      
+      // Check by displayName (case-insensitive)
+      if (displayNameLower) {
+        const existingUIDForName = seenNames.get(displayNameLower);
+        if (existingUIDForName && existingUIDForName !== player.uid) {
+          // Same name but different UID - treat as duplicate
+          const existingPlayer = uniquePlayers.get(existingUIDForName);
+          if (existingPlayer) {
+            const existingPoints = existingPlayer.totalPoints || 0;
+            const currentPoints = player.totalPoints || 0;
+            if (currentPoints > existingPoints) {
+              uniquePlayers.delete(existingUIDForName);
+              uniquePlayers.set(player.uid, player);
+              seenNames.set(displayNameLower, player.uid);
+            }
+          }
+          continue;
+        }
+      }
+      
+      // New unique player
+      seenUIDs.add(player.uid);
+      if (displayNameLower) {
+        seenNames.set(displayNameLower, player.uid);
+      }
+      uniquePlayers.set(player.uid, player);
     }
     
+    // Convert back to array and sort by points
+    return Array.from(uniquePlayers.values())
+      .filter(p => (p.totalPoints || 0) > 0) // Only include players with points
+      .sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0));
+  };
+
+  // Set up real-time listener for players by points
+  useEffect(() => {
+    // Use cached data immediately if available
+    if (cachedPlayers && cachedPlayers.length > 0) {
+      setPlayers(cachedPlayers);
+      setLoading(false);
+    }
+
+    let unsubscribe: Unsubscribe | null = null;
+    let isMounted = true;
+
+    (async () => {
+      const { subscribeToPlayersByPoints } = await import("@/lib/db/players");
+      if (!isMounted) return;
+      
+      unsubscribe = subscribeToPlayersByPoints((playersData) => {
+        if (!isMounted) return;
+        const processed = processPlayers(playersData);
+        setPlayers(processed);
+        setLoading(false);
+        // Update cache
+        pageCache.set(CACHE_KEY_PLAYERS, processed, 1000 * 60 * 5); // 5 minutes
+      }, 100);
+    })();
+
     // Fetch categories and platforms for breakdown
     if (!cachedCategories || !cachedPlatforms) {
       Promise.all([
@@ -134,6 +140,11 @@ const PointsLeaderboard = () => {
         pageCache.set(CACHE_KEY_PLATFORMS, plats, 1000 * 60 * 30); // 30 minutes
       });
     }
+
+    return () => {
+      isMounted = false;
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   // Fetch player runs when dialog opens

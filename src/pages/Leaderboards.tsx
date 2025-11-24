@@ -8,7 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, Users, Trophy, Sparkles, TrendingUp, Star, Gem, Gamepad2 } from "lucide-react";
 import { LeaderboardTable } from "@/components/LeaderboardTable";
 import { Pagination } from "@/components/Pagination";
-import { getLeaderboardEntries, getCategories, getPlatforms, runTypes, getLevels } from "@/lib/db";
+import { getCategories, getPlatforms, runTypes, getLevels, subscribeToLeaderboardEntries } from "@/lib/db";
+import type { Unsubscribe } from "firebase/firestore";
 import { LeaderboardEntry, Category, Level } from "@/types/database";
 import { Skeleton } from "@/components/ui/skeleton";
 import LegoGoldBrickIcon from "@/components/icons/LegoGoldBrickIcon";
@@ -45,9 +46,6 @@ const Leaderboards = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [availableSubcategories, setAvailableSubcategories] = useState<Array<{ id: string; name: string }>>([]);
   const itemsPerPage = 25;
-  const requestCounterRef = useRef(0);
-  const abortControllerRef = useRef<AbortController | null>(null);
-  const lastRefreshTimeRef = useRef<number>(Date.now());
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -179,112 +177,46 @@ const Leaderboards = () => {
     fetchSubcategories();
   }, [selectedCategory, leaderboardType]);
 
+  // Set up real-time listener for leaderboard data
   useEffect(() => {
-    // Cancel previous request if it exists
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
-    // Create new abort controller for this request
-    const abortController = new AbortController();
-    abortControllerRef.current = abortController;
-
-    // Increment request counter to track the latest request
-    const currentRequest = ++requestCounterRef.current;
-    
-    const fetchLeaderboardData = async () => {
-      setLoading(true);
-      try {
-        const data = await getLeaderboardEntries(
-          selectedCategory,
-          selectedPlatform,
-          selectedRunType as 'solo' | 'co-op',
-          showObsoleteRuns === "true",
-          leaderboardType,
-          (leaderboardType === 'individual-level' || leaderboardType === 'community-golds') ? selectedLevel : undefined,
-          (leaderboardType === 'regular' && selectedSubcategory) ? selectedSubcategory : undefined
-        );
-        
-        // Only update state if this is still the latest request
-        if (currentRequest === requestCounterRef.current && !abortController.signal.aborted) {
-        setLeaderboardData(data);
-        setCurrentPage(1); // Reset to first page when data changes
-        }
-      } catch (error) {
-        // Only handle error if this is still the latest request and not aborted
-        if (currentRequest === requestCounterRef.current && !abortController.signal.aborted) {
-        // Silent fail
-        }
-      } finally {
-        // Only update loading state if this is still the latest request
-        if (currentRequest === requestCounterRef.current) {
-        setLoading(false);
-        }
-      }
-    };
-
     const hasRequiredFilters = selectedCategory && selectedPlatform && selectedRunType;
     const hasLevelFilter = leaderboardType === 'regular' || selectedLevel;
     
-    if (hasRequiredFilters && hasLevelFilter) {
-      fetchLeaderboardData();
-    } else {
+    if (!hasRequiredFilters || !hasLevelFilter) {
       setLoading(false);
       setLeaderboardData([]);
+      return;
     }
 
-    // Cleanup: abort request on unmount or dependency change
+    setLoading(true);
+    let unsubscribe: Unsubscribe | null = null;
+    let isMounted = true;
+
+    (async () => {
+      const { subscribeToLeaderboardEntries } = await import("@/lib/db/runs");
+      if (!isMounted) return;
+      
+      unsubscribe = subscribeToLeaderboardEntries(
+        (data) => {
+          if (!isMounted) return;
+          setLeaderboardData(data);
+          setCurrentPage(1); // Reset to first page when data changes
+          setLoading(false);
+        },
+        selectedCategory,
+        selectedPlatform,
+        selectedRunType as 'solo' | 'co-op',
+        showObsoleteRuns === "true",
+        leaderboardType,
+        (leaderboardType === 'individual-level' || leaderboardType === 'community-golds') ? selectedLevel : undefined,
+        (leaderboardType === 'regular' && selectedSubcategory) ? selectedSubcategory : undefined
+      );
+    })();
+
     return () => {
-      abortController.abort();
+      isMounted = false;
+      if (unsubscribe) unsubscribe();
     };
-  }, [selectedCategory, selectedPlatform, selectedRunType, selectedLevel, showObsoleteRuns, leaderboardType, selectedSubcategory]);
-  
-  // Only refresh when page becomes visible AND enough time has passed
-  useEffect(() => {
-    const MIN_REFRESH_INTERVAL = 60000; // Minimum 1 minute between refreshes
-    
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        const timeSinceLastRefresh = Date.now() - lastRefreshTimeRef.current;
-        if (timeSinceLastRefresh < MIN_REFRESH_INTERVAL) {
-          return; // Skip if refreshed recently
-        }
-        
-        // Refresh data when user returns to the page
-        if (selectedCategory && selectedPlatform && selectedRunType) {
-          const hasLevelFilter = leaderboardType === 'regular' || selectedLevel;
-          if (hasLevelFilter) {
-            // Trigger a refresh by incrementing request counter
-            requestCounterRef.current++;
-            const fetchLeaderboardData = async () => {
-              setLoading(true);
-              try {
-                const data = await getLeaderboardEntries(
-                  selectedCategory,
-                  selectedPlatform,
-                  selectedRunType as 'solo' | 'co-op',
-                  showObsoleteRuns === "true",
-                  leaderboardType,
-                  (leaderboardType === 'individual-level' || leaderboardType === 'community-golds') ? selectedLevel : undefined,
-                  (leaderboardType === 'regular' && selectedSubcategory) ? selectedSubcategory : undefined
-                );
-                setLeaderboardData(data);
-                setCurrentPage(1);
-                lastRefreshTimeRef.current = Date.now();
-              } catch (error) {
-                // Silent fail
-              } finally {
-                setLoading(false);
-              }
-            };
-            fetchLeaderboardData();
-          }
-        }
-      }
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [selectedCategory, selectedPlatform, selectedRunType, selectedLevel, showObsoleteRuns, leaderboardType, selectedSubcategory]);
 
   return (
