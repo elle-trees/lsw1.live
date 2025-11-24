@@ -172,11 +172,14 @@ const Live = () => {
                     const uptime = uptimeText.toLowerCase();
                     console.log(`[Live] Uptime check for ${twitchUsername}: "${uptimeText}"`);
                     
-                    // Only mark as live if uptime is explicitly NOT "offline" and contains valid time info
-                    // Be strict: reject if it says "offline" or is empty/error
-                    if (uptime === 'offline' || uptime === '' || uptime.includes('error') || uptime.includes('not found')) {
+                    // Reject if response contains "offline" anywhere (case-insensitive)
+                    // This catches: "offline", "is offline", "username is offline", etc.
+                    if (uptime.includes('offline')) {
                       // Explicitly offline, don't mark as live
-                      console.log(`[Live] Uptime confirms offline for ${twitchUsername}`);
+                      console.log(`[Live] Uptime confirms offline for ${twitchUsername}: "${uptimeText}"`);
+                    } else if (uptime === '' || uptime.includes('error') || uptime.includes('not found')) {
+                      // Empty or error response, don't mark as live
+                      console.log(`[Live] Uptime response is empty/error for ${twitchUsername}: "${uptimeText}"`);
                     } else {
                       // Check if it looks like a valid time string (contains numbers and time units)
                       // Must have digits AND time indicators (h, m, s, or :)
@@ -436,6 +439,7 @@ const Live = () => {
                         key={runner.uid} 
                         className="bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] hover:border-[#f38ba8]/50 transition-all duration-300"
                         delay={index * 0.1}
+                        hover={false}
                       >
                         <CardContent className="p-4">
                           <a 
@@ -460,6 +464,10 @@ const Live = () => {
                                 </Link>
                                 <p className="text-xs text-ctp-overlay0 truncate">@{runner.twitchUsername}</p>
                               </div>
+                              <Badge variant="default" className="bg-red-600 text-white border-0 shadow-lg flex-shrink-0">
+                                <Radio className="h-3 w-3 mr-1.5 animate-pulse" />
+                                Live
+                              </Badge>
                             </div>
                             <div className="relative group" style={{ paddingBottom: '56.25%' }}>
                               <img
@@ -473,21 +481,6 @@ const Live = () => {
                                 }}
                               />
                               <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
-                              <div className="absolute top-2 right-2">
-                                <Badge variant="default" className="bg-red-600 text-white border-0 shadow-lg">
-                                  <Radio className="h-3 w-3 mr-1.5 animate-pulse" />
-                                  Live
-                                </Badge>
-                              </div>
-                              {runner.viewerCount !== undefined && (
-                                <div className="absolute bottom-2 left-2">
-                                  <Badge variant="secondary" className="bg-black/70 text-white border-0 backdrop-blur-sm">
-                                    <span className="text-xs">
-                                      {runner.viewerCount.toLocaleString()} viewer{runner.viewerCount !== 1 ? 's' : ''}
-                                    </span>
-                                  </Badge>
-                                </div>
-                              )}
                             </div>
                             {runner.viewerCount !== undefined && (
                               <div className="mt-3 flex items-center justify-center">
