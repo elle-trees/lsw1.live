@@ -42,8 +42,8 @@ const Live = () => {
     // Check if stream is live
     const checkStreamStatus = async () => {
       try {
-        // Use decapi.me status endpoint which returns "live" or "offline"
-        const response = await fetch(`https://decapi.me/twitch/status/${channel}`);
+        // Use proxy API endpoint which returns "live" or "offline"
+        const response = await fetch(`/api/twitch/status?username=${encodeURIComponent(channel)}`);
         
         if (!response.ok) {
           setIsLive(false);
@@ -118,10 +118,10 @@ const Live = () => {
               
               let isLive = false;
               
-              // Method 1: Try status endpoint
+              // Method 1: Try status endpoint (via proxy to avoid CORS)
               try {
                 const statusResponse = await fetch(
-                  `https://decapi.me/twitch/status/${twitchUsernameLower}`,
+                  `/api/twitch/status?username=${encodeURIComponent(twitchUsernameLower)}`,
                   { 
                     signal: controller.signal,
                     cache: 'no-cache',
@@ -151,7 +151,7 @@ const Live = () => {
               if (!isLive) {
                 try {
                   const uptimeResponse = await fetch(
-                    `https://decapi.me/twitch/uptime/${twitchUsernameLower}`,
+                    `/api/twitch/uptime?username=${encodeURIComponent(twitchUsernameLower)}`,
                     { 
                       signal: controller.signal,
                       cache: 'no-cache',
@@ -191,13 +191,13 @@ const Live = () => {
               // Stream is confirmed live - get viewer count
               let viewerCount: number | undefined;
               
-              // Try to get viewer count from decapi.me
+              // Try to get viewer count (via proxy to avoid CORS)
               try {
                 const viewerController = new AbortController();
                 const viewerTimeoutId = setTimeout(() => viewerController.abort(), 8000);
                 
                 const viewerResponse = await fetch(
-                  `https://decapi.me/twitch/viewercount/${twitchUsernameLower}`,
+                  `/api/twitch/viewercount?username=${encodeURIComponent(twitchUsernameLower)}`,
                   { 
                     signal: viewerController.signal,
                     cache: 'no-cache',

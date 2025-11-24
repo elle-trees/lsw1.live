@@ -138,8 +138,8 @@ const Index = () => {
     // Check if stream is live
     const checkStreamStatus = async () => {
       try {
-        // Use decapi.me status endpoint which returns "live" or "offline"
-        const response = await fetch(`https://decapi.me/twitch/status/${channel}`);
+        // Use proxy API endpoint which returns "live" or "offline"
+        const response = await fetch(`/api/twitch/status?username=${encodeURIComponent(channel)}`);
         
         if (!response.ok) {
           setIsLive(false);
