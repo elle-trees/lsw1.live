@@ -243,8 +243,8 @@ const RunDetails = () => {
         if (leftColumnRef.current && detailsCardRef.current) {
           // Get the height of the entire left column (video + comment)
           const leftColumnHeight = leftColumnRef.current.offsetHeight;
-          // Add extra height to make the details panel slightly taller
-          detailsCardRef.current.style.height = `${leftColumnHeight + 264}px`;
+          // Match the height of the left column to align bottoms
+          detailsCardRef.current.style.height = `${leftColumnHeight}px`;
         }
       };
 
@@ -387,7 +387,7 @@ const RunDetails = () => {
           setTimeout(() => {
             if (leftColumnRef.current && detailsCardRef.current) {
               const leftColumnHeight = leftColumnRef.current.offsetHeight;
-              detailsCardRef.current.style.height = `${leftColumnHeight + 264}px`;
+              detailsCardRef.current.style.height = `${leftColumnHeight}px`;
             }
           }, 200);
         }
