@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PlayerProfile } from "@/components/PlayerProfile";
 import { ArrowLeft, Trophy, User, Users, Clock, Star, Gem, CheckCircle, Filter, Gamepad2, Sparkles, MapPin, ExternalLink, Check } from "lucide-react";
-import { Link } from "react-router-dom";
+import { PrefetchLink } from "@/components/PrefetchLink";
 import { getPlayerRuns, getPlayerByUid, getCategories, getPlatforms, getPlayerPendingRuns, getLevels, getCategoriesFromFirestore, getUnclaimedRunsBySRCUsername, claimRun, runTypes } from "@/lib/db";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import LegoStudIcon from "@/components/icons/LegoStudIcon";
@@ -408,10 +408,10 @@ const PlayerDetails = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full">
         <div className="mb-8 mt-4 animate-fade-in">
           <Button variant="outline" className="text-ctp-text border-ctp-surface1/50 bg-glass hover:bg-ctp-surface0/50 hover:border-ctp-mauve/50 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-ctp-mauve/20 rounded-none backdrop-blur-sm" asChild>
-            <Link to="/leaderboards">
+            <PrefetchLink to="/leaderboards">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Leaderboards
-            </Link>
+            </PrefetchLink>
           </Button>
         </div>
 

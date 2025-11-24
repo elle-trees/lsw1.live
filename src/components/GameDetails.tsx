@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { PrefetchLink } from "@/components/PrefetchLink";
 import { GameDetailsConfig } from "@/types/database";
 import { getGameDetailsConfig } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
@@ -177,7 +178,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                       Navigation
                     </div>
                     <nav className="flex flex-col gap-1">
-                      <Link
+                      <PrefetchLink
                         to="/"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className={cn(
@@ -189,8 +190,8 @@ export function GameDetails({ className }: GameDetailsProps) {
                         style={location.pathname === "/" ? { borderLeft: "3px solid #89b4fa" } : {}}
                       >
                         <span className="flex-1">Home</span>
-                      </Link>
-                      <Link
+                      </PrefetchLink>
+                      <PrefetchLink
                         to="/leaderboards"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className={cn(
@@ -203,8 +204,8 @@ export function GameDetails({ className }: GameDetailsProps) {
                       >
                         <Trophy className="h-4 w-4 flex-shrink-0" style={{ color: location.pathname.startsWith("/leaderboards") ? "#f9e2af" : "#cdd6f4" }} />
                         <span className="flex-1">Leaderboards</span>
-                      </Link>
-                      <Link
+                      </PrefetchLink>
+                      <PrefetchLink
                         to="/submit"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className={cn(
@@ -217,7 +218,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                       >
                         <Upload className="h-4 w-4 flex-shrink-0" style={{ color: location.pathname.startsWith("/submit") ? "#a6e3a1" : "#cdd6f4" }} />
                         <span className="flex-1">Submit Run</span>
-                      </Link>
+                      </PrefetchLink>
                       {config && sortedHeaderLinks.length > 0 && sortedHeaderLinks.map((link) => {
                         const IconComponent = link.icon === "LegoStud" 
                           ? LegoStudIcon 
@@ -232,7 +233,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                         }
 
                         return (
-                          <Link
+                          <PrefetchLink
                             key={link.id}
                             to={link.route}
                             onClick={() => setIsMobileMenuOpen(false)}
@@ -258,7 +259,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                               )
                             )}
                             <span className="flex-1">{link.label}</span>
-                          </Link>
+                          </PrefetchLink>
                         );
                       })}
                     </nav>
@@ -272,13 +273,14 @@ export function GameDetails({ className }: GameDetailsProps) {
                       <div className="text-sm text-muted-foreground px-2">Loading...</div>
                     ) : currentUser ? (
                       <div className="flex flex-col gap-2">
-                        <Link 
+                        <PrefetchLink 
                           to={`/player/${currentUser.uid}`}
+                          params={{ playerId: currentUser.uid }}
                           className="text-sm text-ctp-text transition-colors px-2 py-1.5 rounded-md hover:bg-ctp-surface0"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
                           Hi, {currentUser.displayName || currentUser.email?.split('@')[0]}
-                        </Link>
+                        </PrefetchLink>
                         {hasNotifications && (
                           <Button
                             variant="outline"
@@ -307,10 +309,10 @@ export function GameDetails({ className }: GameDetailsProps) {
                           className="w-full text-ctp-text hover:text-ctp-text border-ctp-surface1 hover:bg-ctp-blue hover:border-ctp-blue justify-start"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
-                          <Link to="/settings">
+                          <PrefetchLink to="/settings">
                             <Settings className="h-4 w-4 mr-2" />
                             Settings
-                          </Link>
+                          </PrefetchLink>
                         </Button>
                         <Button 
                           variant="outline" 
@@ -413,22 +415,23 @@ export function GameDetails({ className }: GameDetailsProps) {
                 </Button>
               ) : currentUser ? (
                 <div className="flex items-center gap-2">
-                  <Link 
+                  <PrefetchLink 
                     to={`/player/${currentUser.uid}`}
+                    params={{ playerId: currentUser.uid }}
                     className="text-ctp-text hover:text-ctp-text mr-2 transition-all duration-300 hover:scale-105 cursor-pointer font-medium"
                   >
                     Hi, {currentUser.displayName || currentUser.email?.split('@')[0]}
-                  </Link>
+                  </PrefetchLink>
                   <Notifications />
                   <Button 
                     variant="outline" 
                     asChild
                     className="text-ctp-text hover:text-ctp-text border-ctp-surface1 hover:bg-ctp-blue hover:border-ctp-blue transition-all duration-300 hover:scale-105 hover:shadow-lg"
                   >
-                    <Link to="/settings">
+                    <PrefetchLink to="/settings">
                       <Settings className="h-4 w-4 mr-2 transition-transform duration-300 group-hover:rotate-90" />
                       Settings
-                    </Link>
+                    </PrefetchLink>
                   </Button>
                   <Button 
                     variant="outline" 
@@ -574,7 +577,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                           (link.route !== "/" && location.pathname.startsWith(link.route));
 
                         return (
-                          <Link
+                          <PrefetchLink
                             key={link.id}
                             to={link.route}
                             className="relative flex items-center gap-1 transition-all duration-300 group text-sm"
@@ -607,7 +610,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                                 style={{ backgroundColor: linkColor }}
                               ></span>
                             )}
-                          </Link>
+                          </PrefetchLink>
                         );
                       })}
                     </nav>
@@ -655,7 +658,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                             (link.route !== "/" && location.pathname.startsWith(link.route));
 
                           return (
-                            <Link
+                            <PrefetchLink
                               key={link.id}
                               to={link.route}
                               onClick={() => setIsMobileMenuOpen(false)}
@@ -681,7 +684,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                                 )
                               )}
                               <span className="flex-1">{link.label}</span>
-                            </Link>
+                            </PrefetchLink>
                           );
                         })}
                       </nav>
@@ -696,13 +699,14 @@ export function GameDetails({ className }: GameDetailsProps) {
                       <div className="text-sm text-muted-foreground px-2">Loading...</div>
                     ) : currentUser ? (
                       <div className="flex flex-col gap-2">
-                        <Link 
+                        <PrefetchLink 
                           to={`/player/${currentUser.uid}`}
+                          params={{ playerId: currentUser.uid }}
                           className="text-sm text-ctp-text transition-colors px-2 py-1.5 rounded-md hover:bg-ctp-surface0"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
                           Hi, {currentUser.displayName || currentUser.email?.split('@')[0]}
-                        </Link>
+                        </PrefetchLink>
                         {hasNotifications && (
                           <Button
                             variant="outline"
@@ -731,10 +735,10 @@ export function GameDetails({ className }: GameDetailsProps) {
                           className="w-full text-ctp-text hover:text-ctp-text border-ctp-surface1 hover:bg-ctp-blue hover:border-ctp-blue justify-start"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
-                          <Link to="/settings">
+                          <PrefetchLink to="/settings">
                             <Settings className="h-4 w-4 mr-2" />
                             Settings
-                          </Link>
+                          </PrefetchLink>
                         </Button>
                         <Button 
                           variant="outline" 
@@ -837,22 +841,23 @@ export function GameDetails({ className }: GameDetailsProps) {
                 </Button>
               ) : currentUser ? (
                 <div className="flex items-center gap-2">
-                  <Link 
+                  <PrefetchLink 
                     to={`/player/${currentUser.uid}`}
+                    params={{ playerId: currentUser.uid }}
                     className="text-ctp-text hover:text-ctp-text mr-2 transition-all duration-300 hover:scale-105 cursor-pointer font-medium"
                   >
                     Hi, {currentUser.displayName || currentUser.email?.split('@')[0]}
-                  </Link>
+                  </PrefetchLink>
                   <Notifications />
                   <Button 
                     variant="outline" 
                     asChild
                     className="text-ctp-text hover:text-ctp-text border-ctp-surface1 hover:bg-ctp-blue hover:border-ctp-blue transition-all duration-300 hover:scale-105 hover:shadow-lg"
                   >
-                    <Link to="/settings">
+                    <PrefetchLink to="/settings">
                       <Settings className="h-4 w-4 mr-2 transition-transform duration-300 group-hover:rotate-90" />
                       Settings
-                    </Link>
+                    </PrefetchLink>
                   </Button>
                   <Button 
                     variant="outline" 

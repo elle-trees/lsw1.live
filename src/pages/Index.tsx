@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Clock, ExternalLink } from "lucide-react";
 import { getRecentRuns, getAllVerifiedRuns } from "@/lib/db";
 import { LeaderboardEntry } from "@/types/database";
-import { Link } from "react-router-dom";
 import { RecentRuns } from "@/components/RecentRuns";
 import TwitchEmbed from "@/components/TwitchEmbed";
 import { parseTimeToSeconds, cn } from "@/lib/utils";
@@ -15,8 +14,9 @@ import { buttonVariants } from "@/components/ui/button";
 import { AnimatedCard } from "@/components/ui/animated-card";
 import { fadeSlideUpVariants, scaleVariants, buttonVariants as motionButtonVariants, transitions } from "@/lib/animations";
 import { pageCache } from "@/lib/pageCache";
+import { PrefetchLink } from "@/components/PrefetchLink";
 
-const MotionLink = motion(Link);
+const MotionLink = motion(PrefetchLink);
 
 const CACHE_KEY_RECENT_RUNS = "index-recent-runs";
 const CACHE_KEY_STATS = "index-stats";

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import { PrefetchLink } from "@/components/PrefetchLink";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -824,24 +825,26 @@ const RunDetails = () => {
                             // For claimed runs, show with link
                             return (
                               <>
-                                <Link
+                                <PrefetchLink
                                   to={`/player/${run.playerId}`}
+                                  params={{ playerId: run.playerId }}
                                   className="font-medium text-lg hover:opacity-80 transition-opacity"
                                   style={{ color: player?.nameColor || 'inherit' }}
                                 >
                                   {run.playerName}
-                                </Link>
+                                </PrefetchLink>
                                 {run.player2Name && (
                                   <>
                                     <span className="text-muted-foreground">&</span>
                                     {run.player2Id ? (
-                                      <Link
+                                      <PrefetchLink
                                         to={`/player/${run.player2Id}`}
+                                        params={{ playerId: run.player2Id }}
                                         className="font-medium text-lg hover:opacity-80 transition-opacity"
                                         style={{ color: player2?.nameColor || run.player2Color || 'inherit' }}
                                       >
                                         {run.player2Name}
-                                      </Link>
+                                      </PrefetchLink>
                                     ) : (
                                       <span 
                                         className="font-medium text-lg"
@@ -976,12 +979,13 @@ const RunDetails = () => {
                       {run.verifiedBy && (
                         <div className="text-base text-muted-foreground ml-2">
                           by {verifier ? (
-                            <Link
+                            <PrefetchLink
                               to={`/player/${verifier.uid}`}
+                              params={{ playerId: verifier.uid }}
                               className="hover:text-[hsl(var(--mocha-mauve))] transition-colors"
                             >
                               {verifier.displayName}
-                            </Link>
+                            </PrefetchLink>
                           ) : (
                             <span>{run.verifiedBy}</span>
                           )}

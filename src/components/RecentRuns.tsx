@@ -5,10 +5,11 @@ import { User, Users, Trophy, Sparkles, Check } from "lucide-react";
 import { LeaderboardEntry } from "@/types/database";
 import { getCategories, getPlatforms } from "@/lib/db";
 import { formatTime } from "@/lib/utils";
-import { Link } from "react-router-dom";
+import { PrefetchLink } from "@/components/PrefetchLink";
 import { useState, useEffect } from "react";
 import LegoStudIcon from "@/components/icons/LegoStudIcon";
 import { getPlatformName } from "@/lib/dataValidation";
+import { usePrefetchVisible } from "@/hooks/usePrefetch";
 
 interface RecentRunsProps {
   runs: LeaderboardEntry[];
@@ -21,6 +22,7 @@ export function RecentRuns({ runs, loading, showRankBadge = true, maxRuns }: Rec
   const [platforms, setPlatforms] = useState<{ id: string; name: string }[]>([]);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
+  const { prefetchItem } = usePrefetchVisible([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -146,7 +148,7 @@ export function RecentRuns({ runs, loading, showRankBadge = true, maxRuns }: Rec
               >
                 {showRankBadge && (
                   <TableCell className="py-4 pl-4 pr-2">
-                    <Link to={`/run/${run.id}`} className="block" onClick={(e) => e.stopPropagation()}>
+                    <PrefetchLink to={`/run/${run.id}`} params={{ runId: run.id }} className="block" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-2">
                         {rank === 1 ? (
                           <LegoStudIcon size={36} color="#0055BF" />
@@ -165,7 +167,7 @@ export function RecentRuns({ runs, loading, showRankBadge = true, maxRuns }: Rec
                           </Badge>
                         )}
                       </div>
-                    </Link>
+                    </PrefetchLink>
                   </TableCell>
                 )}
                 <TableCell className="py-4 pl-2 pr-3 min-w-[250px]">
@@ -200,26 +202,28 @@ export function RecentRuns({ runs, loading, showRankBadge = true, maxRuns }: Rec
                         // For claimed runs, show with link and check icon
                         return (
                           <>
-                            <Link 
+                            <PrefetchLink 
                               to={`/player/${run.playerId}`} 
+                              params={{ playerId: run.playerId }}
                               className="inline-block"
                               style={{ color: run.nameColor || '#cba6f7' }}
                               onClick={(e) => e.stopPropagation()}
                             >
                               <span className="font-semibold text-base whitespace-nowrap">{run.playerName}</span>
-                            </Link>
+                            </PrefetchLink>
                             {run.player2Name && (
                               <>
                                 <span className="text-ctp-overlay0 text-base"> & </span>
                                 {run.player2Id && run.player2Id.trim() !== "" ? (
-                                  <Link 
+                                  <PrefetchLink 
                                     to={`/player/${run.player2Id}`} 
+                                    params={{ playerId: run.player2Id }}
                                     className="inline-block"
                                     style={{ color: run.player2Color || '#cba6f7' }}
                                     onClick={(e) => e.stopPropagation()}
                                   >
                                     <span className="font-semibold text-base whitespace-nowrap">{run.player2Name}</span>
-                                  </Link>
+                                  </PrefetchLink>
                                 ) : (
                                   <span className="font-semibold text-base whitespace-nowrap text-ctp-text">{run.player2Name}</span>
                                 )}
@@ -254,42 +258,42 @@ export function RecentRuns({ runs, loading, showRankBadge = true, maxRuns }: Rec
                   </div>
                 </TableCell>
                 <TableCell className="py-4 px-3 hidden sm:table-cell">
-                  <Link to={`/run/${run.id}`} onClick={(e) => e.stopPropagation()}>
+                  <PrefetchLink to={`/run/${run.id}`} params={{ runId: run.id }} onClick={(e) => e.stopPropagation()}>
                     <span className="text-base font-semibold text-ctp-text">
                       {formatTime(run.time)}
                     </span>
-                  </Link>
+                  </PrefetchLink>
                 </TableCell>
                 <TableCell className="py-4 px-3 hidden md:table-cell">
-                  <Link to={`/run/${run.id}`} onClick={(e) => e.stopPropagation()}>
+                  <PrefetchLink to={`/run/${run.id}`} params={{ runId: run.id }} onClick={(e) => e.stopPropagation()}>
                     <span className="text-base text-ctp-subtext1 whitespace-nowrap">{run.date}</span>
-                  </Link>
+                  </PrefetchLink>
                 </TableCell>
                 <TableCell className="py-4 px-3 hidden lg:table-cell">
-                  <Link to={`/run/${run.id}`} className="block" onClick={(e) => e.stopPropagation()}>
+                  <PrefetchLink to={`/run/${run.id}`} params={{ runId: run.id }} className="block" onClick={(e) => e.stopPropagation()}>
                     {platformName && (
                       <Badge variant="outline" className="border-ctp-surface1/50 bg-ctp-surface0/50 text-ctp-text text-sm px-2 py-1">
                         {platformName}
                       </Badge>
                     )}
-                  </Link>
+                  </PrefetchLink>
                 </TableCell>
                 <TableCell className="py-4 px-3 hidden lg:table-cell">
-                  <Link to={`/run/${run.id}`} className="block" onClick={(e) => e.stopPropagation()}>
+                  <PrefetchLink to={`/run/${run.id}`} params={{ runId: run.id }} className="block" onClick={(e) => e.stopPropagation()}>
                     <Badge variant="outline" className="border-ctp-surface1/50 bg-ctp-surface0/50 text-ctp-text flex items-center gap-1.5 w-fit text-sm px-2 py-1">
                       {run.runType === 'solo' ? <User className="h-4 w-4" /> : <Users className="h-4 w-4" />}
                       {run.runType.charAt(0).toUpperCase() + run.runType.slice(1)}
                     </Badge>
-                  </Link>
+                  </PrefetchLink>
                 </TableCell>
                 <TableCell className="py-4 px-3 hidden lg:table-cell">
-                  <Link to={`/run/${run.id}`} className="block" onClick={(e) => e.stopPropagation()}>
+                  <PrefetchLink to={`/run/${run.id}`} params={{ runId: run.id }} className="block" onClick={(e) => e.stopPropagation()}>
                     {getCategoryName(run.category) && (
                       <Badge variant="outline" className="border-ctp-surface1/50 bg-ctp-surface0/50 text-ctp-text text-sm px-2 py-1">
                         {getCategoryName(run.category)}
                       </Badge>
                     )}
-                  </Link>
+                  </PrefetchLink>
                 </TableCell>
               </TableRow>
             );

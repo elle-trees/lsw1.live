@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Link } from "react-router-dom";
+import { PrefetchLink } from "@/components/PrefetchLink";
 import { User, Users, ExternalLink, Trophy, MapPin, Check } from "lucide-react";
 import { LeaderboardEntry } from "@/types/database";
 import LegoStudIcon from "@/components/icons/LegoStudIcon";
@@ -8,7 +8,8 @@ import { formatTime } from "@/lib/utils";
 import { getPlatformName, getLevelName } from "@/lib/dataValidation";
 import { motion } from "framer-motion";
 import { tableRowVariants } from "@/lib/animations";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { usePrefetchVisible } from "@/hooks/usePrefetch";
 
 const MotionTableRow = motion(TableRow);
 
@@ -22,8 +23,25 @@ interface LeaderboardTableProps {
 
 export function LeaderboardTable({ data, platforms = [], categories = [], levels = [], leaderboardType }: LeaderboardTableProps) {
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
+  const { prefetchItem } = usePrefetchVisible([]);
   // Determine if we should show level column (for IL and Community Golds)
   const showLevelColumn = leaderboardType === 'individual-level' || leaderboardType === 'community-golds';
+
+  // Prefetch data for visible items
+  useEffect(() => {
+    // Prefetch first 10 items immediately
+    data.slice(0, 10).forEach(entry => {
+      if (entry.id) {
+        prefetchItem({ id: entry.id, type: "run" });
+      }
+      if (entry.playerId) {
+        prefetchItem({ id: entry.playerId, type: "player" });
+      }
+      if (entry.player2Id) {
+        prefetchItem({ id: entry.player2Id, type: "player" });
+      }
+    });
+  }, [data, prefetchItem]);
   if (data.length === 0) {
     return (
       <div className="text-center py-12">
@@ -78,7 +96,7 @@ export function LeaderboardTable({ data, platforms = [], categories = [], levels
               className={`border-b border-ctp-surface1/20 cursor-pointer transition-colors duration-50 ${isHighlighted ? 'bg-ctp-surface0' : ''} ${entry.isObsolete ? 'opacity-60 italic' : ''}`}
             >
               <TableCell className="py-2.5 pl-3 pr-1">
-                <Link to={`/run/${entry.id}`} className="block">
+                <PrefetchLink to={`/run/${entry.id}`} params={{ runId: entry.id }} className="block">
                   <div className="flex items-center gap-1.5">
                     {entry.rank === 1 ? (
                       <LegoStudIcon size={28} color="#0055BF" />
@@ -97,7 +115,7 @@ export function LeaderboardTable({ data, platforms = [], categories = [], levels
                       </Badge>
                     )}
                   </div>
-                </Link>
+                </PrefetchLink>
               </TableCell>
               <TableCell className="py-2.5 pl-1 pr-2 min-w-[200px]">
                 <div className="flex items-center gap-1.5 flex-wrap">
@@ -131,26 +149,28 @@ export function LeaderboardTable({ data, platforms = [], categories = [], levels
                     // For claimed runs, show with link and check icon
                     return (
                       <>
-                        <Link 
+                        <PrefetchLink 
                           to={`/player/${entry.playerId}`} 
+                          params={{ playerId: entry.playerId }}
                           className="inline-block"
                           style={{ color: entry.nameColor || '#cba6f7' }}
                           onClick={(e) => e.stopPropagation()}
                         >
                           <span className="font-semibold text-sm whitespace-nowrap">{entry.playerName}</span>
-                        </Link>
+                        </PrefetchLink>
                         {entry.player2Name && (
                           <>
                             <span className="text-ctp-overlay0 text-sm"> & </span>
                             {entry.player2Id && entry.player2Id.trim() !== "" ? (
-                              <Link 
+                              <PrefetchLink 
                                 to={`/player/${entry.player2Id}`} 
+                                params={{ playerId: entry.player2Id }}
                                 className="inline-block"
                                 style={{ color: entry.player2Color || '#cba6f7' }}
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 <span className="font-semibold text-sm whitespace-nowrap">{entry.player2Name}</span>
-                              </Link>
+                              </PrefetchLink>
                             ) : (
                               <span className="font-semibold text-sm whitespace-nowrap text-ctp-text">{entry.player2Name}</span>
                             )}
@@ -184,40 +204,40 @@ export function LeaderboardTable({ data, platforms = [], categories = [], levels
               </TableCell>
               {showLevelColumn && (
                 <TableCell className="py-2.5 px-2 hidden md:table-cell">
-                  <Link to={`/run/${entry.id}`} className="flex items-center gap-1">
+                  <PrefetchLink to={`/run/${entry.id}`} params={{ runId: entry.id }} className="flex items-center gap-1">
                     <MapPin className="h-3.5 w-3.5 text-ctp-overlay0" />
                     <span className="text-sm text-ctp-subtext1">
                       {levelName || entry.srcLevelName || 'Unknown Level'}
                     </span>
-                  </Link>
+                  </PrefetchLink>
                 </TableCell>
               )}
               <TableCell className="py-2.5 px-2 hidden sm:table-cell">
-                <Link to={`/run/${entry.id}`}>
+                <PrefetchLink to={`/run/${entry.id}`} params={{ runId: entry.id }}>
                   <span className="text-sm font-semibold text-ctp-text">
                     {formatTime(entry.time)}
                   </span>
-                </Link>
+                </PrefetchLink>
               </TableCell>
               <TableCell className="py-2.5 px-2 hidden md:table-cell">
-                <Link to={`/run/${entry.id}`}>
+                <PrefetchLink to={`/run/${entry.id}`} params={{ runId: entry.id }}>
                   <span className="text-sm text-ctp-subtext1 whitespace-nowrap">{entry.date}</span>
-                </Link>
+                </PrefetchLink>
               </TableCell>
               <TableCell className="py-2.5 px-2 hidden lg:table-cell">
-                <Link to={`/run/${entry.id}`} className="block">
+                <PrefetchLink to={`/run/${entry.id}`} params={{ runId: entry.id }} className="block">
                   <Badge variant="outline" className="border-ctp-surface1/50 bg-ctp-surface0/50 text-ctp-text text-xs px-1.5 py-0.5">
                     {platformName}
                   </Badge>
-                </Link>
+                </PrefetchLink>
               </TableCell>
               <TableCell className="py-2.5 px-2 hidden lg:table-cell">
-                <Link to={`/run/${entry.id}`} className="block">
+                <PrefetchLink to={`/run/${entry.id}`} params={{ runId: entry.id }} className="block">
                   <Badge variant="outline" className="border-ctp-surface1/50 bg-ctp-surface0/50 text-ctp-text flex items-center gap-1 w-fit text-xs px-1.5 py-0.5">
                     {entry.runType === 'solo' ? <User className="h-3 w-3" /> : <Users className="h-3 w-3" />}
                     {entry.runType.charAt(0).toUpperCase() + entry.runType.slice(1)}
                   </Badge>
-                </Link>
+                </PrefetchLink>
               </TableCell>
               <TableCell className="py-2.5 px-2">
                 {entry.videoUrl && (
