@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, XCircle, ShieldAlert, ExternalLink, Download, PlusCircle, Trash2, Wrench, Edit2, FolderTree, Play, ArrowUp, ArrowDown, Gamepad2, UserPlus, UserMinus, Trophy, Upload, Star, Gem, RefreshCw, X, AlertTriangle, Users, Search, Save, Coins } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, AnimatedTabsList, AnimatedTabsTrigger, AnimatedTabsContent } from "@/components/ui/animated-tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Pagination } from "@/components/Pagination";
@@ -3384,71 +3384,71 @@ const Admin = () => {
       <div className="max-w-7xl mx-auto px-2 sm:px-4 w-full">
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="flex w-full mb-6 p-0.5 gap-1 overflow-x-auto overflow-y-hidden scrollbar-hide" style={{ minWidth: 'max-content' }}>
-            <TabsTrigger 
+          <AnimatedTabsList className="flex w-full mb-6 p-0.5 gap-1 overflow-x-auto overflow-y-hidden scrollbar-hide relative" style={{ minWidth: 'max-content' }} indicatorClassName="h-0.5 bg-[#f9e2af]">
+            <AnimatedTabsTrigger 
               value="runs" 
-              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap"
+              className="transition-all duration-300 font-medium text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap data-[state=active]:text-[#f9e2af]"
             >
               Unverified Runs
-            </TabsTrigger>
-            <TabsTrigger 
+            </AnimatedTabsTrigger>
+            <AnimatedTabsTrigger 
               value="categories" 
-              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap"
+              className="transition-all duration-300 font-medium text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap data-[state=active]:text-[#f9e2af]"
             >
               Categories
-            </TabsTrigger>
-            <TabsTrigger 
+            </AnimatedTabsTrigger>
+            <AnimatedTabsTrigger 
               value="levels" 
-              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap"
+              className="transition-all duration-300 font-medium text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap data-[state=active]:text-[#f9e2af]"
             >
               Levels
-            </TabsTrigger>
-            <TabsTrigger 
+            </AnimatedTabsTrigger>
+            <AnimatedTabsTrigger 
               value="platforms" 
-              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap"
+              className="transition-all duration-300 font-medium text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap data-[state=active]:text-[#f9e2af]"
             >
               Platforms
-            </TabsTrigger>
-            <TabsTrigger 
+            </AnimatedTabsTrigger>
+            <AnimatedTabsTrigger 
               value="downloads" 
-              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap"
+              className="transition-all duration-300 font-medium text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap data-[state=active]:text-[#f9e2af]"
             >
               Downloads
-            </TabsTrigger>
-            <TabsTrigger 
+            </AnimatedTabsTrigger>
+            <AnimatedTabsTrigger 
               value="users" 
-              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap"
+              className="transition-all duration-300 font-medium text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap data-[state=active]:text-[#f9e2af]"
             >
               Users
-            </TabsTrigger>
-            <TabsTrigger 
+            </AnimatedTabsTrigger>
+            <AnimatedTabsTrigger 
               value="points" 
-              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap"
+              className="transition-all duration-300 font-medium text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap data-[state=active]:text-[#f9e2af]"
             >
               Points
-            </TabsTrigger>
-            <TabsTrigger 
+            </AnimatedTabsTrigger>
+            <AnimatedTabsTrigger 
               value="game-details" 
-              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap"
+              className="transition-all duration-300 font-medium text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap data-[state=active]:text-[#f9e2af]"
             >
               Game Details
-            </TabsTrigger>
-            <TabsTrigger 
+            </AnimatedTabsTrigger>
+            <AnimatedTabsTrigger 
               value="src" 
-              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap"
+              className="transition-all duration-300 font-medium text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap data-[state=active]:text-[#f9e2af]"
             >
               SRC Tools
-            </TabsTrigger>
-            <TabsTrigger 
+            </AnimatedTabsTrigger>
+            <AnimatedTabsTrigger 
               value="tools" 
-              className="data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#f9e2af]/50 text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap"
+              className="transition-all duration-300 font-medium text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap data-[state=active]:text-[#f9e2af]"
             >
               Tools
-            </TabsTrigger>
-          </TabsList>
+            </AnimatedTabsTrigger>
+          </AnimatedTabsList>
 
           {/* Tools Section */}
-          <TabsContent value="tools" className="space-y-4 animate-fade-in">
+          <AnimatedTabsContent value="tools" className="space-y-4 animate-fade-in">
             {/* Manual Run Input Section */}
             <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
               <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
@@ -3531,59 +3531,47 @@ const Admin = () => {
                   {/* Leaderboard Type Buttons */}
                   <div>
                     <Label className="text-sm font-semibold mb-2 block">Leaderboard Type *</Label>
-                    <div className="grid w-full grid-cols-3 p-0.5 gap-1 bg-ctp-surface0/50 rounded-none border border-ctp-surface1">
-                      <Button
-                        variant={manualRunLeaderboardType === 'regular' ? "default" : "ghost"}
-                        onClick={() => {
-                          setManualRunLeaderboardType('regular');
-                          setManualRun(prev => ({ ...prev, category: "", level: "" }));
-                        }}
-                        className={`h-auto py-1.5 sm:py-2 px-2 sm:px-3 rounded-none transition-all duration-300 font-medium text-xs sm:text-sm whitespace-nowrap ${
-                          manualRunLeaderboardType === 'regular'
-                            ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm"
-                            : "bg-ctp-surface0 text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
-                        }`}
+                    <Tabs 
+                      value={manualRunLeaderboardType} 
+                      onValueChange={(value) => {
+                        setManualRunLeaderboardType(value as 'regular' | 'individual-level' | 'community-golds');
+                        setManualRun(prev => ({ ...prev, category: "", level: "" }));
+                      }}
+                      className="w-full"
+                    >
+                      <AnimatedTabsList 
+                        className="grid w-full grid-cols-3 p-0.5 gap-1 bg-ctp-surface0/50 rounded-none border border-ctp-surface1 h-auto"
+                        indicatorClassName="bg-[#f9e2af]"
                       >
-                        <Trophy className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
-                        <span className="hidden min-[375px]:inline">Full Game</span>
-                        <span className="min-[375px]:hidden">Game</span>
-                      </Button>
-                      <Button
-                        variant={manualRunLeaderboardType === 'individual-level' ? "default" : "ghost"}
-                        onClick={() => {
-                          setManualRunLeaderboardType('individual-level');
-                          setManualRun(prev => ({ ...prev, category: "", level: "" }));
-                        }}
-                        className={`h-auto py-1.5 sm:py-2 px-2 sm:px-3 rounded-none transition-all duration-300 font-medium text-xs sm:text-sm whitespace-nowrap ${
-                          manualRunLeaderboardType === 'individual-level'
-                            ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm"
-                            : "bg-ctp-surface0 text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
-                        }`}
-                      >
-                        <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
-                        <span className="hidden sm:inline">Individual Levels</span>
-                        <span className="sm:hidden">ILs</span>
-                      </Button>
-                      <Button
-                        variant={manualRunLeaderboardType === 'community-golds' ? "default" : "ghost"}
-                        onClick={() => {
-                          setManualRunLeaderboardType('community-golds');
-                          setManualRun(prev => ({ ...prev, category: "", level: "" }));
-                        }}
-                        className={`h-auto py-1.5 sm:py-2 px-2 sm:px-3 rounded-none transition-all duration-300 font-medium text-xs sm:text-sm whitespace-nowrap ${
-                          manualRunLeaderboardType === 'community-golds'
-                            ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm"
-                            : "bg-ctp-surface0 text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
-                        }`}
-                      >
-                        <Gem className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
-                        <span className="hidden sm:inline">Community Golds</span>
-                        <span className="sm:hidden">Golds</span>
-                      </Button>
-                    </div>
+                        <AnimatedTabsTrigger 
+                          value="regular"
+                          className="h-auto py-1.5 sm:py-2 px-2 sm:px-3 rounded-none transition-all duration-300 font-medium text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] data-[state=active]:hover:bg-[#f9e2af]/90 data-[state=active]:shadow-sm data-[state=inactive]:bg-ctp-surface0 data-[state=inactive]:text-ctp-text data-[state=inactive]:hover:bg-ctp-surface1 data-[state=inactive]:hover:text-ctp-text"
+                        >
+                          <Trophy className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
+                          <span className="hidden min-[375px]:inline">Full Game</span>
+                          <span className="min-[375px]:hidden">Game</span>
+                        </AnimatedTabsTrigger>
+                        <AnimatedTabsTrigger 
+                          value="individual-level"
+                          className="h-auto py-1.5 sm:py-2 px-2 sm:px-3 rounded-none transition-all duration-300 font-medium text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] data-[state=active]:hover:bg-[#f9e2af]/90 data-[state=active]:shadow-sm data-[state=inactive]:bg-ctp-surface0 data-[state=inactive]:text-ctp-text data-[state=inactive]:hover:bg-ctp-surface1 data-[state=inactive]:hover:text-ctp-text"
+                        >
+                          <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
+                          <span className="hidden sm:inline">Individual Levels</span>
+                          <span className="sm:hidden">ILs</span>
+                        </AnimatedTabsTrigger>
+                        <AnimatedTabsTrigger 
+                          value="community-golds"
+                          className="h-auto py-1.5 sm:py-2 px-2 sm:px-3 rounded-none transition-all duration-300 font-medium text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-[#f9e2af] data-[state=active]:text-[#11111b] data-[state=active]:hover:bg-[#f9e2af]/90 data-[state=active]:shadow-sm data-[state=inactive]:bg-ctp-surface0 data-[state=inactive]:text-ctp-text data-[state=inactive]:hover:bg-ctp-surface1 data-[state=inactive]:hover:text-ctp-text"
+                        >
+                          <Gem className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
+                          <span className="hidden sm:inline">Community Golds</span>
+                          <span className="sm:hidden">Golds</span>
+                        </AnimatedTabsTrigger>
+                      </AnimatedTabsList>
+                    </Tabs>
                   </div>
 
-                  {/* Category Selection - Buttons */}
+                  {/* Category Selection - Tabs */}
                   {firestoreCategories.length > 0 && (
                     <div>
                       <Label className="text-sm font-semibold mb-2 block">
@@ -3591,26 +3579,22 @@ const Admin = () => {
                          manualRunLeaderboardType === 'community-golds' ? 'Full Game Category *' : 
                          'Category *'}
                       </Label>
-                      <div className="flex w-full p-0.5 gap-1 overflow-x-auto overflow-y-hidden scrollbar-hide" style={{ minWidth: 'max-content' }}>
-                        {firestoreCategories.map((category, index) => {
-                          const isSelected = manualRun.category === category.id;
-                          return (
-                            <Button
-                              key={category.id}
-                              variant={isSelected ? "default" : "outline"}
-                              onClick={() => setManualRun({ ...manualRun, category: category.id })}
-                              className={`${
-                                isSelected
-                                  ? "bg-[#94e2d5] text-[#11111b] hover:bg-[#94e2d5]/90 border-transparent shadow-sm"
-                                  : "bg-ctp-surface0 text-ctp-text border-transparent hover:bg-ctp-surface1 hover:border-[#94e2d5]/50"
-                              } py-2 px-3 text-sm transition-all duration-300 font-medium`}
-                              style={{ animationDelay: `${index * 50}ms` }}
-                            >
-                              {category.name}
-                            </Button>
-                          );
-                        })}
-                      </div>
+                      <Tabs value={manualRun.category} onValueChange={(value) => setManualRun({ ...manualRun, category: value })} className="w-full">
+                        <AnimatedTabsList className="flex w-full p-0.5 gap-1 overflow-x-auto overflow-y-visible scrollbar-hide relative" style={{ minWidth: 'max-content' }} indicatorClassName="h-0.5 bg-[#94e2d5]">
+                          {firestoreCategories.map((category, index) => {
+                            return (
+                              <AnimatedTabsTrigger
+                                key={category.id}
+                                value={category.id}
+                                className="py-2 px-3 text-sm transition-all duration-300 font-medium data-[state=active]:text-[#94e2d5]"
+                                style={{ animationDelay: `${index * 50}ms` }}
+                              >
+                                {category.name}
+                              </AnimatedTabsTrigger>
+                            );
+                          })}
+                        </AnimatedTabsList>
+                      </Tabs>
                     </div>
                   )}
 
@@ -3838,10 +3822,10 @@ const Admin = () => {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          </AnimatedTabsContent>
 
           {/* Game Details Configuration Section */}
-          <TabsContent value="game-details" className="space-y-4 animate-fade-in">
+          <AnimatedTabsContent value="game-details" className="space-y-4 animate-fade-in">
             <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
               <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
                 <CardTitle className="flex items-center gap-2 text-xl text-[#94e2d5]">
@@ -4301,10 +4285,10 @@ const Admin = () => {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
+          </AnimatedTabsContent>
 
         {/* SRC Tools Section */}
-          <TabsContent value="src" className="space-y-4 animate-fade-in">
+          <AnimatedTabsContent value="src" className="space-y-4 animate-fade-in">
             {/* Import Runs from SRC */}
             <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
               <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
@@ -4481,30 +4465,29 @@ const Admin = () => {
                   return (
                     <>
                       {/* Buttons for Full Game vs Individual Level - Always show buttons */}
-                      <div className="grid w-full max-w-md grid-cols-2 mb-6 p-0.5 gap-1 bg-[hsl(240,21%,15%)] rounded-none border border-[hsl(235,13%,30%)]">
-                        <Button
-                          variant={importedRunsLeaderboardType === 'regular' ? "default" : "ghost"}
-                          onClick={() => setImportedRunsLeaderboardType('regular')}
-                          className={`${
-                            importedRunsLeaderboardType === 'regular'
-                              ? "bg-[hsl(240,21%,20%)] text-[hsl(220,17%,92%)] hover:bg-[hsl(240,21%,25%)]"
-                              : "bg-[hsl(240,21%,15%)] text-[hsl(222,15%,60%)] hover:bg-[hsl(240,21%,18%)]"
-                          } transition-all duration-200`}
+                      <Tabs 
+                        value={importedRunsLeaderboardType} 
+                        onValueChange={(value) => setImportedRunsLeaderboardType(value as 'regular' | 'individual-level')}
+                        className="w-full max-w-md mb-6"
+                      >
+                        <AnimatedTabsList 
+                          className="grid w-full grid-cols-2 p-0.5 gap-1 bg-[hsl(240,21%,15%)] rounded-none border border-[hsl(235,13%,30%)] h-auto"
+                          indicatorColor="hsl(240,21%,20%)"
                         >
-                          Full Game ({fullGameCount})
-                        </Button>
-                        <Button
-                          variant={importedRunsLeaderboardType === 'individual-level' ? "default" : "ghost"}
-                          onClick={() => setImportedRunsLeaderboardType('individual-level')}
-                          className={`${
-                            importedRunsLeaderboardType === 'individual-level'
-                              ? "bg-[hsl(240,21%,20%)] text-[hsl(220,17%,92%)] hover:bg-[hsl(240,21%,25%)]"
-                              : "bg-[hsl(240,21%,15%)] text-[hsl(222,15%,60%)] hover:bg-[hsl(240,21%,18%)]"
-                          } transition-all duration-200`}
-                        >
-                          Individual Levels ({ilCount})
-                        </Button>
-                      </div>
+                          <AnimatedTabsTrigger 
+                            value="regular"
+                            className="transition-all duration-200 data-[state=active]:bg-[hsl(240,21%,20%)] data-[state=active]:text-[hsl(220,17%,92%)] data-[state=active]:hover:bg-[hsl(240,21%,25%)] data-[state=inactive]:bg-[hsl(240,21%,15%)] data-[state=inactive]:text-[hsl(222,15%,60%)] data-[state=inactive]:hover:bg-[hsl(240,21%,18%)]"
+                          >
+                            Full Game ({fullGameCount})
+                          </AnimatedTabsTrigger>
+                          <AnimatedTabsTrigger 
+                            value="individual-level"
+                            className="transition-all duration-200 data-[state=active]:bg-[hsl(240,21%,20%)] data-[state=active]:text-[hsl(220,17%,92%)] data-[state=active]:hover:bg-[hsl(240,21%,25%)] data-[state=inactive]:bg-[hsl(240,21%,15%)] data-[state=inactive]:text-[hsl(222,15%,60%)] data-[state=inactive]:hover:bg-[hsl(240,21%,18%)]"
+                          >
+                            Individual Levels ({ilCount})
+                          </AnimatedTabsTrigger>
+                        </AnimatedTabsList>
+                      </Tabs>
                       
                       {/* Filters - Always show so users can adjust when results are empty */}
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -5025,10 +5008,10 @@ const Admin = () => {
               </CardContent>
             </Card>
 
-          </TabsContent>
+          </AnimatedTabsContent>
 
         {/* Unverified Runs Section */}
-          <TabsContent value="runs" className="space-y-4 animate-fade-in">
+          <AnimatedTabsContent value="runs" className="space-y-4 animate-fade-in">
             {/* Regular Unverified Runs */}
             <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
               <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
@@ -5139,7 +5122,7 @@ const Admin = () => {
           </CardContent>
         </Card>
 
-          </TabsContent>
+          </AnimatedTabsContent>
 
         {/* Confirm Clear Unverified Runs Dialog */}
         <Dialog open={showConfirmClearUnverifiedDialog} onOpenChange={setShowConfirmClearUnverifiedDialog}>
@@ -5384,7 +5367,7 @@ const Admin = () => {
         </Dialog>
 
         {/* Category Management Section */}
-          <TabsContent value="categories" className="space-y-4 animate-fade-in">
+          <AnimatedTabsContent value="categories" className="space-y-4 animate-fade-in">
             <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
               <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
                 <CardTitle className="flex items-center gap-2 text-xl text-[#f2cdcd]">
@@ -5394,78 +5377,67 @@ const Admin = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4">
-            <div className="grid w-full grid-cols-3 p-0.5 gap-1 bg-ctp-surface0/50 rounded-none border border-ctp-surface1 mb-4">
-              <Button
-                variant={categoryLeaderboardType === 'regular' ? "default" : "ghost"}
-                onClick={() => {
-                  setCategoryLeaderboardType('regular');
-                  fetchCategories('regular');
-                }}
-                className={`${
-                  categoryLeaderboardType === 'regular'
-                    ? "bg-[#94e2d5] text-[#11111b] hover:bg-[#94e2d5]/90 shadow-sm"
-                    : "bg-ctp-surface0 text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
-                } py-2 px-3 text-sm transition-all duration-300 font-medium`}
-              >
-                <Trophy className="h-4 w-4 mr-2" />
-                Full Game
-              </Button>
-              <Button
-                variant={categoryLeaderboardType === 'individual-level' ? "default" : "ghost"}
-                onClick={() => {
-                  setCategoryLeaderboardType('individual-level');
-                  fetchCategories('individual-level');
+            <Tabs 
+              value={categoryLeaderboardType} 
+              onValueChange={(value) => {
+                const type = value as 'regular' | 'individual-level' | 'community-golds';
+                setCategoryLeaderboardType(type);
+                fetchCategories(type);
+                if (type !== 'regular') {
                   setSelectedCategoryForSubcategories(null);
                   setCategoryManagementTab('categories');
-                }}
-                className={`${
-                  categoryLeaderboardType === 'individual-level'
-                    ? "bg-[#94e2d5] text-[#11111b] hover:bg-[#94e2d5]/90 shadow-sm"
-                    : "bg-ctp-surface0 text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
-                } py-2 px-3 text-sm transition-all duration-300 font-medium`}
+                }
+              }}
+              className="w-full mb-4"
+            >
+              <AnimatedTabsList 
+                className="grid w-full grid-cols-3 p-0.5 gap-1 bg-ctp-surface0/50 rounded-none border border-ctp-surface1 h-auto"
+                indicatorClassName="bg-[#94e2d5]"
               >
-                <Star className="h-4 w-4 mr-2" />
-                Individual Level
-              </Button>
-              <Button
-                variant={categoryLeaderboardType === 'community-golds' ? "default" : "ghost"}
-                onClick={() => {
-                  setCategoryLeaderboardType('community-golds');
-                  fetchCategories('community-golds');
-                  setSelectedCategoryForSubcategories(null);
-                  setCategoryManagementTab('categories');
-                }}
-                className={`${
-                  categoryLeaderboardType === 'community-golds'
-                    ? "bg-[#94e2d5] text-[#11111b] hover:bg-[#94e2d5]/90 shadow-sm"
-                    : "bg-ctp-surface0 text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
-                } py-2 px-3 text-sm transition-all duration-300 font-medium`}
-              >
-                <Gem className="h-4 w-4 mr-2" />
-                Community Golds
-              </Button>
-            </div>
+                <AnimatedTabsTrigger 
+                  value="regular"
+                  className="py-2 px-3 text-sm transition-all duration-300 font-medium data-[state=active]:bg-[#94e2d5] data-[state=active]:text-[#11111b] data-[state=active]:hover:bg-[#94e2d5]/90 data-[state=active]:shadow-sm data-[state=inactive]:bg-ctp-surface0 data-[state=inactive]:text-ctp-text data-[state=inactive]:hover:bg-ctp-surface1 data-[state=inactive]:hover:text-ctp-text"
+                >
+                  <Trophy className="h-4 w-4 mr-2" />
+                  Full Game
+                </AnimatedTabsTrigger>
+                <AnimatedTabsTrigger 
+                  value="individual-level"
+                  className="py-2 px-3 text-sm transition-all duration-300 font-medium data-[state=active]:bg-[#94e2d5] data-[state=active]:text-[#11111b] data-[state=active]:hover:bg-[#94e2d5]/90 data-[state=active]:shadow-sm data-[state=inactive]:bg-ctp-surface0 data-[state=inactive]:text-ctp-text data-[state=inactive]:hover:bg-ctp-surface1 data-[state=inactive]:hover:text-ctp-text"
+                >
+                  <Star className="h-4 w-4 mr-2" />
+                  Individual Level
+                </AnimatedTabsTrigger>
+                <AnimatedTabsTrigger 
+                  value="community-golds"
+                  className="py-2 px-3 text-sm transition-all duration-300 font-medium data-[state=active]:bg-[#94e2d5] data-[state=active]:text-[#11111b] data-[state=active]:hover:bg-[#94e2d5]/90 data-[state=active]:shadow-sm data-[state=inactive]:bg-ctp-surface0 data-[state=inactive]:text-ctp-text data-[state=inactive]:hover:bg-ctp-surface1 data-[state=inactive]:hover:text-ctp-text"
+                >
+                  <Gem className="h-4 w-4 mr-2" />
+                  Community Golds
+                </AnimatedTabsTrigger>
+              </AnimatedTabsList>
+            </Tabs>
 
             <div className="mt-0">
                 {/* Inner tabs for Categories vs Subcategories (only show subcategories for regular) */}
                 {categoryLeaderboardType === 'regular' ? (
                   <Tabs value={categoryManagementTab} onValueChange={(value) => setCategoryManagementTab(value as 'categories' | 'subcategories')} className="mb-4">
-                    <TabsList className="grid w-full grid-cols-2 rounded-none p-0.5 gap-1 mb-4">
-                      <TabsTrigger 
+                    <AnimatedTabsList className="grid w-full grid-cols-2 rounded-none p-0.5 gap-1 mb-4" indicatorClassName="h-0.5 bg-[#cba6f7]">
+                      <AnimatedTabsTrigger 
                         value="categories" 
-                        className="data-[state=active]:bg-[#cba6f7] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#cba6f7]/50 py-2 px-3 text-sm"
+                        className="transition-all duration-300 font-medium py-2 px-3 text-sm data-[state=active]:text-[#cba6f7]"
                       >
                         Categories
-                      </TabsTrigger>
-                      <TabsTrigger 
+                      </AnimatedTabsTrigger>
+                      <AnimatedTabsTrigger 
                         value="subcategories" 
-                        className="data-[state=active]:bg-[#cba6f7] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#cba6f7]/50 py-2 px-3 text-sm"
+                        className="transition-all duration-300 font-medium py-2 px-3 text-sm data-[state=active]:text-[#cba6f7]"
                       >
                         Subcategories
-                      </TabsTrigger>
-                    </TabsList>
+                      </AnimatedTabsTrigger>
+                    </AnimatedTabsList>
 
-                    <TabsContent value="categories" className="mt-0">
+                    <AnimatedTabsContent value="categories" className="mt-0">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div>
                     <h3 className="text-base font-semibold mb-3">Add New Category</h3>
@@ -5607,9 +5579,9 @@ const Admin = () => {
             )}
                   </div>
                 </div>
-                    </TabsContent>
+                    </AnimatedTabsContent>
 
-                    <TabsContent value="subcategories" className="mt-0">
+                    <AnimatedTabsContent value="subcategories" className="mt-0">
                       <div className="space-y-6">
                         {/* Category Selection */}
                         <div>
@@ -5902,7 +5874,7 @@ const Admin = () => {
                           </div>
                         )}
                       </div>
-                    </TabsContent>
+                    </AnimatedTabsContent>
                   </Tabs>
                 ) : (
                   // For non-regular categories, just show the regular category management
@@ -6051,10 +6023,10 @@ const Admin = () => {
             </div>
           </CardContent>
         </Card>
-          </TabsContent>
+          </AnimatedTabsContent>
 
           {/* Level Management Section */}
-          <TabsContent value="levels" className="space-y-4 animate-fade-in">
+          <AnimatedTabsContent value="levels" className="space-y-4 animate-fade-in">
             <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
               <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
                 <CardTitle className="flex items-center gap-2 text-xl text-[#f2cdcd]">
@@ -6064,32 +6036,31 @@ const Admin = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4">
-                <div className="grid w-full grid-cols-2 p-0.5 gap-1 bg-ctp-surface0/50 rounded-none border border-ctp-surface1 mb-4">
-                  <Button
-                    variant={levelLeaderboardType === 'individual-level' ? "default" : "ghost"}
-                    onClick={() => setLevelLeaderboardType('individual-level')}
-                    className={`${
-                      levelLeaderboardType === 'individual-level'
-                        ? "bg-[#94e2d5] text-[#11111b] hover:bg-[#94e2d5]/90 shadow-sm"
-                        : "bg-ctp-surface0 text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
-                    } py-2 px-3 text-sm transition-all duration-300 font-medium`}
+                <Tabs 
+                  value={levelLeaderboardType} 
+                  onValueChange={(value) => setLevelLeaderboardType(value as 'individual-level' | 'community-golds')}
+                  className="w-full mb-4"
+                >
+                  <AnimatedTabsList 
+                    className="grid w-full grid-cols-2 p-0.5 gap-1 bg-ctp-surface0/50 rounded-none border border-ctp-surface1 h-auto"
+                    indicatorClassName="bg-[#94e2d5]"
                   >
-                    <Star className="h-4 w-4 mr-2" />
-                    Individual Level
-                  </Button>
-                  <Button
-                    variant={levelLeaderboardType === 'community-golds' ? "default" : "ghost"}
-                    onClick={() => setLevelLeaderboardType('community-golds')}
-                    className={`${
-                      levelLeaderboardType === 'community-golds'
-                        ? "bg-[#94e2d5] text-[#11111b] hover:bg-[#94e2d5]/90 shadow-sm"
-                        : "bg-ctp-surface0 text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
-                    } py-2 px-3 text-sm transition-all duration-300 font-medium`}
-                  >
-                    <Gem className="h-4 w-4 mr-2" />
-                    Community Golds
-                  </Button>
-                </div>
+                    <AnimatedTabsTrigger 
+                      value="individual-level"
+                      className="py-2 px-3 text-sm transition-all duration-300 font-medium data-[state=active]:bg-[#94e2d5] data-[state=active]:text-[#11111b] data-[state=active]:hover:bg-[#94e2d5]/90 data-[state=active]:shadow-sm data-[state=inactive]:bg-ctp-surface0 data-[state=inactive]:text-ctp-text data-[state=inactive]:hover:bg-ctp-surface1 data-[state=inactive]:hover:text-ctp-text"
+                    >
+                      <Star className="h-4 w-4 mr-2" />
+                      Individual Level
+                    </AnimatedTabsTrigger>
+                    <AnimatedTabsTrigger 
+                      value="community-golds"
+                      className="py-2 px-3 text-sm transition-all duration-300 font-medium data-[state=active]:bg-[#94e2d5] data-[state=active]:text-[#11111b] data-[state=active]:hover:bg-[#94e2d5]/90 data-[state=active]:shadow-sm data-[state=inactive]:bg-ctp-surface0 data-[state=inactive]:text-ctp-text data-[state=inactive]:hover:bg-ctp-surface1 data-[state=inactive]:hover:text-ctp-text"
+                    >
+                      <Gem className="h-4 w-4 mr-2" />
+                      Community Golds
+                    </AnimatedTabsTrigger>
+                  </AnimatedTabsList>
+                </Tabs>
 
                 <div className="mt-0">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -6321,10 +6292,10 @@ const Admin = () => {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          </AnimatedTabsContent>
 
         {/* Platform Management Section */}
-          <TabsContent value="platforms" className="space-y-4 animate-fade-in">
+          <AnimatedTabsContent value="platforms" className="space-y-4 animate-fade-in">
             <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
               <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
                 <CardTitle className="flex items-center gap-2 text-xl text-[#f2cdcd]">
@@ -6463,10 +6434,10 @@ const Admin = () => {
           </CardContent>
         </Card>
 
-          </TabsContent>
+          </AnimatedTabsContent>
 
           {/* Users Section */}
-          <TabsContent value="users" className="space-y-4 animate-fade-in">
+          <AnimatedTabsContent value="users" className="space-y-4 animate-fade-in">
             <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
               <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
                 <div className="flex items-center justify-between">
@@ -6806,10 +6777,10 @@ const Admin = () => {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-          </TabsContent>
+          </AnimatedTabsContent>
 
           {/* Points Configuration Section */}
-          <TabsContent value="points" className="space-y-4 animate-fade-in">
+          <AnimatedTabsContent value="points" className="space-y-4 animate-fade-in">
             <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
               <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
                 <CardTitle className="flex items-center gap-2 text-xl text-[#fab387]">
@@ -7101,10 +7072,10 @@ const Admin = () => {
                   </Button>
               </CardContent>
             </Card>
-          </TabsContent>
+          </AnimatedTabsContent>
 
         {/* Manage Downloads Section */}
-          <TabsContent value="downloads" className="space-y-4 animate-fade-in">
+          <AnimatedTabsContent value="downloads" className="space-y-4 animate-fade-in">
             <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
               <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
                 <CardTitle className="flex items-center gap-2 text-xl text-[#f2cdcd]">
@@ -7381,7 +7352,7 @@ const Admin = () => {
             )}
           </CardContent>
         </Card>
-        </TabsContent>
+        </AnimatedTabsContent>
         </Tabs>
 
         {/* Edit Download Dialog */}
@@ -7649,18 +7620,18 @@ const Admin = () => {
                       value={editingImportedRunForm.subcategory || editingSubcategories[0]?.id || ""} 
                       onValueChange={(value) => setEditingImportedRunForm({ ...editingImportedRunForm, subcategory: value })}
                     >
-                      <TabsList className="flex w-full p-0.5 gap-1 overflow-x-auto overflow-y-hidden scrollbar-hide rounded-none" style={{ minWidth: 'max-content' }}>
+                      <AnimatedTabsList className="flex w-full p-0.5 gap-1 overflow-x-auto overflow-y-hidden scrollbar-hide rounded-none" style={{ minWidth: 'max-content' }} indicatorClassName="h-0.5 bg-[#cba6f7]">
                         {editingSubcategories.map((subcategory, index) => (
-                          <TabsTrigger 
+                          <AnimatedTabsTrigger 
                             key={subcategory.id} 
                             value={subcategory.id} 
-                            className="data-[state=active]:bg-[#cba6f7] data-[state=active]:text-[#11111b] bg-ctp-surface0 text-ctp-text transition-all duration-300 font-medium border border-transparent hover:bg-ctp-surface1 hover:border-[#cba6f7]/50 py-1.5 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm whitespace-nowrap rounded-none"
+                            className="transition-all duration-300 font-medium py-1.5 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm whitespace-nowrap data-[state=active]:text-[#cba6f7]"
                             style={{ animationDelay: `${index * 50}ms` }}
                           >
                             {subcategory.name}
-                          </TabsTrigger>
+                          </AnimatedTabsTrigger>
                         ))}
-                      </TabsList>
+                      </AnimatedTabsList>
                     </Tabs>
                     {editingImportedRun.srcSubcategory && (
                       <p className="text-xs text-[hsl(222,15%,60%)] mt-1">

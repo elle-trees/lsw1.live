@@ -437,7 +437,7 @@ export const subscribeToLeaderboardEntriesFirestore = (
     const q = query(collection(db, "leaderboardEntries").withConverter(leaderboardEntryConverter), ...constraints);
     
     return onSnapshot(q, async (snapshot: QuerySnapshot) => {
-      const entries = snapshot.docs.map(doc => doc.data());
+      const entries = snapshot.docs.map(doc => doc.data()) as LeaderboardEntry[];
       const processed = await processLeaderboardEntries(entries, leaderboardType, subcategoryId, includeObsolete);
       callback(processed);
     }, (error) => {

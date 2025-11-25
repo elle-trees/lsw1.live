@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, AnimatedTabsList, AnimatedTabsTrigger } from "@/components/ui/animated-tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Upload, Gamepad2, Timer, User, Users, FileText, Sparkles, CheckCircle, Calendar, Trophy, Star, Gem, BookOpen } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -224,8 +225,10 @@ const SubmitRun = () => {
     // Check if video is required for this category
     const selectedCategory = availableCategories.find(c => c.id === formData.category);
     const categoryName = selectedCategory?.name || "";
-    const normalizedCategory = categoryName.toLowerCase().trim();
-    const isNocutsNoships = normalizedCategory === "nocuts noships" || normalizedCategory === "nocutsnoships";
+    // Normalize category name by removing spaces, hyphens, and converting to lowercase for flexible matching
+    // This handles variations like "Nocuts Noships", "No Cuts No Ships", "No-Cuts-No-Ships", "nocutsnoships", etc.
+    const normalizedCategory = categoryName.toLowerCase().replace(/[\s-]+/g, "");
+    const isNocutsNoships = normalizedCategory === "nocutsnoships";
     
     // Video is required for all categories except Nocuts Noships
     if (!isNocutsNoships && (!formData.videoUrl || !formData.videoUrl.trim())) {
@@ -499,7 +502,7 @@ const SubmitRun = () => {
                         onChange={handleChange}
                         placeholder="HH:MM:SS"
                         required
-                        className="bg-gradient-to-br from-[hsl(240,21%,18%)] to-[hsl(240,21%,16%)] border-[hsl(235,13%,30%)] h-10 text-sm pl-10 hover:border-[#cba6f7] hover:bg-gradient-to-br hover:from-[hsl(240,21%,20%)] hover:to-[hsl(240,21%,18%)] transition-all duration-300"
+                        className="bg-gradient-to-br from-[hsl(240,21%,18%)] to-[hsl(240,21%,16%)] border-[hsl(235,13%,30%)] h-10 text-sm pl-10 text-left hover:border-[#cba6f7] hover:bg-gradient-to-br hover:from-[hsl(240,21%,20%)] hover:to-[hsl(240,21%,18%)] transition-all duration-300"
                       />
                     </div>
                   </FadeIn>
@@ -517,7 +520,7 @@ const SubmitRun = () => {
                         onChange={handleChange}
                         required
                         max={new Date().toISOString().split('T')[0]}
-                        className="bg-gradient-to-br from-[hsl(240,21%,18%)] to-[hsl(240,21%,16%)] border-[hsl(235,13%,30%)] h-10 text-sm pl-10 hover:border-[#cba6f7] hover:bg-gradient-to-br hover:from-[hsl(240,21%,20%)] hover:to-[hsl(240,21%,18%)] transition-all duration-300"
+                        className="bg-gradient-to-br from-[hsl(240,21%,18%)] to-[hsl(240,21%,16%)] border-[hsl(235,13%,30%)] h-10 text-sm pl-10 text-left hover:border-[#cba6f7] hover:bg-gradient-to-br hover:from-[hsl(240,21%,20%)] hover:to-[hsl(240,21%,18%)] transition-all duration-300"
                       />
                     </div>
                   </FadeIn>
@@ -555,7 +558,7 @@ const SubmitRun = () => {
                   </FadeIn>
                 )}
 
-                {/* Category Selection - Buttons for all types */}
+                {/* Category Selection - Tabs for all types */}
                 {availableCategories.length > 0 ? (
                   <FadeIn delay={0.15}>
                     <Label className="text-sm font-semibold mb-2 block flex items-center gap-2">
@@ -576,27 +579,26 @@ const SubmitRun = () => {
                         </>
                       )}
                     </Label>
-                    <div className="flex w-full p-1 gap-2 overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-thumb-ctp-surface1 scrollbar-track-transparent pb-3" style={{ minWidth: 'max-content' }}>
+                    <Tabs value={formData.category} onValueChange={(value) => handleSelectChange("category", value)} className="w-full">
+                      <AnimatedTabsList 
+                        className="flex w-full p-1 gap-2 overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-thumb-ctp-surface1 scrollbar-track-transparent pb-3 relative" 
+                        style={{ minWidth: 'max-content' }}
+                        indicatorClassName="h-0.5 bg-[#94e2d5]"
+                      >
                         {availableCategories.map((category, index) => {
-                          const isSelected = formData.category === category.id;
                           return (
-                          <Button 
-                            key={category.id} 
-                            type="button"
-                            variant={isSelected ? "default" : "outline"}
-                            onClick={() => handleSelectChange("category", category.id)}
-                            className={`button-click-animation category-button-animate whitespace-nowrap px-4 py-2 h-9 text-sm font-medium transition-all duration-200 rounded-none ${
-                              isSelected 
-                                ? "bg-[#94e2d5] text-[#11111b] hover:bg-[#94e2d5]/90 border-transparent shadow-sm" 
-                                : "bg-ctp-surface0 text-ctp-text border-ctp-surface1 hover:bg-ctp-surface1 hover:text-ctp-text hover:border-[#94e2d5]/50"
-                            }`}
-                            style={{ animationDelay: `${index * 50}ms` }}
-                          >
-                            {category.name}
-                          </Button>
+                            <AnimatedTabsTrigger
+                              key={category.id}
+                              value={category.id}
+                              className="whitespace-nowrap px-4 py-2 h-9 text-sm font-medium transition-all duration-200 data-[state=active]:text-[#94e2d5]"
+                              style={{ animationDelay: `${index * 50}ms` }}
+                            >
+                              {category.name}
+                            </AnimatedTabsTrigger>
                           );
                         })}
-                    </div>
+                      </AnimatedTabsList>
+                    </Tabs>
                     {leaderboardType === 'individual-level' && (
                       <p className="text-xs text-[hsl(222,15%,60%)] mt-1">
                         Choose "Story" for story mode levels or "Free Play" for free play levels
@@ -645,27 +647,26 @@ const SubmitRun = () => {
                           <Trophy className="h-3.5 w-3.5 text-[#cba6f7]" />
                           Subcategory *
                         </Label>
-                        <div className="flex w-full p-1 gap-2 overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-thumb-ctp-surface1 scrollbar-track-transparent pb-3" style={{ minWidth: 'max-content' }}>
+                        <Tabs value={formData.subcategory} onValueChange={(value) => handleSelectChange("subcategory", value)} className="w-full">
+                          <AnimatedTabsList 
+                            className="flex w-full p-1 gap-2 overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-thumb-ctp-surface1 scrollbar-track-transparent pb-3 relative" 
+                            style={{ minWidth: 'max-content' }}
+                            indicatorClassName="h-0.5 bg-[#cba6f7]"
+                          >
                             {availableSubcategories.map((subcategory, index) => {
-                              const isSelected = formData.subcategory === subcategory.id;
                               return (
-                              <Button 
-                                key={subcategory.id} 
-                                type="button"
-                                variant={isSelected ? "default" : "outline"}
-                                onClick={() => handleSelectChange("subcategory", subcategory.id)}
-                                className={`button-click-animation category-button-animate whitespace-nowrap px-4 py-2 h-8 text-xs sm:text-sm font-medium transition-all duration-200 rounded-none ${
-                                  isSelected 
-                                    ? "bg-[#cba6f7] text-[#11111b] hover:bg-[#cba6f7]/90 border-transparent shadow-sm" 
-                                    : "bg-ctp-surface0 text-ctp-text border-ctp-surface1 hover:bg-ctp-surface1 hover:text-ctp-text hover:border-[#cba6f7]/50"
-                                }`}
-                                style={{ animationDelay: `${index * 50}ms` }}
-                              >
-                                {subcategory.name}
-                              </Button>
+                                <AnimatedTabsTrigger
+                                  key={subcategory.id}
+                                  value={subcategory.id}
+                                  className="whitespace-nowrap px-4 py-2 h-8 text-xs sm:text-sm font-medium transition-all duration-200 data-[state=active]:text-[#cba6f7]"
+                                  style={{ animationDelay: `${index * 50}ms` }}
+                                >
+                                  {subcategory.name}
+                                </AnimatedTabsTrigger>
                               );
                             })}
-                        </div>
+                          </AnimatedTabsList>
+                        </Tabs>
                         <p className="text-xs text-[hsl(222,15%,60%)] mt-1">
                           Select a subcategory for this run (e.g., Glitchless, No Major Glitches)
                         </p>
@@ -729,8 +730,10 @@ const SubmitRun = () => {
                   {(() => {
                     const selectedCategory = availableCategories.find(c => c.id === formData.category);
                     const categoryName = selectedCategory?.name || "";
-                    const normalizedCategory = categoryName.toLowerCase().trim();
-                    const isNocutsNoships = normalizedCategory === "nocuts noships" || normalizedCategory === "nocutsnoships";
+                    // Normalize category name by removing spaces, hyphens, and converting to lowercase for flexible matching
+                    // This handles variations like "Nocuts Noships", "No Cuts No Ships", "No-Cuts-No-Ships", "nocutsnoships", etc.
+                    const normalizedCategory = categoryName.toLowerCase().replace(/[\s-]+/g, "");
+                    const isNocutsNoships = normalizedCategory === "nocutsnoships";
                     const isVideoRequired = !isNocutsNoships;
                     
                     return (

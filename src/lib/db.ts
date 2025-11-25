@@ -1,367 +1,375 @@
-export const getUnverifiedLeaderboardEntries = async (...args: any[]) => {
+export const getUnverifiedLeaderboardEntries = async () => {
   const module = await import("./db/runs");
-  return module.getUnverifiedLeaderboardEntries(...args);
+  return module.getUnverifiedLeaderboardEntries();
 };
 
-export const updateRunVerificationStatus = async (...args: any[]) => {
+export const updateRunVerificationStatus = async (runId: string, verified: boolean, verifiedBy?: string) => {
   const module = await import("./db/runs");
-  return module.updateRunVerificationStatus(...args);
+  return module.updateRunVerificationStatus(runId, verified, verifiedBy);
 };
 
-export const deleteLeaderboardEntry = async (...args: any[]) => {
+export const deleteLeaderboardEntry = async (runId: string) => {
   const module = await import("./db/runs");
-  return module.deleteLeaderboardEntry(...args);
+  return module.deleteLeaderboardEntry(runId);
 };
 
-export const addLeaderboardEntry = async (...args: any[]) => {
+export const addLeaderboardEntry = async (entry: Omit<import("@/types/database").LeaderboardEntry, 'id' | 'rank' | 'isObsolete'> & { verified?: boolean }) => {
   const module = await import("./db/runs");
-  return module.addLeaderboardEntry(...args);
+  return module.addLeaderboardEntry(entry);
 };
 
-export const updateLeaderboardEntry = async (...args: any[]) => {
+export const updateLeaderboardEntry = async (runId: string, data: Partial<import("@/types/database").LeaderboardEntry>) => {
   const module = await import("./db/runs");
-  return module.updateLeaderboardEntry(...args);
+  return module.updateLeaderboardEntry(runId, data);
 };
 
-export const getPlayerByUid = async (...args: any[]) => {
+export const getPlayerByUid = async (uid: string) => {
   const module = await import("./db/players");
-  return module.getPlayerByUid(...args);
+  return module.getPlayerByUid(uid);
 };
 
-export const getPlayerByDisplayName = async (...args: any[]) => {
+export const getPlayerByDisplayName = async (displayName: string) => {
   const module = await import("./db/players");
-  return module.getPlayerByDisplayName(...args);
+  return module.getPlayerByDisplayName(displayName);
 };
 
-export const createPlayer = async (...args: any[]) => {
+export const createPlayer = async (player: import("@/types/database").Player) => {
   const module = await import("./db/players");
-  return module.createPlayer(...args);
+  return module.createPlayer(player);
 };
 
-export const setPlayerAdminStatus = async (...args: any[]) => {
+export const setPlayerAdminStatus = async (uid: string, isAdmin: boolean) => {
   const module = await import("./db/players");
-  return module.setPlayerAdminStatus(...args);
+  return module.setPlayerAdminStatus(uid, isAdmin);
 };
 
-export const getAllPlayers = async (...args: any[]) => {
+export const getAllPlayers = async () => {
   const module = await import("./db/players");
-  return module.getAllPlayers(...args);
+  return module.getAllPlayers();
 };
 
-export const updatePlayer = async (...args: any[]) => {
+export const updatePlayer = async (uid: string, data: Partial<import("@/types/database").Player>) => {
   const module = await import("./db/players");
-  return module.updatePlayer(...args);
+  return module.updatePlayer(uid, data);
 };
 
-export const deletePlayer = async (...args: any[]) => {
+export const deletePlayer = async (uid: string) => {
   const module = await import("./db/players");
-  return module.deletePlayer(...args);
+  return module.deletePlayer(uid);
 };
 
-export const getUnreadUserNotifications = async (...args: any[]) => {
+export const getUnreadUserNotifications = async (userId: string) => {
   const module = await import("./db/notifications");
-  return module.getUnreadUserNotifications(...args);
+  return module.getUnreadUserNotifications(userId);
 };
 
-export const markNotificationAsRead = async (...args: any[]) => {
+export const markNotificationAsRead = async (notificationId: string) => {
   const module = await import("./db/notifications");
-  return module.markNotificationAsRead(...args);
+  return module.markNotificationAsRead(notificationId);
 };
 
-export const markAllNotificationsAsRead = async (...args: any[]) => {
+export const markAllNotificationsAsRead = async (userId: string) => {
   const module = await import("./db/notifications");
-  return module.markAllNotificationsAsRead(...args);
+  return module.markAllNotificationsAsRead(userId);
 };
 
-export const deleteNotification = async (...args: any[]) => {
+export const deleteNotification = async (notificationId: string) => {
   const module = await import("./db/notifications");
-  return module.deleteNotification(...args);
+  return module.deleteNotification(notificationId);
 };
 
-export const getUnclaimedRunsBySRCUsername = async (...args: any[]) => {
+export const getUnclaimedRunsBySRCUsername = async (srcUsername: string) => {
   const module = await import("./db/src-imports");
-  return module.getUnclaimedRunsBySRCUsername(...args);
+  return module.getUnclaimedRunsBySRCUsername(srcUsername);
 };
 
-export const runAutoclaimingForAllUsers = async (...args: any[]) => {
+export const runAutoclaimingForAllUsers = async () => {
   const module = await import("./db/src-imports");
-  return module.runAutoclaimingForAllUsers(...args);
+  return module.runAutoclaimingForAllUsers();
 };
 
 // Re-export commonly used functions with lazy loading
-export const getCategories = async (...args: any[]) => {
+export const getCategories = async (leaderboardType?: 'regular' | 'individual-level' | 'community-golds') => {
   const module = await import("./db/categories");
-  return module.getCategories(...args);
+  return module.getCategories(leaderboardType);
 };
 
-export const getCategoriesFromFirestore = async (...args: any[]) => {
+export const getCategoriesFromFirestore = async (leaderboardType?: 'regular' | 'individual-level' | 'community-golds') => {
   const module = await import("./db/categories");
-  return module.getCategoriesFromFirestore(...args);
+  return module.getCategoriesFromFirestore(leaderboardType);
 };
 
-export const getPlatforms = async (...args: any[]) => {
+export const getPlatforms = async () => {
   const module = await import("./db/categories");
-  return module.getPlatforms(...args);
+  return module.getPlatforms();
 };
 
-export const getPlatformsFromFirestore = async (...args: any[]) => {
+export const getPlatformsFromFirestore = async () => {
   const module = await import("./db/categories");
-  return module.getPlatformsFromFirestore(...args);
+  return module.getPlatformsFromFirestore();
 };
 
-export const getLevels = async (...args: any[]) => {
+export const getLevels = async () => {
   const module = await import("./db/categories");
-  return module.getLevels(...args);
+  return module.getLevels();
 };
 
-export const getDownloadEntries = async (...args: any[]) => {
+export const getDownloadEntries = async () => {
   const module = await import("./db/downloads");
-  return module.getDownloadEntries(...args);
+  return module.getDownloadEntries();
 };
 
-export const getImportedSRCRuns = async (...args: any[]) => {
+export const getImportedSRCRuns = async (limitCount: number = 50) => {
   const module = await import("./db/src-imports");
-  return module.getImportedSRCRuns(...args);
+  return module.getImportedSRCRuns(limitCount);
 };
 
-export const getLeaderboardEntries = async (...args: any[]) => {
+export const getLeaderboardEntries = async (
+  categoryId?: string,
+  platformId?: string,
+  runType?: 'solo' | 'co-op',
+  includeObsolete?: boolean,
+  leaderboardType?: 'regular' | 'individual-level' | 'community-golds',
+  levelId?: string,
+  subcategoryId?: string
+) => {
   const module = await import("./db/runs");
-  return module.getLeaderboardEntries(...args);
+  return module.getLeaderboardEntries(categoryId, platformId, runType, includeObsolete, leaderboardType, levelId, subcategoryId);
 };
 
-export const getLeaderboardEntryById = async (...args: any[]) => {
+export const getLeaderboardEntryById = async (runId: string) => {
   const module = await import("./db/runs");
-  return module.getLeaderboardEntryById(...args);
+  return module.getLeaderboardEntryById(runId);
 };
 
-export const getRecentRuns = async (...args: any[]) => {
+export const getRecentRuns = async (limitCount: number = 20) => {
   const module = await import("./db/runs");
-  return module.getRecentRuns(...args);
+  return module.getRecentRuns(limitCount);
 };
 
-export const getPlayerRuns = async (...args: any[]) => {
+export const getPlayerRuns = async (playerId: string) => {
   const module = await import("./db/runs");
-  return module.getPlayerRuns(...args);
+  return module.getPlayerRuns(playerId);
 };
 
-export const getPlayerPendingRuns = async (...args: any[]) => {
+export const getPlayerPendingRuns = async (playerId: string) => {
   const module = await import("./db/runs");
-  return module.getPlayerPendingRuns(...args);
+  return module.getPlayerPendingRuns(playerId);
 };
 
-export const updateRunObsoleteStatus = async (...args: any[]) => {
+export const updateRunObsoleteStatus = async (runId: string, isObsolete: boolean) => {
   const module = await import("./db/runs");
-  return module.updateRunObsoleteStatus(...args);
+  return module.updateRunObsoleteStatus(runId, isObsolete);
 };
 
-export const deleteAllLeaderboardEntries = async (...args: any[]) => {
+export const deleteAllLeaderboardEntries = async () => {
   const module = await import("./db/runs");
-  return module.deleteAllLeaderboardEntries(...args);
+  return module.deleteAllLeaderboardEntries();
 };
 
-export const addCategory = async (...args: any[]) => {
+export const addCategory = async (name: string, leaderboardType?: 'regular' | 'individual-level' | 'community-golds', srcCategoryId?: string) => {
   const module = await import("./db/categories");
-  return module.addCategory(...args);
+  return module.addCategory(name, leaderboardType, srcCategoryId);
 };
 
-export const updateCategory = async (...args: any[]) => {
+export const updateCategory = async (id: string, name: string, subcategories?: Array<{ id: string; name: string; order?: number; srcVariableId?: string; srcValueId?: string }>, srcCategoryId?: string | null, srcSubcategoryVariableName?: string | null) => {
   const module = await import("./db/categories");
-  return module.updateCategory(...args);
+  return module.updateCategory(id, name, subcategories, srcCategoryId, srcSubcategoryVariableName);
 };
 
-export const deleteCategory = async (...args: any[]) => {
+export const deleteCategory = async (id: string) => {
   const module = await import("./db/categories");
-  return module.deleteCategory(...args);
+  return module.deleteCategory(id);
 };
 
-export const moveCategoryUp = async (...args: any[]) => {
+export const moveCategoryUp = async (id: string) => {
   const module = await import("./db/categories");
-  return module.moveCategoryUp(...args);
+  return module.moveCategoryUp(id);
 };
 
-export const moveCategoryDown = async (...args: any[]) => {
+export const moveCategoryDown = async (id: string) => {
   const module = await import("./db/categories");
-  return module.moveCategoryDown(...args);
+  return module.moveCategoryDown(id);
 };
 
-export const addPlatform = async (...args: any[]) => {
+export const addPlatform = async (name: string) => {
   const module = await import("./db/categories");
-  return module.addPlatform(...args);
+  return module.addPlatform(name);
 };
 
-export const updatePlatform = async (...args: any[]) => {
+export const updatePlatform = async (id: string, name: string) => {
   const module = await import("./db/categories");
-  return module.updatePlatform(...args);
+  return module.updatePlatform(id, name);
 };
 
-export const deletePlatform = async (...args: any[]) => {
+export const deletePlatform = async (id: string) => {
   const module = await import("./db/categories");
-  return module.deletePlatform(...args);
+  return module.deletePlatform(id);
 };
 
-export const movePlatformUp = async (...args: any[]) => {
+export const movePlatformUp = async (id: string) => {
   const module = await import("./db/categories");
-  return module.movePlatformUp(...args);
+  return module.movePlatformUp(id);
 };
 
-export const movePlatformDown = async (...args: any[]) => {
+export const movePlatformDown = async (id: string) => {
   const module = await import("./db/categories");
-  return module.movePlatformDown(...args);
+  return module.movePlatformDown(id);
 };
 
-export const addLevel = async (...args: any[]) => {
+export const addLevel = async (name: string) => {
   const module = await import("./db/categories");
-  return module.addLevel(...args);
+  return module.addLevel(name);
 };
 
-export const updateLevel = async (...args: any[]) => {
+export const updateLevel = async (id: string, name: string) => {
   const module = await import("./db/categories");
-  return module.updateLevel(...args);
+  return module.updateLevel(id, name);
 };
 
-export const deleteLevel = async (...args: any[]) => {
+export const deleteLevel = async (id: string) => {
   const module = await import("./db/categories");
-  return module.deleteLevel(...args);
+  return module.deleteLevel(id);
 };
 
-export const moveLevelUp = async (...args: any[]) => {
+export const moveLevelUp = async (id: string) => {
   const module = await import("./db/categories");
-  return module.moveLevelUp(...args);
+  return module.moveLevelUp(id);
 };
 
-export const moveLevelDown = async (...args: any[]) => {
+export const moveLevelDown = async (id: string) => {
   const module = await import("./db/categories");
-  return module.moveLevelDown(...args);
+  return module.moveLevelDown(id);
 };
 
-export const updateLevelCategoryDisabled = async (...args: any[]) => {
+export const updateLevelCategoryDisabled = async (levelId: string, categoryId: string, disabled: boolean) => {
   const module = await import("./db/categories");
-  return module.updateLevelCategoryDisabled(...args);
+  return module.updateLevelCategoryDisabled(levelId, categoryId, disabled);
 };
 
-export const addDownloadEntry = async (...args: any[]) => {
+export const addDownloadEntry = async (download: Omit<import("@/types/database").DownloadEntry, 'id' | 'dateAdded'>) => {
   const module = await import("./db/downloads");
-  return module.addDownloadEntry(...args);
+  return module.addDownloadEntry(download);
 };
 
-export const deleteDownloadEntry = async (...args: any[]) => {
+export const deleteDownloadEntry = async (id: string) => {
   const module = await import("./db/downloads");
-  return module.deleteDownloadEntry(...args);
+  return module.deleteDownloadEntry(id);
 };
 
-export const moveDownloadUp = async (...args: any[]) => {
+export const moveDownloadUp = async (id: string) => {
   const module = await import("./db/downloads");
-  return module.moveDownloadUp(...args);
+  return module.moveDownloadUp(id);
 };
 
-export const moveDownloadDown = async (...args: any[]) => {
+export const moveDownloadDown = async (id: string) => {
   const module = await import("./db/downloads");
-  return module.moveDownloadDown(...args);
+  return module.moveDownloadDown(id);
 };
 
-export const getDownloadCategories = async (...args: any[]) => {
+export const getDownloadCategories = async () => {
   const module = await import("./db/downloads");
-  return module.getDownloadCategories(...args);
+  return module.getDownloadCategories();
 };
 
-export const getPointsConfig = async (...args: any[]) => {
+export const getPointsConfig = async () => {
   const module = await import("./db/config");
-  return module.getPointsConfig(...args);
+  return module.getPointsConfig();
 };
 
-export const updatePointsConfig = async (...args: any[]) => {
+export const updatePointsConfig = async (config: import("@/types/database").PointsConfig) => {
   const module = await import("./db/config");
-  return module.updatePointsConfig(...args);
+  return module.updatePointsConfig(config);
 };
 
-export const getGameDetailsConfig = async (...args: any[]) => {
+export const getGameDetailsConfig = async () => {
   const module = await import("./db/config");
-  return module.getGameDetailsConfig(...args);
+  return module.getGameDetailsConfig();
 };
 
-export const updateGameDetailsConfig = async (...args: any[]) => {
+export const updateGameDetailsConfig = async (config: Partial<import("@/types/database").GameDetailsConfig>) => {
   const module = await import("./db/config");
-  return module.updateGameDetailsConfig(...args);
+  return module.updateGameDetailsConfig(config);
 };
 
-export const backfillPointsForAllRuns = async (...args: any[]) => {
+export const backfillPointsForAllRuns = async () => {
   const module = await import("./db/config");
-  return module.backfillPointsForAllRuns(...args);
+  return module.backfillPointsForAllRuns();
 };
 
-export const findDuplicateRuns = async (...args: any[]) => {
+export const findDuplicateRuns = async () => {
   const module = await import("./db/src-imports");
-  return module.findDuplicateRuns(...args);
+  return module.findDuplicateRuns();
 };
 
-export const removeDuplicateRuns = async (...args: any[]) => {
+export const removeDuplicateRuns = async (duplicateGroups: Array<{ runs: import("@/types/database").LeaderboardEntry[]; key: string }>) => {
   const module = await import("./db/src-imports");
-  return module.removeDuplicateRuns(...args);
+  return module.removeDuplicateRuns(duplicateGroups);
 };
 
-export const deleteAllImportedSRCRuns = async (...args: any[]) => {
+export const deleteAllImportedSRCRuns = async () => {
   const module = await import("./db/src-imports");
-  return module.deleteAllImportedSRCRuns(...args);
+  return module.deleteAllImportedSRCRuns();
 };
 
-export const getUserNotifications = async (...args: any[]) => {
+export const getUserNotifications = async (userId: string, limitCount: number = 20) => {
   const module = await import("./db/notifications");
-  return module.getUserNotifications(...args);
+  return module.getUserNotifications(userId, limitCount);
 };
 
-export const createNotification = async (...args: any[]) => {
+export const createNotification = async (notification: Omit<import("@/types/notifications").Notification, "id" | "createdAt" | "read">) => {
   const module = await import("./db/notifications");
-  return module.createNotification(...args);
+  return module.createNotification(notification);
 };
 
-export const getPlayersByPoints = async (...args: any[]) => {
+export const getPlayersByPoints = async (limitCount: number = 100) => {
   const module = await import("./db/players");
-  return module.getPlayersByPoints(...args);
+  return module.getPlayersByPoints(limitCount);
 };
 
-export const getPlayersWithTwitchUsernames = async (...args: any[]) => {
+export const getPlayersWithTwitchUsernames = async () => {
   const module = await import("./db/players");
-  return module.getPlayersWithTwitchUsernames(...args);
+  return module.getPlayersWithTwitchUsernames();
 };
 
-export const getPlayersWithSRCUsernames = async (...args: any[]) => {
+export const getPlayersWithSRCUsernames = async () => {
   const module = await import("./db/players");
-  return module.getPlayersWithSRCUsernames(...args);
+  return module.getPlayersWithSRCUsernames();
 };
 
-export const isDisplayNameAvailable = async (...args: any[]) => {
+export const isDisplayNameAvailable = async (displayName: string) => {
   const module = await import("./db/players");
-  return module.isDisplayNameAvailable(...args);
+  return module.isDisplayNameAvailable(displayName);
 };
 
-export const updatePlayerProfile = async (...args: any[]) => {
+export const updatePlayerProfile = async (uid: string, data: Partial<import("@/types/database").Player>) => {
   const module = await import("./db/players");
-  return module.updatePlayerProfile(...args);
+  return module.updatePlayerProfile(uid, data);
 };
 
-export const getUnassignedRuns = async (...args: any[]) => {
+export const getUnassignedRuns = async () => {
   const module = await import("./db/src-imports");
-  return module.getUnassignedRuns(...args);
+  return module.getUnassignedRuns();
 };
 
-export const claimRun = async (...args: any[]) => {
+export const claimRun = async (runId: string, playerId: string) => {
   const module = await import("./db/src-imports");
-  return module.claimRun(...args);
+  return module.claimRun(runId, playerId);
 };
 
-export const getAllVerifiedRuns = async (...args: any[]) => {
+export const getAllVerifiedRuns = async () => {
   const module = await import("./db/src-imports");
-  return module.getAllVerifiedRuns(...args);
+  return module.getAllVerifiedRuns();
 };
 
-export const initializeDefaultCategories = async (...args: any[]) => {
+export const initializeDefaultCategories = async () => {
   const module = await import("./db/categories");
-  return module.initializeDefaultCategories(...args);
+  return module.initializeDefaultCategories();
 };
 
-export const initializeDefaultPlatforms = async (...args: any[]) => {
+export const initializeDefaultPlatforms = async () => {
   const module = await import("./db/categories");
-  return module.initializeDefaultPlatforms(...args);
+  return module.initializeDefaultPlatforms();
 };
 
 export const runTypes = [

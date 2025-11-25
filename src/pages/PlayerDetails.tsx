@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Tabs, AnimatedTabsList, AnimatedTabsTrigger } from "@/components/ui/animated-tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PlayerProfile } from "@/components/PlayerProfile";
@@ -414,10 +415,10 @@ const PlayerDetails = () => {
           <h1 className="text-3xl font-bold mb-4">Player Not Found</h1>
           <p className="text-[hsl(222,15%,60%)] mb-8">The requested player could not be found.</p>
           <Button variant="outline" className="text-[hsl(220,17%,92%)] border-[hsl(235,13%,30%)] hover:bg-[hsl(234,14%,29%)]" asChild>
-            <Link to="/leaderboards">
+            <PrefetchLink to="/leaderboards">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Leaderboards
-            </Link>
+            </PrefetchLink>
           </Button>
         </div>
       </div>
@@ -484,8 +485,8 @@ const PlayerDetails = () => {
                         onClick={() => navigate(`/run/${run.id}`)}
                       >
                         <TableCell className="py-3 px-4 font-medium text-ctp-text">{categoryName}</TableCell>
-                        <TableCell className="py-3 px-4 font-mono text-ctp-text">{formatTime(run.time)}</TableCell>
-                        <TableCell className="py-3 px-4 text-ctp-subtext1">{formatDate(run.date)}</TableCell>
+                        <TableCell className="py-3 px-4 font-mono text-ctp-text text-left">{formatTime(run.time)}</TableCell>
+                        <TableCell className="py-3 px-4 text-ctp-subtext1 text-left">{formatDate(run.date)}</TableCell>
                         <TableCell className="py-3 px-4">
                           <Badge variant="outline" className="border-ctp-surface1 bg-ctp-surface0 text-ctp-text text-xs px-1.5 py-0.5">
                             {platformName}
@@ -512,48 +513,35 @@ const PlayerDetails = () => {
               Runs
             </h3>
 
-            {/* Leaderboard Type Buttons */}
-            <div className="grid grid-cols-3 mb-4 p-0.5 gap-1 bg-ctp-surface0/50 rounded-none border border-ctp-surface1">
-              <Button
-                variant={leaderboardType === 'regular' ? "default" : "ghost"}
-                onClick={() => setLeaderboardType('regular')}
-                className={`button-click-animation h-auto py-1.5 sm:py-2 px-2 sm:px-3 rounded-none transition-all duration-200 font-medium text-xs sm:text-sm whitespace-nowrap ${
-                  leaderboardType === 'regular'
-                    ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm"
-                    : "text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
-                }`}
-              >
-                <Trophy className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
-                <span className="hidden min-[375px]:inline">Full Game</span>
-                <span className="min-[375px]:hidden">Game</span>
-              </Button>
-              <Button
-                variant={leaderboardType === 'individual-level' ? "default" : "ghost"}
-                onClick={() => setLeaderboardType('individual-level')}
-                className={`button-click-animation h-auto py-1.5 sm:py-2 px-2 sm:px-3 rounded-none transition-all duration-200 font-medium text-xs sm:text-sm whitespace-nowrap ${
-                  leaderboardType === 'individual-level'
-                    ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm"
-                    : "text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
-                }`}
-              >
-                <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
-                <span className="hidden sm:inline">Individual Levels</span>
-                <span className="sm:hidden">ILs</span>
-              </Button>
-              <Button
-                variant={leaderboardType === 'community-golds' ? "default" : "ghost"}
-                onClick={() => setLeaderboardType('community-golds')}
-                className={`button-click-animation h-auto py-1.5 sm:py-2 px-2 sm:px-3 rounded-none transition-all duration-200 font-medium text-xs sm:text-sm whitespace-nowrap ${
-                  leaderboardType === 'community-golds'
-                    ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm"
-                    : "text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
-                }`}
-              >
-                <Gem className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
-                <span className="hidden sm:inline">Community Golds</span>
-                <span className="sm:hidden">CGs</span>
-              </Button>
-            </div>
+            {/* Leaderboard Type Tabs */}
+            <Tabs value={leaderboardType} onValueChange={(value) => setLeaderboardType(value as 'regular' | 'individual-level' | 'community-golds')} className="w-full mb-4">
+              <AnimatedTabsList className="grid grid-cols-3 p-0 gap-1 relative" indicatorClassName="h-0.5 bg-[#f9e2af]">
+                <AnimatedTabsTrigger
+                  value="regular"
+                  className="h-auto py-1.5 sm:py-2 px-2 sm:px-3 transition-all duration-200 font-medium text-xs sm:text-sm whitespace-nowrap data-[state=active]:text-[#f9e2af]"
+                >
+                  <Trophy className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
+                  <span className="hidden min-[375px]:inline">Full Game</span>
+                  <span className="min-[375px]:hidden">Game</span>
+                </AnimatedTabsTrigger>
+                <AnimatedTabsTrigger
+                  value="individual-level"
+                  className="h-auto py-1.5 sm:py-2 px-2 sm:px-3 transition-all duration-200 font-medium text-xs sm:text-sm whitespace-nowrap data-[state=active]:text-[#f9e2af]"
+                >
+                  <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
+                  <span className="hidden sm:inline">Individual Levels</span>
+                  <span className="sm:hidden">ILs</span>
+                </AnimatedTabsTrigger>
+                <AnimatedTabsTrigger
+                  value="community-golds"
+                  className="h-auto py-1.5 sm:py-2 px-2 sm:px-3 transition-all duration-200 font-medium text-xs sm:text-sm whitespace-nowrap data-[state=active]:text-[#f9e2af]"
+                >
+                  <Gem className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
+                  <span className="hidden sm:inline">Community Golds</span>
+                  <span className="sm:hidden">CGs</span>
+                </AnimatedTabsTrigger>
+              </AnimatedTabsList>
+            </Tabs>
 
             <div className="mt-0">
                 {(() => {
@@ -617,55 +605,55 @@ const PlayerDetails = () => {
                   // Combine verified and unclaimed runs
                   const allRuns = [...filteredVerifiedRuns, ...filteredUnclaimedRuns];
 
-                  // Category buttons
+                  // Category tabs
                   const categoryButtons = categoriesWithRuns.length > 0 ? (
                     <div className="mb-4">
-                      <div className="flex w-full p-1 gap-2 overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-thumb-ctp-surface1 scrollbar-track-transparent pb-3" style={{ minWidth: 'max-content' }}>
-                        {categoriesWithRuns.map((category, index) => {
-                          const isSelected = selectedCategory === category.id;
-                          return (
-                            <Button
-                              key={category.id}
-                              variant={isSelected ? "default" : "outline"}
-                              onClick={() => setSelectedCategory(category.id)}
-                              className={`button-click-animation category-button-animate whitespace-nowrap px-4 py-2 h-9 text-sm font-medium transition-all duration-200 ${
-                                isSelected
-                                  ? "bg-[#94e2d5] text-[#11111b] hover:bg-[#94e2d5]/90 border-transparent shadow-sm"
-                                  : "bg-ctp-surface0 text-ctp-text border-ctp-surface1 hover:bg-ctp-surface1 hover:text-ctp-text hover:border-[#94e2d5]/50"
-                              }`}
-                              style={{ animationDelay: `${index * 50}ms` }}
-                            >
-                              {category.name}
-                            </Button>
-                          );
-                        })}
-                      </div>
+                      <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="w-full">
+                        <AnimatedTabsList 
+                          className="flex w-full p-1 gap-2 overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-thumb-ctp-surface1 scrollbar-track-transparent pb-3" 
+                          style={{ minWidth: 'max-content' }}
+                          indicatorClassName="h-0.5 bg-[#94e2d5]"
+                        >
+                          {categoriesWithRuns.map((category, index) => {
+                            return (
+                              <AnimatedTabsTrigger
+                                key={category.id}
+                                value={category.id}
+                                className="whitespace-nowrap px-4 py-2 h-9 text-sm font-medium transition-all duration-200 data-[state=active]:text-[#94e2d5]"
+                                style={{ animationDelay: `${index * 50}ms` }}
+                              >
+                                {category.name}
+                              </AnimatedTabsTrigger>
+                            );
+                          })}
+                        </AnimatedTabsList>
+                      </Tabs>
                     </div>
                   ) : null;
                   
-                  // Subcategory buttons (only for regular leaderboard type)
+                  // Subcategory tabs (only for regular leaderboard type)
                   const subcategoryButtons = leaderboardType === 'regular' && availableSubcategories.length > 0 ? (
                     <div className="mb-6">
-                      <div className="flex w-full p-1 gap-2 overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-thumb-ctp-surface1 scrollbar-track-transparent pb-3" style={{ minWidth: 'max-content' }}>
-                        {availableSubcategories.map((subcategory, index) => {
-                          const isSelected = selectedSubcategory === subcategory.id;
-                          return (
-                            <Button
-                              key={subcategory.id}
-                              variant={isSelected ? "default" : "outline"}
-                              onClick={() => setSelectedSubcategory(subcategory.id)}
-                              className={`button-click-animation category-button-animate whitespace-nowrap px-4 py-2 h-8 text-xs sm:text-sm font-medium transition-all duration-200 ${
-                                isSelected
-                                  ? "bg-[#cba6f7] text-[#11111b] hover:bg-[#cba6f7]/90 border-transparent shadow-sm"
-                                  : "bg-ctp-surface0 text-ctp-text border-ctp-surface1 hover:bg-ctp-surface1 hover:text-ctp-text hover:border-[#cba6f7]/50"
-                              }`}
-                              style={{ animationDelay: `${index * 50}ms` }}
-                            >
-                              {subcategory.name}
-                            </Button>
-                          );
-                        })}
-                      </div>
+                      <Tabs value={selectedSubcategory} onValueChange={setSelectedSubcategory} className="w-full">
+                        <AnimatedTabsList 
+                          className="flex w-full p-1 gap-2 overflow-x-auto overflow-y-visible scrollbar-thin scrollbar-thumb-ctp-surface1 scrollbar-track-transparent pb-3 relative" 
+                          style={{ minWidth: 'max-content' }}
+                          indicatorClassName="h-0.5 bg-[#cba6f7]"
+                        >
+                          {availableSubcategories.map((subcategory, index) => {
+                            return (
+                              <AnimatedTabsTrigger
+                                key={subcategory.id}
+                                value={subcategory.id}
+                                className="whitespace-nowrap px-4 py-2 h-8 text-xs sm:text-sm font-medium transition-all duration-200 data-[state=active]:text-[#cba6f7]"
+                                style={{ animationDelay: `${index * 50}ms` }}
+                              >
+                                {subcategory.name}
+                              </AnimatedTabsTrigger>
+                            );
+                          })}
+                        </AnimatedTabsList>
+                      </Tabs>
                     </div>
                   ) : null;
 
@@ -674,88 +662,102 @@ const PlayerDetails = () => {
                       {categoryButtons}
                       {subcategoryButtons}
                       
-                      {/* Filters */}
-                      <Card className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl mb-6 rounded-none">
-                        <CardHeader className="bg-gradient-to-r from-ctp-base to-ctp-mantle border-b border-ctp-surface1 py-3">
-                          <CardTitle className="flex items-center gap-2 text-lg">
-                            <span className="text-ctp-text">Filter Results</span>
+                      {/* Runs Table with Filters */}
+                      <Card className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl rounded-none overflow-hidden">
+                        <CardHeader className="bg-gradient-to-r from-ctp-base to-ctp-mantle border-b border-ctp-surface1 py-4">
+                          <CardTitle className="flex items-center gap-2 text-lg text-[#a6e3a1]">
+                            <span>Runs</span>
+                            {allRuns.length > 0 && (
+                              <span className="ml-auto text-sm font-normal text-ctp-subtext1">
+                                {allRuns.length} {allRuns.length === 1 ? 'run' : 'runs'}
+                              </span>
+                            )}
                           </CardTitle>
                         </CardHeader>
-                        <CardContent className="p-3 sm:p-4">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                            {(leaderboardType === 'individual-level' || leaderboardType === 'community-golds') && (
+                        <CardContent className="p-0">
+                          {/* Filters */}
+                          <div className="p-4 sm:p-6 border-b border-ctp-surface1/50">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                              {(leaderboardType === 'individual-level' || leaderboardType === 'community-golds') && (
+                                <div>
+                                  <label className="block text-sm font-semibold mb-2 text-ctp-text flex items-center gap-2">
+                                    <Sparkles className="h-4 w-4 text-ctp-mauve" />
+                                    Levels
+                                  </label>
+                                  <Select value={selectedLevel} onValueChange={setSelectedLevel}>
+                                    <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-10 text-sm rounded-none focus:ring-ctp-mauve">
+                                      <SelectValue placeholder="Select level" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {levels.map((level) => (
+                                        <SelectItem key={level.id} value={level.id} className="text-sm">
+                                          {level.name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              )}
                               <div>
-                                <label className="block text-sm font-semibold mb-1.5 text-ctp-text flex items-center gap-2">
-                                  <Sparkles className="h-3.5 w-3.5 text-ctp-mauve" />
-                                  Levels
+                                <label className="block text-sm font-semibold mb-2 text-ctp-text flex items-center gap-2">
+                                  <Gamepad2 className="h-4 w-4 text-ctp-mauve" />
+                                  Platform
                                 </label>
-                                <Select value={selectedLevel} onValueChange={setSelectedLevel}>
-                                  <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-9 text-sm rounded-none">
-                                    <SelectValue placeholder="Select level" />
+                                <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
+                                  <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-10 text-sm rounded-none focus:ring-ctp-mauve">
+                                    <SelectValue placeholder="Select platform" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {levels.map((level) => (
-                                      <SelectItem key={level.id} value={level.id} className="text-sm">
-                                        {level.name}
+                                    {platforms.map((platform) => (
+                                      <SelectItem key={platform.id} value={platform.id} className="text-sm">
+                                        {platform.name}
                                       </SelectItem>
                                     ))}
                                   </SelectContent>
                                 </Select>
                               </div>
-                            )}
-                            <div>
-                              <label className="block text-sm font-semibold mb-1.5 text-ctp-text flex items-center gap-2">
-                                <Gamepad2 className="h-3.5 w-3.5 text-ctp-mauve" />
-                                Platform
-                              </label>
-                              <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
-                                <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-9 text-sm rounded-none">
-                                  <SelectValue placeholder="Select platform" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {platforms.map((platform) => (
-                                    <SelectItem key={platform.id} value={platform.id} className="text-sm">
-                                      {platform.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div>
-                              <label className="block text-sm font-semibold mb-1.5 text-ctp-text flex items-center gap-2">
-                                {selectedRunType === 'solo' ? (
-                                  <User className="h-3.5 w-3.5 text-ctp-mauve" />
-                                ) : (
-                                  <Users className="h-3.5 w-3.5 text-ctp-mauve" />
-                                )}
-                                Run Type
-                              </label>
-                              <Select value={selectedRunType} onValueChange={setSelectedRunType}>
-                                <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-9 text-sm rounded-none">
-                                  <SelectValue placeholder="Select run type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {runTypes.map((type) => (
-                                    <SelectItem key={type.id} value={type.id} className="text-sm">
-                                      <div className="flex items-center gap-2">
-                                        {type.id === 'solo' ? <User className="h-4 w-4" /> : <Users className="h-4 w-4" />}
-                                        {type.name}
-                                      </div>
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <div>
+                                <label className="block text-sm font-semibold mb-2 text-ctp-text flex items-center gap-2">
+                                  {selectedRunType === 'solo' ? (
+                                    <User className="h-4 w-4 text-ctp-mauve" />
+                                  ) : (
+                                    <Users className="h-4 w-4 text-ctp-mauve" />
+                                  )}
+                                  Run Type
+                                </label>
+                                <Select value={selectedRunType} onValueChange={setSelectedRunType}>
+                                  <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-10 text-sm rounded-none focus:ring-ctp-mauve">
+                                    <SelectValue placeholder="Select run type" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {runTypes.map((type) => (
+                                      <SelectItem key={type.id} value={type.id} className="text-sm">
+                                        <div className="flex items-center gap-2">
+                                          {type.id === 'solo' ? <User className="h-4 w-4" /> : <Users className="h-4 w-4" />}
+                                          {type.name}
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
                             </div>
                           </div>
-                        </CardContent>
-                      </Card>
 
-                      {allRuns.length === 0 ? (
-                        <div className="text-center py-8">
-                          <p className="text-ctp-overlay0">No runs found matching the selected filters</p>
-                        </div>
-                      ) : (
-                        <div className="overflow-x-auto scrollbar-custom rounded-none border border-ctp-surface1/20">
+                          {allRuns.length === 0 ? (
+                            <div className="text-center py-12 px-4">
+                              <div className="flex flex-col items-center gap-3">
+                                <Trophy className="h-8 w-8 text-ctp-subtext1" />
+                                <div>
+                                  <h3 className="text-base font-semibold mb-1 text-ctp-text">No runs found</h3>
+                                  <p className="text-sm text-ctp-subtext1">
+                                    Try adjusting your filters to see more results
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="overflow-x-auto scrollbar-custom">
                       <Table>
                         <TableHeader>
                           <TableRow className="border-b border-ctp-surface1/50 hover:bg-transparent bg-ctp-surface0/50">
@@ -843,8 +845,8 @@ const PlayerDetails = () => {
                                     )}
                                   </TableCell>
                                 )}
-                                <TableCell className="py-2.5 px-4 font-semibold text-ctp-text">{formatTime(run.time)}</TableCell>
-                                <TableCell className="py-2.5 px-4 text-ctp-subtext1 hidden sm:table-cell">{formatDate(run.date)}</TableCell>
+                                <TableCell className="py-2.5 px-4 font-semibold text-ctp-text text-left">{formatTime(run.time)}</TableCell>
+                                <TableCell className="py-2.5 px-4 text-ctp-subtext1 hidden sm:table-cell text-left">{formatDate(run.date)}</TableCell>
                                 <TableCell className="py-2.5 px-4 hidden md:table-cell">
                                   <Badge variant="outline" className="border-ctp-surface1 bg-ctp-surface0 text-ctp-text text-xs px-1.5 py-0.5">
                                     {platformName}
@@ -891,8 +893,10 @@ const PlayerDetails = () => {
                           })}
                         </TableBody>
                       </Table>
-                    </div>
-                      )}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
                     </>
                   );
                 })()}

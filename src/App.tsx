@@ -57,8 +57,8 @@ const App = () => {
                 <GameDetails />
                 <main className="flex-grow bg-[#1e1e2e]">
                   <Suspense fallback={null}>
-                    <PageTransition>
-                      <Routes>
+                    <Routes>
+                      <Route element={<PageTransition />}>
                         <Route path="/" element={<Index />} />
                         <Route path="/leaderboards" element={<Leaderboards />} />
                         <Route path="/points" element={<PointsLeaderboard />} />
@@ -71,8 +71,8 @@ const App = () => {
                         <Route path="/downloads" element={<Downloads />} />
                         <Route path="/stats" element={<Stats />} />
                         <Route path="*" element={<NotFound />} />
-                      </Routes>
-                    </PageTransition>
+                      </Route>
+                    </Routes>
                   </Suspense>
                 </main>
               </div>

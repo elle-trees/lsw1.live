@@ -212,15 +212,15 @@ export function LeaderboardTable({ data, platforms = [], categories = [], levels
                   </PrefetchLink>
                 </TableCell>
               )}
-              <TableCell className="py-2.5 px-2 hidden sm:table-cell">
-                <PrefetchLink to={`/run/${entry.id}`} params={{ runId: entry.id }}>
+              <TableCell className="py-2.5 px-2 hidden sm:table-cell text-left">
+                <PrefetchLink to={`/run/${entry.id}`} params={{ runId: entry.id }} className="block">
                   <span className="text-sm font-semibold text-ctp-text">
                     {formatTime(entry.time)}
                   </span>
                 </PrefetchLink>
               </TableCell>
-              <TableCell className="py-2.5 px-2 hidden md:table-cell">
-                <PrefetchLink to={`/run/${entry.id}`} params={{ runId: entry.id }}>
+              <TableCell className="py-2.5 px-2 hidden md:table-cell text-left">
+                <PrefetchLink to={`/run/${entry.id}`} params={{ runId: entry.id }} className="block">
                   <span className="text-sm text-ctp-subtext1 whitespace-nowrap">{entry.date}</span>
                 </PrefetchLink>
               </TableCell>

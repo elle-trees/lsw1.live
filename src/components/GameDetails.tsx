@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { PrefetchLink } from "@/components/PrefetchLink";
 import { GameDetailsConfig } from "@/types/database";
@@ -16,9 +16,11 @@ import { useToast } from "@/hooks/use-toast";
 import { getErrorMessage } from "@/lib/errorUtils";
 import { getUnverifiedLeaderboardEntries, getUnclaimedRunsBySRCUsername, getPlayerByUid } from "@/lib/db";
 import { Notifications } from "@/components/Notifications";
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import { fadeSlideDownVariants, iconVariants, transitions } from "@/lib/animations";
 import { cn } from "@/lib/utils";
+import { useScroll as useScrollHook } from "@/hooks/useScroll";
+import { Tabs, AnimatedTabsList, AnimatedTabsTrigger } from "@/components/ui/animated-tabs";
 
 interface GameDetailsProps {
   className?: string;
@@ -45,6 +47,33 @@ export function GameDetails({ className }: GameDetailsProps) {
   const [unclaimedRunsCount, setUnclaimedRunsCount] = useState(0);
   const [unverifiedRunsCount, setUnverifiedRunsCount] = useState(0);
   const { toast } = useToast();
+  const headerRef = useRef<HTMLElement>(null);
+  const { isScrolled } = useScrollHook({ threshold: 10 });
+
+  // Framer Motion scroll tracking for smooth animations
+  const { scrollY } = useScroll();
+  const headerOpacity = useTransform(scrollY, [0, 50], [1, 0.95]);
+  const headerBlur = useTransform(scrollY, [0, 50], [0, 8]);
+  const headerScale = useTransform(scrollY, [0, 50], [1, 0.98]);
+  const headerY = useTransform(scrollY, [0, 50], [0, -2]);
+
+  // Smooth spring animations
+  const smoothOpacity = useSpring(headerOpacity, {
+    stiffness: 100,
+    damping: 30,
+  });
+  const smoothBlur = useSpring(headerBlur, {
+    stiffness: 100,
+    damping: 30,
+  });
+  const smoothScale = useSpring(headerScale, {
+    stiffness: 100,
+    damping: 30,
+  });
+  const smoothY = useSpring(headerY, {
+    stiffness: 100,
+    damping: 30,
+  });
 
   useEffect(() => {
     const fetchConfig = async () => {
@@ -139,11 +168,78 @@ export function GameDetails({ className }: GameDetailsProps) {
   const notificationCount = currentUser?.isAdmin ? unverifiedRunsCount : unclaimedRunsCount;
   const hasNotifications = notificationCount > 0;
 
+  // Compute sortedHeaderLinks early (before early return)
+  const sortedHeaderLinks = config ? (() => {
+    let headerLinks = [...(config.headerLinks || [])];
+    if (currentUser?.isAdmin) {
+      const hasAdminLink = headerLinks.some(link => link.route === "/admin");
+      if (!hasAdminLink) {
+        headerLinks.push({
+          id: "admin",
+          label: "Admin",
+          route: "/admin",
+          icon: "ShieldAlert",
+          color: "#f2cdcd",
+          order: 999,
+          adminOnly: true,
+        });
+      }
+    }
+    return headerLinks
+      .filter(link => !link.adminOnly || currentUser?.isAdmin)
+      .sort((a, b) => {
+        const orderA = a.order ?? Infinity;
+        const orderB = b.order ?? Infinity;
+        return orderA - orderB;
+      });
+  })() : [];
+
+  // Determine active tab based on current route
+  const getActiveTab = () => {
+    const currentPath = location.pathname;
+    const activeLink = sortedHeaderLinks.find(
+      (link) =>
+        currentPath === link.route ||
+        (link.route !== "/" && currentPath.startsWith(link.route))
+    );
+    return activeLink?.id || sortedHeaderLinks[0]?.id || "";
+  };
+
+  // Get active link color for indicator
+  const getActiveLinkColor = () => {
+    const currentPath = location.pathname;
+    const activeLink = sortedHeaderLinks.find(
+      (link) =>
+        currentPath === link.route ||
+        (link.route !== "/" && currentPath.startsWith(link.route))
+    );
+    return activeLink?.color || "#89b4fa"; // Default to ctp-blue
+  };
+
+  const handleTabChange = (value: string) => {
+    const link = sortedHeaderLinks.find((l) => l.id === value);
+    if (link) {
+      navigate(link.route);
+    }
+  };
+
   // Don't render if loading, disabled, or not visible on current page
   if (loading || !config || !config.enabled) {
     // Still render header controls even if game details are disabled
     return (
-      <header className="bg-[#1e1e2e] shadow-lg sticky top-0 z-40 w-full overflow-x-hidden">
+      <motion.header
+        ref={headerRef}
+        className={cn(
+          "bg-[#1e1e2e] shadow-lg sticky top-0 z-40 w-full overflow-x-hidden transition-all duration-300",
+          isScrolled && "shadow-xl"
+        )}
+        style={{
+          opacity: smoothOpacity,
+          scale: smoothScale,
+          y: smoothY,
+          backdropFilter: `blur(${smoothBlur}px)`,
+        }}
+      >
         <div className="px-3 sm:px-4 md:px-6 lg:px-8">
           <div className="max-w-[1920px] mx-auto w-full">
             <div className="flex items-center justify-between h-14 sm:h-16 min-w-0 w-full">
@@ -456,7 +552,7 @@ export function GameDetails({ className }: GameDetailsProps) {
           </div>
         </div>
         </div>
-      </header>
+      </motion.header>
     );
   }
 
@@ -476,60 +572,62 @@ export function GameDetails({ className }: GameDetailsProps) {
     return orderA - orderB;
   });
 
-  // Sort header links by order and filter by admin status
-  // Also ensure admin link is always present for admins
-  let headerLinks = [...(config.headerLinks || [])];
-  
-  // If user is admin, ensure admin link exists
-  if (currentUser?.isAdmin) {
-    const hasAdminLink = headerLinks.some(link => link.route === "/admin");
-    if (!hasAdminLink) {
-      headerLinks.push({
-        id: "admin",
-        label: "Admin",
-        route: "/admin",
-        icon: "ShieldAlert",
-        color: "#f2cdcd",
-        order: 999, // Put it at the end if not configured
-        adminOnly: true,
-      });
-    }
-  }
-  
-  const sortedHeaderLinks = headerLinks
-    .filter(link => !link.adminOnly || currentUser?.isAdmin)
-    .sort((a, b) => {
-      const orderA = a.order ?? Infinity;
-      const orderB = b.order ?? Infinity;
-      return orderA - orderB;
-    });
+  // sortedHeaderLinks is already computed above
 
   return (
     <>
-      <header className="bg-[#1e1e2e] shadow-lg sticky top-0 z-40 w-full overflow-x-hidden">
+      <motion.header
+        ref={headerRef}
+        className={cn(
+          "bg-[#1e1e2e] shadow-lg sticky top-0 z-40 w-full overflow-x-hidden transition-all duration-300",
+          isScrolled && "shadow-xl",
+          className
+        )}
+        style={{
+          opacity: smoothOpacity,
+          scale: smoothScale,
+          y: smoothY,
+          backdropFilter: `blur(${smoothBlur}px)`,
+        }}
+      >
         <div className="px-3 sm:px-4 md:px-6 lg:px-8">
           <div className="max-w-[1920px] mx-auto w-full">
             <div className="flex items-start justify-between min-w-0 w-full py-2 sm:py-3">
               {/* Game Details Section - Left Side */}
               <div className="flex items-start gap-2 sm:gap-3 md:gap-4 lg:gap-5 min-w-0 flex-shrink flex-1">
                 {isVisible ? (
-                  <div className="flex items-end gap-2 sm:gap-4 lg:gap-5 min-w-0 flex-shrink flex-1">
+                  <motion.div
+                    className="flex items-end gap-2 sm:gap-4 lg:gap-5 min-w-0 flex-shrink flex-1"
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
                 {/* Game Cover Image */}
                 {config.coverImageUrl && (
-                  <div className="flex-shrink-0 hidden sm:block">
+                  <motion.div
+                    className="flex-shrink-0 hidden sm:block"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.1, duration: 0.3 }}
+                  >
                     <img
                       src={config.coverImageUrl}
                       alt={config.title}
                       className="w-20 h-28 sm:w-24 sm:h-32 object-cover rounded-none border border-ctp-surface1"
                     />
-                  </div>
+                  </motion.div>
                 )}
 
                 {/* Main Content */}
                 <div className="flex-1 min-w-0 flex flex-col h-24 sm:h-28 md:h-32">
                   <div className="flex-1">
                     {/* Title and Categories */}
-                    <div className="mb-1 sm:mb-1.5">
+                    <motion.div
+                      className="mb-1 sm:mb-1.5"
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2, duration: 0.3 }}
+                    >
                       <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-ctp-text mb-0.5 sm:mb-1.5 leading-tight">
                         {config.title}
                         {config.subtitle && (
@@ -539,84 +637,120 @@ export function GameDetails({ className }: GameDetailsProps) {
                       {config.categories.length > 0 && (
                         <div className="flex flex-wrap gap-1 sm:gap-1.5 mb-1 sm:mb-1.5">
                           {config.categories.map((category, index) => (
-                            <Badge
+                            <motion.div
                               key={index}
-                              variant="outline"
-                              className="bg-ctp-surface0 text-ctp-text border-ctp-surface1 text-[10px] sm:text-xs md:text-sm px-1.5 sm:px-2 py-0.5 sm:py-1"
+                              initial={{ opacity: 0, scale: 0.8 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{
+                                delay: 0.3 + index * 0.05,
+                                duration: 0.2,
+                              }}
                             >
-                              {category}
-                            </Badge>
+                              <Badge
+                                variant="outline"
+                                className="bg-ctp-surface0 text-ctp-text border-ctp-surface1 text-[10px] sm:text-xs md:text-sm px-1.5 sm:px-2 py-0.5 sm:py-1"
+                              >
+                                {category}
+                              </Badge>
+                            </motion.div>
                           ))}
                         </div>
                       )}
-                    </div>
+                    </motion.div>
 
                     {/* Platform Buttons */}
                     <div className="flex flex-wrap gap-1 sm:gap-1.5">
-                      {sortedPlatforms.map((platform) => (
-                        <Button
+                      {sortedPlatforms.map((platform, index) => (
+                        <motion.div
                           key={platform.id}
-                          variant="outline"
-                          className="bg-ctp-surface0 text-ctp-text border-ctp-surface1 hover:bg-ctp-surface1 hover:border-ctp-mauve/50 rounded-none text-[10px] sm:text-xs md:text-sm px-1.5 sm:px-2.5 py-0.5 sm:py-1 h-auto"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{
+                            delay: 0.4 + index * 0.05,
+                            duration: 0.2,
+                          }}
                         >
-                          {platform.label}
-                        </Button>
+                          <Button
+                            variant="outline"
+                            className="bg-ctp-surface0 text-ctp-text border-ctp-surface1 hover:bg-ctp-surface1 hover:border-ctp-mauve/50 rounded-none text-[10px] sm:text-xs md:text-sm px-1.5 sm:px-2.5 py-0.5 sm:py-1 h-auto"
+                          >
+                            {platform.label}
+                          </Button>
+                        </motion.div>
                       ))}
                     </div>
                   </div>
 
-                  {/* Header Navigation Links - Hidden on mobile, shown in sidebar */}
+                  {/* Header Navigation Links - Using Animated Tabs */}
                   {sortedHeaderLinks.length > 0 && (
-                    <nav className="hidden xl:flex flex-wrap gap-2 sm:gap-3 lg:gap-4">
-                      {sortedHeaderLinks.map((link) => {
-                        const IconComponent = link.icon === "LegoStud" 
-                          ? LegoStudIcon 
-                          : (link.icon ? iconMap[link.icon] : null);
-                        const linkColor = link.color || "#cdd6f4";
-                        const isActive = location.pathname === link.route || 
-                          (link.route !== "/" && location.pathname.startsWith(link.route));
+                    <motion.div
+                      className="hidden xl:block"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5, duration: 0.3 }}
+                    >
+                      <Tabs
+                        value={getActiveTab()}
+                        onValueChange={handleTabChange}
+                        className="w-full"
+                      >
+                        <AnimatedTabsList
+                          className="h-auto bg-transparent p-0 gap-2 sm:gap-3 lg:gap-4 border-none"
+                          indicatorClassName="h-0.5"
+                          indicatorColor={getActiveLinkColor()}
+                        >
+                          {sortedHeaderLinks.map((link, index) => {
+                            const IconComponent =
+                              link.icon === "LegoStud"
+                                ? LegoStudIcon
+                                : link.icon
+                                  ? iconMap[link.icon]
+                                  : null;
+                            const linkColor = link.color || "#cdd6f4";
+                            const isActive =
+                              location.pathname === link.route ||
+                              (link.route !== "/" &&
+                                location.pathname.startsWith(link.route));
 
-                        return (
-                          <PrefetchLink
-                            key={link.id}
-                            to={link.route}
-                            className="relative flex items-center gap-1 transition-all duration-300 group text-sm"
-                            style={{ color: linkColor }}
-                          >
-                            {IconComponent && (
-                              link.icon === "LegoStud" ? (
-                                <LegoStudIcon 
-                                  size={16} 
-                                  color={linkColor}
-                                  className="transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12"
-                                />
-                              ) : (
-                                <IconComponent 
-                                  className="h-4 w-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12"
-                                  style={{ color: linkColor }}
-                                />
-                              )
-                            )}
-                            <span className="relative">
-                              {link.label}
-                              <span 
-                                className="absolute -bottom-1 left-0 w-0 h-0.5 transition-all duration-300 group-hover:w-full"
-                                style={{ backgroundColor: linkColor }}
-                              ></span>
-                            </span>
-                            {isActive && (
-                              <span 
-                                className="absolute -bottom-1 left-0 w-full h-0.5"
-                                style={{ backgroundColor: linkColor }}
-                              ></span>
-                            )}
-                          </PrefetchLink>
-                        );
-                      })}
-                    </nav>
+                            return (
+                              <AnimatedTabsTrigger
+                                key={link.id}
+                                value={link.id}
+                                className={cn(
+                                  "relative flex items-center gap-1.5 px-2 py-1.5 h-auto text-sm font-medium bg-transparent hover:bg-ctp-surface0/50 transition-all duration-300 group"
+                                )}
+                                style={{
+                                  color: linkColor,
+                                }}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  navigate(link.route);
+                                }}
+                              >
+                                {IconComponent && (
+                                  link.icon === "LegoStud" ? (
+                                    <LegoStudIcon
+                                      size={16}
+                                      color={linkColor}
+                                      className="transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12"
+                                    />
+                                  ) : (
+                                    <IconComponent
+                                      className="h-4 w-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12"
+                                      style={{ color: linkColor }}
+                                    />
+                                  )
+                                )}
+                                <span>{link.label}</span>
+                              </AnimatedTabsTrigger>
+                            );
+                          })}
+                        </AnimatedTabsList>
+                      </Tabs>
+                    </motion.div>
                   )}
                 </div>
-                  </div>
+                  </motion.div>
                 ) : null}
               </div>
               
@@ -882,7 +1016,7 @@ export function GameDetails({ className }: GameDetailsProps) {
             </div>
           </div>
         </div>
-      </header>
+      </motion.header>
       <LoginModal open={isLoginOpen} onOpenChange={setIsLoginOpen} />
     </>
   );

@@ -257,15 +257,15 @@ export function RecentRuns({ runs, loading, showRankBadge = true, maxRuns }: Rec
                     </div>
                   </div>
                 </TableCell>
-                <TableCell className="py-4 px-3 hidden sm:table-cell">
-                  <PrefetchLink to={`/run/${run.id}`} params={{ runId: run.id }} onClick={(e) => e.stopPropagation()}>
+                <TableCell className="py-4 px-3 hidden sm:table-cell text-left">
+                  <PrefetchLink to={`/run/${run.id}`} params={{ runId: run.id }} className="block" onClick={(e) => e.stopPropagation()}>
                     <span className="text-base font-semibold text-ctp-text">
                       {formatTime(run.time)}
                     </span>
                   </PrefetchLink>
                 </TableCell>
-                <TableCell className="py-4 px-3 hidden md:table-cell">
-                  <PrefetchLink to={`/run/${run.id}`} params={{ runId: run.id }} onClick={(e) => e.stopPropagation()}>
+                <TableCell className="py-4 px-3 hidden md:table-cell text-left">
+                  <PrefetchLink to={`/run/${run.id}`} params={{ runId: run.id }} className="block" onClick={(e) => e.stopPropagation()}>
                     <span className="text-base text-ctp-subtext1 whitespace-nowrap">{run.date}</span>
                   </PrefetchLink>
                 </TableCell>

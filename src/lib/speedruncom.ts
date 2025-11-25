@@ -322,6 +322,63 @@ export function normalizeSRCUsername(username: string | null | undefined): strin
 }
 
 /**
+ * Extract SRC username from player weblink
+ * SRC weblink format: https://www.speedrun.com/users/{username}
+ * Returns the username portion of the URL, normalized (lowercase, trimmed)
+ */
+export function extractSRCUsernameFromWeblink(weblink: string | undefined): string | undefined {
+  if (!weblink || typeof weblink !== 'string') return undefined;
+  
+  try {
+    // Match pattern: /users/{username} or /users/{username}?
+    const match = weblink.match(/\/users\/([^/?]+)/);
+    if (match && match[1]) {
+      // Normalize username (lowercase, trimmed) for consistent matching
+      return normalizeSRCUsername(match[1]);
+    }
+  } catch (error) {
+    // Silent fail
+  }
+  
+  return undefined;
+}
+
+/**
+ * Get SRC username from player data
+ * Tries to extract from weblink first, falls back to display name if weblink not available
+ */
+export function getSRCUsername(player: SRCRun['players'][0]): string | undefined {
+  if (!player) return undefined;
+  
+  // Handle embedded player data
+  let actualPlayer = player;
+  if (typeof player === 'object' && 'data' in player && Array.isArray((player as any).data) && (player as any).data.length > 0) {
+    actualPlayer = (player as any).data[0];
+  } else if (typeof player === 'object' && 'data' in player && !Array.isArray((player as any).data)) {
+    actualPlayer = (player as any).data;
+  }
+  
+  // Try to get username from weblink (most reliable)
+  if (actualPlayer?.weblink) {
+    const username = extractSRCUsernameFromWeblink(actualPlayer.weblink);
+    if (username) return username;
+  }
+  
+  // Try from player.data.weblink if available
+  if (actualPlayer?.data?.weblink) {
+    const username = extractSRCUsernameFromWeblink(actualPlayer.data.weblink);
+    if (username) return username;
+  }
+  
+  // Fallback: for guest players, use the name field
+  if (actualPlayer?.rel === "guest" && actualPlayer?.name) {
+    return actualPlayer.name.trim();
+  }
+  
+  return undefined;
+}
+
+/**
  * Fetch a single player by ID from speedrun.com
  * Returns the player's username (from names.international)
  * This is the same field used during import, ensuring consistency
@@ -637,10 +694,14 @@ export async function mapSRCRunToLeaderboardEntry(
   const srcPlayerId = players[0] ? extractSRCPlayerId(players[0]) : undefined;
   const srcPlayer2Id = players.length > 1 ? extractSRCPlayerId(players[1]) : undefined;
   
+  // Extract SRC usernames from weblinks (for proper matching)
+  const srcPlayer1Username = players[0] ? getSRCUsername(players[0]) : undefined;
+  const srcPlayer2Username = players.length > 1 ? getSRCUsername(players[1]) : undefined;
+  
   // Determine run type based on player count
   const runType: 'solo' | 'co-op' = players.length > 1 ? 'co-op' : 'solo';
   
-  // Use async version to fetch names if needed
+  // Use async version to fetch names if needed (for display)
   let player1Name = players[0] ? await getPlayerNameAsync(players[0], playerIdToNameCache) : "Unknown";
   let player2Name: string | undefined;
   
@@ -903,11 +964,12 @@ export async function mapSRCRunToLeaderboardEntry(
     srcCategoryName: categoryName || undefined,
     srcPlatformName: platformName || undefined,
     srcLevelName: levelName || undefined,
-    // Store SRC player IDs and names for claiming
+    // Store SRC player IDs and usernames for claiming
+    // Use username from weblink for proper matching, fallback to display name if username not available
     srcPlayerId: srcPlayerId || undefined,
     srcPlayer2Id: srcPlayer2Id || undefined,
-    srcPlayerName: player1Name.trim() || undefined,
-    srcPlayer2Name: runType === 'co-op' && player2Name ? player2Name.trim() : undefined,
+    srcPlayerName: srcPlayer1Username || player1Name.trim() || undefined,
+    srcPlayer2Name: runType === 'co-op' ? (srcPlayer2Username || (player2Name ? player2Name.trim() : undefined)) : undefined,
     // Store subcategory info
     subcategory: subcategoryId,
     srcSubcategory: srcSubcategory,

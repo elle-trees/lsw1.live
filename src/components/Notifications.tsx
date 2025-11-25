@@ -10,7 +10,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, AnimatedTabsList, AnimatedTabsTrigger, AnimatedTabsContent } from "@/components/ui/animated-tabs";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -170,33 +170,33 @@ export function Notifications() {
           </div>
           
           {currentUser?.isAdmin || unclaimedRunsCount > 0 ? (
-            <TabsList className="w-full justify-start rounded-none border-b border-ctp-surface1 bg-transparent p-0">
-              <TabsTrigger
+            <AnimatedTabsList className="w-full justify-start border-b border-ctp-surface1 bg-transparent p-0" indicatorClassName="h-0.5 bg-ctp-blue">
+              <AnimatedTabsTrigger
                 value="notifications"
-                className="flex-1 rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-ctp-blue data-[state=active]:text-ctp-blue"
+                className="flex-1 px-4 py-2 data-[state=active]:text-ctp-blue"
               >
                 Alerts ({notifications.length})
-              </TabsTrigger>
+              </AnimatedTabsTrigger>
               {currentUser?.isAdmin && (
-                <TabsTrigger
+                <AnimatedTabsTrigger
                   value="pending"
-                  className="flex-1 rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-ctp-blue data-[state=active]:text-ctp-blue"
+                  className="flex-1 px-4 py-2 data-[state=active]:text-ctp-blue"
                 >
                   Pending ({pendingRuns.length})
-                </TabsTrigger>
+                </AnimatedTabsTrigger>
               )}
               {!currentUser?.isAdmin && unclaimedRunsCount > 0 && (
-                  <TabsTrigger
+                  <AnimatedTabsTrigger
                   value="unclaimed"
-                  className="flex-1 rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-ctp-blue data-[state=active]:text-ctp-blue"
+                  className="flex-1 px-4 py-2 data-[state=active]:text-ctp-blue"
                 >
                   Unclaimed ({unclaimedRunsCount})
-                </TabsTrigger>
+                </AnimatedTabsTrigger>
               )}
-            </TabsList>
+            </AnimatedTabsList>
           ) : null}
 
-          <TabsContent value="notifications" className="m-0">
+          <AnimatedTabsContent value="notifications" className="m-0">
             <ScrollArea className="h-[300px]">
               {notifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full p-8 text-ctp-subtext1">
@@ -255,10 +255,10 @@ export function Notifications() {
                 </div>
               )}
             </ScrollArea>
-          </TabsContent>
+          </AnimatedTabsContent>
 
           {currentUser?.isAdmin && (
-            <TabsContent value="pending" className="m-0">
+            <AnimatedTabsContent value="pending" className="m-0">
               <ScrollArea className="h-[300px]">
                 {pendingRuns.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full p-8 text-ctp-subtext1">
@@ -300,11 +300,11 @@ export function Notifications() {
                   </div>
                 )}
               </ScrollArea>
-            </TabsContent>
+            </AnimatedTabsContent>
           )}
 
           {unclaimedRunsCount > 0 && (
-             <TabsContent value="unclaimed" className="m-0">
+             <AnimatedTabsContent value="unclaimed" className="m-0">
                 <div className="p-4 flex flex-col items-center text-center">
                     <p className="mb-4 text-sm">You have {unclaimedRunsCount} unclaimed run(s) imported from Speedrun.com.</p>
                     <Button 
@@ -316,7 +316,7 @@ export function Notifications() {
                         <Link to="/settings">Go to Settings to Claim</Link>
                     </Button>
                 </div>
-             </TabsContent>
+             </AnimatedTabsContent>
           )}
 
         </Tabs>

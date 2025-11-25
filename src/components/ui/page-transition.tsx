@@ -1,16 +1,30 @@
-interface PageTransitionProps {
-  children: React.ReactNode;
-}
+import { useLocation, useOutlet } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
+import { pageVariants } from "@/lib/animations";
 
 /**
- * Wrapper component for page transitions
- * Optimized for instant navigation - no remounting, no flashing
- * Removed all animations for instant page switching when data is ready
+ * Wrapper component for smooth page transitions using React Router outlet pattern
+ * Uses AnimatePresence to handle enter/exit animations between routes
  */
-export function PageTransition({ children }: PageTransitionProps) {
-  // No transition wrapper needed - React Router handles mounting/unmounting
-  // We just need a simple container without any animation delays
-  // Background ensures consistent color during page transitions on HDR displays
-  return <div className="w-full bg-[#1e1e2e] min-h-screen">{children}</div>;
+export function PageTransition() {
+  const location = useLocation();
+  const outlet = useOutlet();
+
+  return (
+    <div className="w-full bg-[#1e1e2e] min-h-screen relative">
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={location.pathname + location.search}
+          initial="initial"
+          animate="enter"
+          exit="exit"
+          variants={pageVariants}
+          className="w-full min-h-screen"
+        >
+          {outlet}
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
 }
 

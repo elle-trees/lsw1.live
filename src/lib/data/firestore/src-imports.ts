@@ -267,11 +267,14 @@ export const removeDuplicateRunsFirestore = async (duplicateRuns: { runs: Leader
 export const autoClaimRunsBySRCUsernameFirestore = async (uid: string, srcUsername: string): Promise<number> => {
     if (!db) return 0;
     try {
+        // Normalize username for consistent matching (lowercase, trimmed)
+        const normalizedUsername = srcUsername.trim().toLowerCase();
+        
         // Find runs with matching srcPlayerName
         const q = query(
             collection(db, "leaderboardEntries").withConverter(leaderboardEntryConverter),
             where("importedFromSRC", "==", true),
-            where("srcPlayerName", "==", srcUsername)
+            where("srcPlayerName", "==", normalizedUsername)
         );
         
         const snapshot = await getDocs(q);
@@ -331,9 +334,12 @@ export const tryAutoAssignRunFirestore = async (runId: string, entry: Leaderboar
     if (!entry.srcPlayerName) return false;
     
     try {
+        // Normalize both values for consistent matching
+        const normalizedSrcPlayerName = entry.srcPlayerName.trim().toLowerCase();
+        
         const q = query(
             collection(db, "players"),
-            where("srcUsername", "==", entry.srcPlayerName),
+            where("srcUsername", "==", normalizedSrcPlayerName),
             firestoreLimit(1)
         );
         const snapshot = await getDocs(q);
@@ -352,10 +358,13 @@ export const tryAutoAssignRunFirestore = async (runId: string, entry: Leaderboar
 export const getUnclaimedRunsBySRCUsernameFirestore = async (srcUsername: string): Promise<LeaderboardEntry[]> => {
     if (!db) return [];
     try {
+        // Normalize username for consistent matching (lowercase, trimmed)
+        const normalizedUsername = srcUsername.trim().toLowerCase();
+        
         const q = query(
             collection(db, "leaderboardEntries").withConverter(leaderboardEntryConverter),
             where("importedFromSRC", "==", true),
-            where("srcPlayerName", "==", srcUsername)
+            where("srcPlayerName", "==", normalizedUsername)
         );
         const snapshot = await getDocs(q);
         return snapshot.docs

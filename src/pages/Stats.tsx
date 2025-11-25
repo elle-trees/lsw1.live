@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tabs, AnimatedTabsList, AnimatedTabsTrigger } from "@/components/ui/animated-tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -709,63 +710,40 @@ const Stats = () => {
       </div>
 
       <div className="space-y-4">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 mb-4 p-0 gap-0 bg-ctp-surface0/50 rounded-none border border-ctp-surface1">
-          <Button
-            variant={activeTab === 'overview' ? "default" : "ghost"}
-            onClick={() => setActiveTab('overview')}
-            className={`h-auto py-2 px-3 rounded-none transition-all duration-300 border-r border-ctp-surface1 last:border-r-0 ${
-              activeTab === 'overview'
-                ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm"
-                : "text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
-            }`}
-          >
-            <span className="font-medium text-xs sm:text-sm">Overview</span>
-          </Button>
-          <Button
-            variant={activeTab === 'progression' ? "default" : "ghost"}
-            onClick={() => setActiveTab('progression')}
-            className={`h-auto py-2 px-3 rounded-none transition-all duration-300 border-r border-ctp-surface1 last:border-r-0 ${
-              activeTab === 'progression'
-                ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm"
-                : "text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
-            }`}
-          >
-            <span className="font-medium text-xs sm:text-sm">WR Progression</span>
-          </Button>
-          <Button
-            variant={activeTab === 'breakdown' ? "default" : "ghost"}
-            onClick={() => setActiveTab('breakdown')}
-            className={`h-auto py-2 px-3 rounded-none transition-all duration-300 border-r border-ctp-surface1 last:border-r-0 ${
-              activeTab === 'breakdown'
-                ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm"
-                : "text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
-            }`}
-          >
-            <span className="font-medium text-xs sm:text-sm">Breakdown</span>
-          </Button>
-          <Button
-            variant={activeTab === 'recent' ? "default" : "ghost"}
-            onClick={() => setActiveTab('recent')}
-            className={`h-auto py-2 px-3 rounded-none transition-all duration-300 border-r border-ctp-surface1 last:border-r-0 ${
-              activeTab === 'recent'
-                ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm"
-                : "text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
-            }`}
-          >
-            <span className="font-medium text-xs sm:text-sm">Recent WRs</span>
-          </Button>
-          <Button
-            variant={activeTab === 'longest' ? "default" : "ghost"}
-            onClick={() => setActiveTab('longest')}
-            className={`h-auto py-2 px-3 rounded-none transition-all duration-300 border-r border-ctp-surface1 last:border-r-0 ${
-              activeTab === 'longest'
-                ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm"
-                : "text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
-            }`}
-          >
-            <span className="font-medium text-xs sm:text-sm">Longest WRs</span>
-          </Button>
-        </div>
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'overview' | 'progression' | 'breakdown' | 'recent' | 'longest')} className="w-full">
+          <AnimatedTabsList className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 mb-4 p-0 gap-0" indicatorClassName="h-0.5 bg-[#f9e2af]">
+            <AnimatedTabsTrigger
+              value="overview"
+              className="h-auto py-2 px-3 transition-all duration-300 border-r border-ctp-surface1 last:border-r-0 data-[state=active]:text-[#f9e2af]"
+            >
+              <span className="font-medium text-xs sm:text-sm">Overview</span>
+            </AnimatedTabsTrigger>
+            <AnimatedTabsTrigger
+              value="progression"
+              className="h-auto py-2 px-3 transition-all duration-300 border-r border-ctp-surface1 last:border-r-0 data-[state=active]:text-[#f9e2af]"
+            >
+              <span className="font-medium text-xs sm:text-sm">WR Progression</span>
+            </AnimatedTabsTrigger>
+            <AnimatedTabsTrigger
+              value="breakdown"
+              className="h-auto py-2 px-3 transition-all duration-300 border-r border-ctp-surface1 last:border-r-0 data-[state=active]:text-[#f9e2af]"
+            >
+              <span className="font-medium text-xs sm:text-sm">Breakdown</span>
+            </AnimatedTabsTrigger>
+            <AnimatedTabsTrigger
+              value="recent"
+              className="h-auto py-2 px-3 transition-all duration-300 border-r border-ctp-surface1 last:border-r-0 data-[state=active]:text-[#f9e2af]"
+            >
+              <span className="font-medium text-xs sm:text-sm">Recent WRs</span>
+            </AnimatedTabsTrigger>
+            <AnimatedTabsTrigger
+              value="longest"
+              className="h-auto py-2 px-3 transition-all duration-300 border-r border-ctp-surface1 last:border-r-0 data-[state=active]:text-[#f9e2af]"
+            >
+              <span className="font-medium text-xs sm:text-sm">Longest WRs</span>
+            </AnimatedTabsTrigger>
+          </AnimatedTabsList>
+        </Tabs>
 
         {activeTab === 'overview' && (
           <>
@@ -880,74 +858,61 @@ const Stats = () => {
             <CardContent>
               {/* Filters - Always show so users can switch leaderboard types even when no data */}
               <div className="mb-6 space-y-4">
-                {/* Leaderboard Type Buttons */}
-                <div className="grid grid-cols-3 mb-4 p-0.5 gap-1 bg-ctp-surface0/50 rounded-none border border-ctp-surface1">
-                  <Button
-                    variant={wrProgressionLeaderboardType === 'regular' ? "default" : "ghost"}
-                    onClick={() => setWrProgressionLeaderboardType('regular')}
-                    className={`h-auto py-2 px-3 rounded-none transition-all duration-300 ${
-                      wrProgressionLeaderboardType === 'regular'
-                        ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm"
-                        : "text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
-                    }`}
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      <Trophy className="h-4 w-4" />
-                      <span className="font-medium text-xs sm:text-sm">Full Game</span>
-                    </div>
-                  </Button>
-                  <Button
-                    variant={wrProgressionLeaderboardType === 'individual-level' ? "default" : "ghost"}
-                    onClick={() => setWrProgressionLeaderboardType('individual-level')}
-                    className={`h-auto py-2 px-3 rounded-none transition-all duration-300 ${
-                      wrProgressionLeaderboardType === 'individual-level'
-                        ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm"
-                        : "text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
-                    }`}
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      <Star className="h-4 w-4" />
-                      <span className="font-medium text-xs sm:text-sm">ILs</span>
-                    </div>
-                  </Button>
-                  <Button
-                    variant={wrProgressionLeaderboardType === 'community-golds' ? "default" : "ghost"}
-                    onClick={() => setWrProgressionLeaderboardType('community-golds')}
-                    className={`h-auto py-2 px-3 rounded-none transition-all duration-300 ${
-                      wrProgressionLeaderboardType === 'community-golds'
-                        ? "bg-[#f9e2af] text-[#11111b] hover:bg-[#f9e2af]/90 shadow-sm"
-                        : "text-ctp-text hover:bg-ctp-surface1 hover:text-ctp-text"
-                    }`}
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      <Gem className="h-4 w-4" />
-                      <span className="font-medium text-xs sm:text-sm">CGs</span>
-                    </div>
-                  </Button>
-                </div>
+                {/* Leaderboard Type Tabs */}
+                <Tabs value={wrProgressionLeaderboardType} onValueChange={(value) => setWrProgressionLeaderboardType(value as 'regular' | 'individual-level' | 'community-golds')} className="w-full mb-4">
+                  <AnimatedTabsList className="grid grid-cols-3 p-0 gap-1 relative" indicatorClassName="h-0.5 bg-[#f9e2af]">
+                    <AnimatedTabsTrigger
+                      value="regular"
+                      className="h-auto py-2 px-3 transition-all duration-300 data-[state=active]:text-[#f9e2af]"
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        <Trophy className="h-4 w-4" />
+                        <span className="font-medium text-xs sm:text-sm">Full Game</span>
+                      </div>
+                    </AnimatedTabsTrigger>
+                    <AnimatedTabsTrigger
+                      value="individual-level"
+                      className="h-auto py-2 px-3 transition-all duration-300 data-[state=active]:text-[#f9e2af]"
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        <Star className="h-4 w-4" />
+                        <span className="font-medium text-xs sm:text-sm">ILs</span>
+                      </div>
+                    </AnimatedTabsTrigger>
+                    <AnimatedTabsTrigger
+                      value="community-golds"
+                      className="h-auto py-2 px-3 transition-all duration-300 data-[state=active]:text-[#f9e2af]"
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        <Gem className="h-4 w-4" />
+                        <span className="font-medium text-xs sm:text-sm">CGs</span>
+                      </div>
+                    </AnimatedTabsTrigger>
+                  </AnimatedTabsList>
+                </Tabs>
 
-                {/* Category Buttons */}
+                {/* Category Tabs */}
                 {availableWrCategories.length > 0 && (
                   <div className="mb-4">
-                    <div className="flex w-full p-1 gap-2 overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-thumb-ctp-surface1 scrollbar-track-transparent pb-3" style={{ minWidth: 'max-content' }}>
-                      {availableWrCategories.map((category) => {
-                        const isSelected = wrProgressionCategory === category.id;
-                        return (
-                          <Button
-                            key={category.id}
-                            variant={isSelected ? "default" : "outline"}
-                            onClick={() => setWrProgressionCategory(category.id)}
-                            className={`whitespace-nowrap px-4 py-2 h-9 text-sm font-medium transition-all duration-200 ${
-                              isSelected
-                                ? "bg-[#94e2d5] text-[#11111b] hover:bg-[#94e2d5]/90 border-transparent shadow-sm"
-                                : "bg-ctp-surface0 text-ctp-text border-ctp-surface1 hover:bg-ctp-surface1 hover:text-ctp-text hover:border-[#94e2d5]/50"
-                            }`}
-                          >
-                            {category.name || getCategoryNameWithOverride(category.id, availableWrCategories)}
-                          </Button>
-                        );
-                      })}
-                    </div>
+                    <Tabs value={wrProgressionCategory} onValueChange={setWrProgressionCategory} className="w-full">
+                      <AnimatedTabsList 
+                        className="flex w-full p-1 gap-2 overflow-x-auto overflow-y-visible scrollbar-thin scrollbar-thumb-ctp-surface1 scrollbar-track-transparent pb-3 relative" 
+                        style={{ minWidth: 'max-content' }}
+                        indicatorClassName="h-0.5 bg-[#94e2d5]"
+                      >
+                        {availableWrCategories.map((category) => {
+                          return (
+                            <AnimatedTabsTrigger
+                              key={category.id}
+                              value={category.id}
+                              className="whitespace-nowrap px-4 py-2 h-9 text-sm font-medium transition-all duration-200 data-[state=active]:text-[#94e2d5]"
+                            >
+                              {category.name || getCategoryNameWithOverride(category.id, availableWrCategories)}
+                            </AnimatedTabsTrigger>
+                          );
+                        })}
+                      </AnimatedTabsList>
+                    </Tabs>
                   </div>
                 )}
 

@@ -767,8 +767,8 @@ const UserSettings = () => {
                                           {levelName || run.srcLevelName || '—'}
                                         </td>
                                       )}
-                                      <td className="py-3 px-4 text-base font-semibold">{formatTime(run.time)}</td>
-                                      <td className="py-3 px-4 text-ctp-overlay0">{formatDate(run.date)}</td>
+                                      <td className="py-3 px-4 text-base font-semibold text-left">{formatTime(run.time)}</td>
+                                      <td className="py-3 px-4 text-ctp-overlay0 text-left">{formatDate(run.date)}</td>
                                       <td className="py-3 px-4">
                                         <Badge variant="outline" className="border-[hsl(235,13%,30%)]">
                                           {platformName}

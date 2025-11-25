@@ -110,38 +110,5 @@ export function useCachedData<T>(
   // This function is provided for reference but requires React hooks
   // Components should implement caching directly using useState and pageCache
   throw new Error("useCachedData requires React hooks - implement caching directly in your component");
-
-  const [data, setData] = useState<T | null>(() => pageCache.get<T>(key));
-  const [loading, setLoading] = useState(!pageCache.has(key));
-  const [error, setError] = useState<Error | null>(null);
-  const fetchingRef = useRef(false);
-
-  const refetch = async () => {
-    if (fetchingRef.current) return;
-    fetchingRef.current = true;
-    setLoading(true);
-    setError(null);
-
-    try {
-      const result = await fetchFn();
-      setData(result);
-      pageCache.set(key, result, options?.maxAge);
-      options?.onSuccess?.(result);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
-    } finally {
-      setLoading(false);
-      fetchingRef.current = false;
-    }
-  };
-
-  useEffect(() => {
-    const enabled = options?.enabled !== false;
-    if (enabled && !pageCache.has(key) && !fetchingRef.current) {
-      refetch();
-    }
-  }, [key, options?.enabled]);
-
-  return [data, loading, error, refetch];
 }
 

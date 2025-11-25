@@ -70,8 +70,8 @@ export const getUnreadUserNotificationsFirestore = async (userId: string): Promi
     const notifications = snapshot.docs.map((doc) => doc.data() as Notification);
     // Sort by createdAt descending client-side
     return notifications.sort((a, b) => {
-      const aTime = a.createdAt?.toMillis?.() || a.createdAt || 0;
-      const bTime = b.createdAt?.toMillis?.() || b.createdAt || 0;
+      const aTime = new Date(a.createdAt || 0).getTime();
+      const bTime = new Date(b.createdAt || 0).getTime();
       return bTime - aTime;
     });
   } catch (error: any) {
@@ -187,8 +187,8 @@ export const subscribeToUnreadUserNotificationsFirestore = (
       const notifications = snapshot.docs.map((doc) => doc.data() as Notification);
       // Sort by createdAt descending client-side
       const sorted = notifications.sort((a, b) => {
-        const aTime = a.createdAt?.toMillis?.() || a.createdAt || 0;
-        const bTime = b.createdAt?.toMillis?.() || b.createdAt || 0;
+        const aTime = new Date(a.createdAt || 0).getTime();
+        const bTime = new Date(b.createdAt || 0).getTime();
         return bTime - aTime;
       });
       callback(sorted);

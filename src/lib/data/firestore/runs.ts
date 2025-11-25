@@ -55,10 +55,15 @@ export const addLeaderboardEntryFirestore = async (entry: Omit<LeaderboardEntry,
     const newDocRef = doc(collection(db, "leaderboardEntries")).withConverter(leaderboardEntryConverter);
     const finalLeaderboardType = normalized.leaderboardType || 'regular';
     
+    // Remove undefined values from normalized entry (Firestore doesn't allow undefined)
+    const cleanedNormalized = Object.fromEntries(
+      Object.entries(normalized).filter(([_, value]) => value !== undefined)
+    ) as Partial<LeaderboardEntry>;
+    
     // Build entry with explicit importedFromSRC field set BEFORE spreading normalized
     const newEntry: any = {
         id: newDocRef.id,
-        ...normalized,
+        ...cleanedNormalized,
         leaderboardType: finalLeaderboardType,
         verified: normalized.verified ?? false,
         isObsolete: false,
@@ -145,7 +150,7 @@ export const getRecentRunsFirestore = async (limitCount: number = 10): Promise<L
             firestoreLimit(limitCount)
         );
         const snapshot = await getDocs(q);
-        return snapshot.docs.map(d => d.data());
+        return snapshot.docs.map(d => d.data()) as LeaderboardEntry[];
     } catch (error) {
         console.error("Error fetching recent runs:", error);
         return [];
@@ -162,7 +167,7 @@ export const getPlayerRunsFirestore = async (playerId: string): Promise<Leaderbo
             orderBy("date", "desc")
         );
         const snapshot = await getDocs(q);
-        return snapshot.docs.map(d => d.data());
+        return snapshot.docs.map(d => d.data()) as LeaderboardEntry[];
     } catch (error) {
         console.error("Error fetching player runs:", error);
         return [];
@@ -179,7 +184,7 @@ export const getPlayerPendingRunsFirestore = async (playerId: string): Promise<L
             orderBy("date", "desc")
         );
         const snapshot = await getDocs(q);
-        return snapshot.docs.map(d => d.data());
+        return snapshot.docs.map(d => d.data()) as LeaderboardEntry[];
     } catch (error) {
         console.error("Error fetching player pending runs:", error);
         return [];
@@ -206,7 +211,7 @@ export const subscribeToPlayerRunsFirestore = (
     );
     
     return onSnapshot(q, (snapshot: QuerySnapshot) => {
-      const runs = snapshot.docs.map(d => d.data());
+      const runs = snapshot.docs.map(d => d.data()) as LeaderboardEntry[];
       callback(runs);
     }, (error) => {
       console.error("Error in player runs subscription:", error);
@@ -238,7 +243,7 @@ export const subscribeToPlayerPendingRunsFirestore = (
     );
     
     return onSnapshot(q, (snapshot: QuerySnapshot) => {
-      const runs = snapshot.docs.map(d => d.data());
+      const runs = snapshot.docs.map(d => d.data()) as LeaderboardEntry[];
       callback(runs);
     }, (error) => {
       console.error("Error in player pending runs subscription:", error);
@@ -416,7 +421,7 @@ export const getUnverifiedLeaderboardEntriesFirestore = async (): Promise<Leader
             orderBy("date", "desc")
         );
         const snapshot = await getDocs(q);
-        return snapshot.docs.map(d => d.data());
+        return snapshot.docs.map(d => d.data()) as LeaderboardEntry[];
     } catch (error) {
         console.error("Error fetching unverified runs:", error);
         return [];
@@ -659,7 +664,7 @@ export const subscribeToRecentRunsFirestore = (
     );
     
     return onSnapshot(q, (snapshot: QuerySnapshot) => {
-      const runs = snapshot.docs.map(d => d.data());
+      const runs = snapshot.docs.map(d => d.data()) as LeaderboardEntry[];
       callback(runs);
     }, (error) => {
       console.error("Error in recent runs subscription:", error);
@@ -688,7 +693,7 @@ export const subscribeToUnverifiedRunsFirestore = (
     );
     
     return onSnapshot(q, (snapshot: QuerySnapshot) => {
-      const runs = snapshot.docs.map(d => d.data());
+      const runs = snapshot.docs.map(d => d.data()) as LeaderboardEntry[];
       callback(runs);
     }, (error) => {
       console.error("Error in unverified runs subscription:", error);

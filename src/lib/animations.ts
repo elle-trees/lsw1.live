@@ -6,11 +6,11 @@ import { Variants, Transition } from "framer-motion";
 
 // Common transitions
 export const transitions = {
-  smooth: { duration: 0.3, ease: [0.4, 0, 0.2, 1] } as Transition,
-  spring: { type: "spring", stiffness: 300, damping: 30 } as Transition,
-  springBounce: { type: "spring", stiffness: 400, damping: 17 } as Transition,
+  smooth: { duration: 0.35, ease: [0.25, 0.1, 0.25, 1] } as Transition, // Smoother, more polished
+  spring: { type: "spring", stiffness: 280, damping: 28 } as Transition, // Softer spring
+  springBounce: { type: "spring", stiffness: 350, damping: 20 } as Transition,
   gentle: { duration: 0.5, ease: [0.25, 0.1, 0.25, 1] } as Transition,
-  quick: { duration: 0.2, ease: "easeOut" } as Transition,
+  quick: { duration: 0.25, ease: [0.4, 0, 0.2, 1] } as Transition, // Less abrupt
   slow: { duration: 0.8, ease: [0.25, 0.1, 0.25, 1] } as Transition,
 };
 
@@ -18,12 +18,12 @@ export const transitions = {
 export const fadeVariants: Variants = {
   hidden: { opacity: 0 },
   visible: { opacity: 1, transition: transitions.smooth },
-  exit: { opacity: 0, transition: transitions.quick },
+  exit: { opacity: 0, transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] } },
 };
 
 // Slide animations
 export const slideUpVariants: Variants = {
-  hidden: { opacity: 0, y: 30 },
+  hidden: { opacity: 0, y: 16 },
   visible: { 
     opacity: 1, 
     y: 0,
@@ -31,8 +31,8 @@ export const slideUpVariants: Variants = {
   },
   exit: { 
     opacity: 0, 
-    y: -20,
-    transition: transitions.quick,
+    y: -8,
+    transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] },
   },
 };
 
@@ -80,7 +80,7 @@ export const slideRightVariants: Variants = {
 
 // Scale animations
 export const scaleVariants: Variants = {
-  hidden: { opacity: 0, scale: 0.8 },
+  hidden: { opacity: 0, scale: 0.95 },
   visible: { 
     opacity: 1, 
     scale: 1,
@@ -88,14 +88,14 @@ export const scaleVariants: Variants = {
   },
   exit: { 
     opacity: 0, 
-    scale: 0.8,
-    transition: transitions.quick,
+    scale: 0.95,
+    transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] },
   },
 };
 
 // Combined fade + slide
 export const fadeSlideUpVariants: Variants = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 0, y: 12 },
   visible: { 
     opacity: 1, 
     y: 0,
@@ -103,8 +103,8 @@ export const fadeSlideUpVariants: Variants = {
   },
   exit: { 
     opacity: 0, 
-    y: -20,
-    transition: transitions.quick,
+    y: -8,
+    transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] },
   },
 };
 
@@ -128,14 +128,14 @@ export const staggerContainerVariants: Variants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.05,
-      delayChildren: 0.1,
+      staggerChildren: 0.04,
+      delayChildren: 0.08,
     },
   },
 };
 
 export const staggerItemVariants: Variants = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 0, y: 12 },
   visible: {
     opacity: 1,
     y: 0,
@@ -171,24 +171,28 @@ export const buttonVariants: Variants = {
   },
 };
 
-// Page transition variants - optimized to prevent reload flash
-// Fast, subtle transitions that don't cause visual reload issues
+// Page transition variants - smooth, polished transitions
 export const pageVariants: Variants = {
   initial: { 
     opacity: 0,
+    y: 8,
   },
   enter: { 
     opacity: 1,
+    y: 0,
     transition: {
-      duration: 0.2,
-      ease: "easeOut",
+      duration: 0.35,
+      ease: [0.25, 0.1, 0.25, 1], // Custom easing for smooth feel
+      opacity: { duration: 0.3 },
     },
   },
   exit: { 
     opacity: 0,
+    y: -4,
     transition: {
-      duration: 0.15,
-      ease: "easeIn",
+      duration: 0.25,
+      ease: [0.4, 0, 0.2, 1],
+      opacity: { duration: 0.2 },
     },
   },
 };
@@ -197,8 +201,8 @@ export const pageVariants: Variants = {
 export const modalVariants: Variants = {
   hidden: {
     opacity: 0,
-    scale: 0.95,
-    y: 20,
+    scale: 0.96,
+    y: 12,
   },
   visible: {
     opacity: 1,
@@ -208,9 +212,9 @@ export const modalVariants: Variants = {
   },
   exit: {
     opacity: 0,
-    scale: 0.95,
-    y: 20,
-    transition: transitions.quick,
+    scale: 0.96,
+    y: 8,
+    transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] },
   },
 };
 

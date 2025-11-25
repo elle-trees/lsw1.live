@@ -67,9 +67,15 @@ export const subscribeToPlayerFirestore = (
 export const createPlayerFirestore = async (player: Player): Promise<string | null> => {
   if (!db) return null;
   try {
-    const playerDocRef = doc(db, "players", player.uid).withConverter(playerConverter);
-    await setDoc(playerDocRef, player);
-    return player.uid;
+    // Normalize srcUsername if provided (lowercase, trimmed) for consistent matching
+    const normalizedPlayer = { ...player };
+    if (normalizedPlayer.srcUsername !== undefined) {
+      normalizedPlayer.srcUsername = normalizedPlayer.srcUsername.trim().toLowerCase() || undefined;
+    }
+    
+    const playerDocRef = doc(db, "players", normalizedPlayer.uid).withConverter(playerConverter);
+    await setDoc(playerDocRef, normalizedPlayer);
+    return normalizedPlayer.uid;
   } catch (error) {
     console.error("Error creating player:", error);
     return null;
@@ -79,8 +85,14 @@ export const createPlayerFirestore = async (player: Player): Promise<string | nu
 export const updatePlayerProfileFirestore = async (uid: string, data: Partial<Player>): Promise<boolean> => {
   if (!db) return false;
   try {
+    // Normalize srcUsername if provided (lowercase, trimmed) for consistent matching
+    const normalizedData = { ...data };
+    if (normalizedData.srcUsername !== undefined) {
+      normalizedData.srcUsername = normalizedData.srcUsername.trim().toLowerCase() || undefined;
+    }
+    
     const playerDocRef = doc(db, "players", uid).withConverter(playerConverter);
-    await updateDoc(playerDocRef, data);
+    await updateDoc(playerDocRef, normalizedData);
     return true;
   } catch (error) {
     console.error("Error updating player profile:", error);
@@ -231,7 +243,7 @@ export const getAllPlayersFirestore = async (sortBy?: string, sortOrder?: 'asc' 
     try {
         const q = query(collection(db, "players").withConverter(playerConverter));
         const snapshot = await getDocs(q);
-        let players = snapshot.docs.map(d => d.data());
+        let players = snapshot.docs.map(d => d.data()) as Player[];
         
         if (sortBy) {
             players.sort((a, b) => {
@@ -306,7 +318,7 @@ export const getPlayersByPointsFirestore = async (limitCount: number = 100): Pro
         );
         
         const snapshot = await getDocs(q);
-        let players = snapshot.docs.map(d => d.data());
+        let players = snapshot.docs.map(d => d.data()) as Player[];
         
         // Sort in memory if index is missing/failing
         players.sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0));
@@ -337,7 +349,7 @@ export const subscribeToPlayersByPointsFirestore = (
     );
     
     return onSnapshot(q, (snapshot: QuerySnapshot) => {
-      let players = snapshot.docs.map(d => d.data());
+      let players = snapshot.docs.map(d => d.data()) as Player[];
       // Sort in memory (Firestore doesn't support sorting on multiple fields easily)
       players.sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0));
       callback(players);
