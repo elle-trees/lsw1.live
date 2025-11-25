@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Bell, Check, ExternalLink, Trash2, X } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 
 import { Button } from "@/components/ui/button";
@@ -222,7 +222,7 @@ export function Notifications() {
                         </p>
                         {notification.link && (
                             <Link 
-                                to={notification.link} 
+                                to={notification.link as any} 
                                 className="text-xs text-ctp-blue hover:underline flex items-center gap-1 mt-2"
                                 onClick={() => setOpen(false)}
                             >
@@ -292,7 +292,7 @@ export function Notifications() {
                                 asChild
                                 onClick={() => setOpen(false)}
                            >
-                               <Link to="/admin">Review in Admin</Link>
+                               <Link to="/admin" params={undefined}>Review in Admin</Link>
                            </Button>
                         </div>
                       </div>
@@ -313,7 +313,7 @@ export function Notifications() {
                         asChild
                         onClick={() => setOpen(false)}
                     >
-                        <Link to="/settings">Go to Settings to Claim</Link>
+                        <Link to="/settings" params={undefined}>Go to Settings to Claim</Link>
                     </Button>
                 </div>
              </AnimatedTabsContent>

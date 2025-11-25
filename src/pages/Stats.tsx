@@ -25,7 +25,7 @@ import { getAllVerifiedRuns, getCategories, getPlatforms, getLevels, runTypes } 
 import { LeaderboardEntry, Player } from "@/types/database";
 import { formatTime, parseTimeToSeconds, formatSecondsToTime } from "@/lib/utils";
 import { getCategoryName, getPlatformName, getLevelName } from "@/lib/dataValidation";
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { FadeIn } from "@/components/ui/fade-in";
 import { lazy, Suspense } from "react";
 
@@ -1162,7 +1162,8 @@ const Stats = () => {
                           </TableCell>
                           <TableCell>
                             <Link 
-                              to={`/player/${wr.playerId}`}
+                              to="/player/$playerId"
+                              params={{ playerId: wr.playerId }}
                               className="text-primary hover:underline"
                             >
                               {wr.playerName}
@@ -1288,7 +1289,8 @@ const Stats = () => {
                           </TableCell>
                           <TableCell>
                             <Link 
-                              to={`/player/${longestWR.run.playerId}`}
+                              to="/player/$playerId"
+                              params={{ playerId: longestWR.run.playerId }}
                               className="text-primary hover:underline"
                             >
                               <span style={{ color: longestWR.run.nameColor || 'inherit' }}>

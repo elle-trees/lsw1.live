@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Radio } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Link } from 'react-router-dom';
+import { Link } from '@tanstack/react-router';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AnimatedCard } from '@/components/ui/animated-card';
@@ -375,7 +375,8 @@ const Live = () => {
                               </Avatar>
                               <div className="flex-1 min-w-0">
                                 <Link
-                                  to={`/player/${runner.uid}`}
+                                  to="/player/$playerId"
+                                  params={{ playerId: runner.uid }}
                                   onClick={(e) => e.stopPropagation()}
                                   className="font-semibold text-base hover:opacity-80 transition-opacity block truncate"
                                   style={{ color: runner.nameColor || '#cba6f7' }}

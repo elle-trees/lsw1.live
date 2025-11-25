@@ -6,7 +6,7 @@
  * 2. Page data (Firestore queries, API calls, etc.)
  */
 
-import { useHref } from "react-router-dom";
+// Removed useHref - no longer needed with TanStack Router
 
 // Route to data prefetch mapping
 type PrefetchDataFn = (params?: Record<string, string>) => Promise<void> | void;

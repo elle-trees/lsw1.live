@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Tabs, AnimatedTabsList, AnimatedTabsTrigger } from "@/components/ui/animated-tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,8 +20,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { FadeIn } from "@/components/ui/fade-in";
 
-const PlayerDetails = () => {
-  const { playerId } = useParams<{ playerId: string }>();
+interface PlayerDetailsProps {
+  playerId: string;
+}
+
+const PlayerDetails = ({ playerId }: PlayerDetailsProps) => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { toast } = useToast();
@@ -482,7 +485,7 @@ const PlayerDetails = () => {
                         key={run.id} 
                         className="table-row-animate border-b border-ctp-surface1/20 hover:bg-ctp-surface0 hover:brightness-125 transition-all duration-150 cursor-pointer"
                         style={{ animationDelay: `${index * 50}ms` }}
-                        onClick={() => navigate(`/run/${run.id}`)}
+                        onClick={() => navigate({ to: '/run/$runId', params: { runId: run.id } })}
                       >
                         <TableCell className="py-3 px-4 font-medium text-ctp-text">{categoryName}</TableCell>
                         <TableCell className="py-3 px-4 font-mono text-ctp-text text-left">{formatTime(run.time)}</TableCell>
@@ -804,7 +807,7 @@ const PlayerDetails = () => {
                                 onMouseLeave={() => setHighlightedId(null)}
                                 className={`table-row-animate border-b border-ctp-surface1/20 transition-colors duration-50 cursor-pointer ${isHighlighted ? 'bg-ctp-surface0' : ''}`}
                                 style={{ animationDelay: `${index * 50}ms` }}
-                                onClick={() => navigate(`/run/${run.id}`)}
+                                onClick={() => navigate({ to: '/run/$runId', params: { runId: run.id } })}
                               >
                                 <TableCell className="py-2.5 pl-3 pr-1">
                                   {run.rank ? (

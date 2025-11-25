@@ -24,7 +24,7 @@ type ImportResult = {
 import { fetchCategoryVariables, getLSWGameId, fetchCategories as fetchSRCCategories, type SRCCategory } from "@/lib/speedruncom";
 import { useUploadThing } from "@/lib/uploadthing";
 import { LeaderboardEntry, DownloadEntry, Category, Level, Subcategory, PointsConfig, GameDetailsConfig, GameDetailsHeaderLink, Player } from "@/types/database";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { formatTime } from "@/lib/utils";
 import { getCategoryName, getPlatformName, getLevelName, normalizeCategoryId, normalizePlatformId, normalizeLevelId } from "@/lib/dataValidation";
@@ -1065,7 +1065,7 @@ const Admin = () => {
           description: "You must be logged in to view this page.",
           variant: "destructive",
         });
-        navigate("/");
+        navigate({ to: '/' });
         return;
       }
       
@@ -1075,7 +1075,7 @@ const Admin = () => {
           description: "You do not have permission to view this page. Admin status required.",
           variant: "destructive",
         });
-        navigate("/");
+        navigate({ to: '/' });
         return;
       }
       

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import { PrefetchLink } from "@/components/PrefetchLink";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,8 +18,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { formatDate, calculatePoints, formatTime } from "@/lib/utils";
 
-const RunDetails = () => {
-  const { runId } = useParams<{ runId: string }>();
+interface RunDetailsProps {
+  runId: string;
+}
+
+const RunDetails = ({ runId }: RunDetailsProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { currentUser } = useAuth();
@@ -60,7 +63,7 @@ const RunDetails = () => {
           description: "Run ID is missing.",
           variant: "destructive",
         });
-        navigate("/leaderboards");
+        navigate({ to: '/leaderboards' });
         return;
       }
 
@@ -78,7 +81,7 @@ const RunDetails = () => {
             description: "This run could not be found.",
             variant: "destructive",
           });
-          navigate("/leaderboards");
+          navigate({ to: '/leaderboards' });
           return;
         }
 
@@ -138,7 +141,7 @@ const RunDetails = () => {
           description: "Failed to load run details.",
           variant: "destructive",
         });
-        navigate("/leaderboards");
+        navigate({ to: '/leaderboards' });
       } finally {
         setLoading(false);
       }
@@ -413,7 +416,7 @@ const RunDetails = () => {
           title: "Run Deleted",
           description: "The run has been successfully deleted.",
         });
-        navigate("/leaderboards");
+        navigate({ to: '/leaderboards' });
       } else {
         throw new Error("Failed to delete run");
       }

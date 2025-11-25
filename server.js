@@ -12,6 +12,16 @@ const PORT = parseInt(process.env.PORT || '8080', 10);
 const HOST = '0.0.0.0';
 const DIST_DIR = resolve(__dirname, 'dist');
 
+// Try to import the SSR handler (only available in production build)
+let ssrHandler = null;
+try {
+  const serverModule = await import('./dist/server.js');
+  ssrHandler = serverModule.default;
+} catch (error) {
+  // SSR handler not available (dev mode or build not complete)
+  console.log('SSR handler not available, serving static files only');
+}
+
 const MIME_TYPES = {
   '.html': 'text/html',
   '.js': 'text/javascript',
@@ -47,7 +57,31 @@ function serveFile(filePath) {
   return null;
 }
 
-const server = createServer((req, res) => {
+const server = createServer(async (req, res) => {
+  // Handle SSR if handler is available
+  if (ssrHandler && req.method === 'GET' && !req.url.startsWith('/api/') && !req.url.includes('.')) {
+    try {
+      // Convert Node.js request to TanStack Start request format
+      const url = new URL(req.url, `http://${req.headers.host}`);
+      const request = new Request(url.toString(), {
+        method: req.method,
+        headers: req.headers,
+      });
+      
+      const response = await ssrHandler(request);
+      
+      // Copy response to Node.js response
+      res.writeHead(response.status, Object.fromEntries(response.headers.entries()));
+      const body = await response.text();
+      res.end(body);
+      return;
+    } catch (error) {
+      console.error('SSR error:', error);
+      // Fall through to static file serving
+    }
+  }
+  
+  // Serve static files or fallback to index.html for SPA routing
   let filePath = req.url === '/' ? '/index.html' : req.url;
   filePath = filePath.split('?')[0]; // Remove query string
   
@@ -89,10 +123,12 @@ const server = createServer((req, res) => {
 
 server.listen(PORT, HOST, () => {
   console.log(`Server running on http://${HOST}:${PORT}`);
+  if (ssrHandler) {
+    console.log('SSR enabled');
+  }
 });
 
 server.on('error', (error) => {
   console.error('Server error:', error);
   process.exit(1);
 });
-

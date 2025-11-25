@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { updatePlayerProfile, getPlayerByUid, getUnclaimedRunsBySRCUsername, claimRun, getCategories, getPlatforms, getLevels, getCategoriesFromFirestore } from "@/lib/db";
 import { updateEmail, updatePassword, updateProfile } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import { LeaderboardEntry } from "@/types/database";
 import { Badge } from "@/components/ui/badge";
 import { formatDate, formatTime } from "@/lib/utils";
@@ -66,7 +66,7 @@ const UserSettings = () => {
           description: "Please log in to view your settings.",
           variant: "destructive",
         });
-        navigate("/"); // Redirect to home or login
+        navigate({ to: '/' }); // Redirect to home or login
         return;
       }
 

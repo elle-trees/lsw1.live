@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useRouterState, useNavigate } from "@tanstack/react-router";
 import { PrefetchLink } from "@/components/PrefetchLink";
 import { GameDetailsConfig } from "@/types/database";
 import { getGameDetailsConfig } from "@/lib/db";
@@ -39,7 +39,8 @@ const iconMap: Record<string, React.ComponentType<{ className?: string; size?: n
 export function GameDetails({ className }: GameDetailsProps) {
   const [config, setConfig] = useState<GameDetailsConfig | null>(null);
   const [loading, setLoading] = useState(true);
-  const location = useLocation();
+  const routerState = useRouterState();
+  const location = { pathname: routerState.location.pathname, search: routerState.location.search };
   const { currentUser, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [isLoginOpen, setIsLoginOpen] = useState(false);

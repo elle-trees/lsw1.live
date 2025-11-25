@@ -5,6 +5,7 @@ import { visualizer } from "rollup-plugin-visualizer";
 import viteCompression from "vite-plugin-compression";
 import { VitePWA } from "vite-plugin-pwa";
 import checker from "vite-plugin-checker";
+import { TanStackRouterVite } from '@tanstack/router-vite-plugin';
 
 export default defineConfig(({ mode }) => {
   // Always read from environment variable, fallback to 8080
@@ -73,6 +74,7 @@ export default defineConfig(({ mode }) => {
       cors: true,
     },
     plugins: [
+      TanStackRouterVite(),
       react(),
       // Type checking in dev mode only (faster than tsc watch)
       // Disable in production builds for faster compilation

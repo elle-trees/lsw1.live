@@ -15,7 +15,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { addLeaderboardEntry, getCategories, getCategoriesFromFirestore, getPlatforms, runTypes, getPlayerByDisplayName, getLevels } from "@/lib/db";
 import { Category } from "@/types/database";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 
 const SubmitRun = () => {
   const { currentUser } = useAuth();
@@ -325,7 +325,7 @@ const SubmitRun = () => {
           title: "Run Submitted",
           description: "Your run has been submitted successfully and is awaiting verification.",
         });
-        navigate("/leaderboards");
+        navigate({ to: '/leaderboards' });
       } else {
         throw new Error("Failed to submit run");
       }

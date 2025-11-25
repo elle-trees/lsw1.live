@@ -1,5 +1,5 @@
 import { useRef, useCallback } from "react";
-import { useHref } from "react-router-dom";
+import { useRouter } from "@tanstack/react-router";
 import { prefetchRouteAndData } from "@/lib/prefetch";
 
 /**
@@ -10,7 +10,7 @@ import { prefetchRouteAndData } from "@/lib/prefetch";
  * 2. Prefetch page data (Firestore queries, etc.) on hover
  * 3. Work with both static and dynamic routes
  * 
- * @param to - The route path to prefetch
+ * @param to - The route path to prefetch (TanStack Router format)
  * @param params - Optional parameters for dynamic routes (e.g., { playerId: "123" })
  * @returns Event handlers for mouse enter
  */
@@ -18,21 +18,35 @@ export function usePrefetch(
   to: string,
   params?: Record<string, string>
 ) {
-  const href = useHref(to);
+  const router = useRouter();
   const hasPrefetched = useRef(false);
 
   const handleMouseEnter = useCallback(() => {
     if (!hasPrefetched.current && typeof document !== "undefined") {
+      // Build the href from the route
+      let href = to;
+      if (params) {
+        // Replace route params in the path
+        Object.entries(params).forEach(([key, value]) => {
+          href = href.replace(`$${key}`, value);
+        });
+      }
       // Prefetch both route and data
       prefetchRouteAndData(href, to, params);
       hasPrefetched.current = true;
     }
-  }, [href, to, params]);
+  }, [to, params]);
 
   return {
     onMouseEnter: handleMouseEnter,
     prefetch: () => {
       if (!hasPrefetched.current) {
+        let href = to;
+        if (params) {
+          Object.entries(params).forEach(([key, value]) => {
+            href = href.replace(`$${key}`, value);
+          });
+        }
         prefetchRouteAndData(href, to, params);
         hasPrefetched.current = true;
       }
