@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from "react";
 import { auth } from "@/lib/firebase";
 import { getPlayerByUid, createPlayer, startRealtimeAutoclaiming, stopRealtimeAutoclaiming } from "@/lib/db";
-import { CustomUser } from "@/types/database";
+import { CustomUser, Player } from "@/types/database";
 import type { User } from "firebase/auth";
 
 interface AuthContextType {
@@ -94,7 +94,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               const finalDisplayName = user.displayName || user.email?.split('@')[0] || "Player";
               
               // Create player document in Firestore - all user data stored securely here
-              const newPlayer = {
+              const newPlayer: Player = {
+                id: user.uid,
                 uid: user.uid,
                 displayName: finalDisplayName,
                 email: user.email || "",

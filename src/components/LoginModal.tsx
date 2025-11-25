@@ -175,6 +175,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
         const today = new Date().toISOString().split('T')[0];
         try {
           await createPlayer({
+            id: user.uid,
             uid: user.uid,
             displayName: displayName.trim(),
             email: user.email || "",

@@ -116,7 +116,7 @@ export function normalizeRunType(type: 'solo' | 'co-op' | string | undefined | n
 export function normalizeLeaderboardEntry(entry: Partial<LeaderboardEntry>): Partial<LeaderboardEntry> {
   // Preserve importedFromSRC explicitly - it's critical for validation bypass
   const importedFromSRC = entry.importedFromSRC !== undefined 
-    ? (entry.importedFromSRC === true || entry.importedFromSRC === 1 || entry.importedFromSRC === "true" || entry.importedFromSRC === Boolean(true))
+    ? (entry.importedFromSRC === true || entry.importedFromSRC === "true")
     : undefined;
   
   return {
@@ -227,7 +227,7 @@ export function validateLeaderboardEntry(entry: Partial<LeaderboardEntry>): {
   
   // Check if this is an imported run - check the actual value
   // Normalization converts it to Boolean(true) which is still === true, but be explicit
-  const isImported = entry.importedFromSRC === true || entry.importedFromSRC === Boolean(true) || entry.importedFromSRC === 1 || !!entry.importedFromSRC;
+  const isImported = entry.importedFromSRC === true || entry.importedFromSRC === "true" || !!entry.importedFromSRC;
   
   if (!entry.playerName || entry.playerName.trim() === "") {
     errors.push("Player name is required");

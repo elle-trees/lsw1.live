@@ -196,6 +196,15 @@ export default defineConfig(({ mode }) => {
         "@": path.resolve(__dirname, "./src"),
       },
     },
+    // SSR configuration
+    ssr: {
+      // Externalize dependencies that should not be bundled for SSR
+      noExternal: [
+        // Keep these internal for SSR
+        '@tanstack/react-router',
+        '@tanstack/react-query',
+      ],
+    },
     build: {
       // Optimize build performance
       // Rolldown has built-in minification, no need to specify

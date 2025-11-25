@@ -30,7 +30,9 @@ const ourFileRouter = {
     }),
 } satisfies FileRouter;
 
-// Create the route handler - this returns an object with GET and POST handlers
+// Create route handlers for Vercel serverless functions
+// Note: uploadthing/next's createRouteHandler works on Vercel because Vercel supports
+// Next.js-style API routes with Request/Response API
 const { GET, POST } = createRouteHandler({
   router: ourFileRouter,
 });

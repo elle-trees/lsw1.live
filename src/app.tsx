@@ -1,4 +1,4 @@
-import { createRouter, RouterProvider } from '@tanstack/react-router'
+import { RouterProvider } from '@tanstack/react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
@@ -9,37 +9,28 @@ import { AuthProvider } from '@/components/AuthProvider'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { initializeRoutePrefetches } from '@/lib/prefetch'
 import { useEffect } from 'react'
+import { router } from './router'
 import './globals.css'
 
-// Import route tree
-import { routeTree } from './routeTree.gen'
-
-// Create a new router instance
-const router = createRouter({ routeTree })
-
-// Register the router instance for type safety
-declare module '@tanstack/react-router' {
-  interface Register {
-    router: typeof router
-  }
+function createQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 1000 * 60 * 5, // 5 minutes
+        gcTime: 1000 * 60 * 30, // 30 minutes
+        retry: 1,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: true,
+      },
+      mutations: {
+        retry: 1,
+      },
+    },
+  })
 }
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 30, // 30 minutes
-      retry: 1,
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: true,
-    },
-    mutations: {
-      retry: 1,
-    },
-  },
-})
-
-export function App() {
+export function App({ queryClient: providedQueryClient }: { queryClient?: QueryClient } = {}) {
+  const queryClient = providedQueryClient || createQueryClient()
   // Initialize prefetch system on mount
   useEffect(() => {
     initializeRoutePrefetches()

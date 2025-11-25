@@ -264,7 +264,7 @@ export const recalculateAllPlayerPointsFirestore = async (
         batch.map(async (player) => {
           try {
             const newTotal = await recalculatePlayerPointsFirestore(player.uid, pointsConfig);
-            if (newTotal > 0 || player.totalPoints > 0) {
+            if (newTotal > 0 || (player.totalPoints !== undefined && player.totalPoints > 0)) {
               playersUpdated++;
             }
             processed++;

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { createServer } from 'http';
-import { readFileSync, statSync } from 'fs';
+import { readFileSync, statSync, existsSync } from 'fs';
 import { join, resolve, extname } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -11,15 +11,20 @@ const __dirname = dirname(__filename);
 const PORT = parseInt(process.env.PORT || '8080', 10);
 const HOST = '0.0.0.0';
 const DIST_DIR = resolve(__dirname, 'dist');
+const SERVER_ENTRY = resolve(DIST_DIR, 'server/server.js');
 
-// Try to import the SSR handler (only available in production build)
-let ssrHandler = null;
-try {
-  const serverModule = await import('./dist/server.js');
-  ssrHandler = serverModule.default;
-} catch (error) {
-  // SSR handler not available (dev mode or build not complete)
-  console.log('SSR handler not available, serving static files only');
+// Check if SSR is available (server bundle exists)
+const SSR_ENABLED = existsSync(SERVER_ENTRY);
+
+// Lazy load SSR render function only if SSR is enabled
+let render;
+if (SSR_ENABLED) {
+  try {
+    const serverModule = await import(SERVER_ENTRY);
+    render = serverModule.render;
+  } catch (error) {
+    console.warn('SSR module failed to load, falling back to SPA mode:', error.message);
+  }
 }
 
 const MIME_TYPES = {
@@ -58,53 +63,76 @@ function serveFile(filePath) {
 }
 
 const server = createServer(async (req, res) => {
-  // Handle SSR if handler is available
-  if (ssrHandler && req.method === 'GET' && !req.url.startsWith('/api/') && !req.url.includes('.')) {
-    try {
-      // Convert Node.js request to TanStack Start request format
-      const url = new URL(req.url, `http://${req.headers.host}`);
-      const request = new Request(url.toString(), {
-        method: req.method,
-        headers: req.headers,
-      });
-      
-      const response = await ssrHandler(request);
-      
-      // Copy response to Node.js response
-      res.writeHead(response.status, Object.fromEntries(response.headers.entries()));
-      const body = await response.text();
-      res.end(body);
+  try {
+    const url = req.url || '/';
+    const [pathname] = url.split('?');
+    
+    // Security: prevent directory traversal
+    if (pathname.includes('..')) {
+      res.writeHead(403, { 'Content-Type': 'text/plain' });
+      res.end('Forbidden');
       return;
-    } catch (error) {
-      console.error('SSR error:', error);
-      // Fall through to static file serving
     }
-  }
-  
-  // Serve static files or fallback to index.html for SPA routing
-  let filePath = req.url === '/' ? '/index.html' : req.url;
-  filePath = filePath.split('?')[0]; // Remove query string
-  
-  // Security: prevent directory traversal
-  if (filePath.includes('..')) {
-    res.writeHead(403, { 'Content-Type': 'text/plain' });
-    res.end('Forbidden');
-    return;
-  }
-  
-  const fullPath = resolve(DIST_DIR, filePath.slice(1));
-  
-  // Try to serve the file
-  const result = serveFile(fullPath);
-  
-  if (result) {
-    res.writeHead(result.status, {
-      'Content-Type': result.mimeType,
-      'Cache-Control': 'public, max-age=31536000, immutable',
-    });
-    res.end(result.content);
-  } else {
-    // For SPA routing, serve index.html for all routes
+    
+    // Check if this is a static asset request
+    const ext = extname(pathname).toLowerCase();
+    const isStaticAsset = ext && ext !== '.html' && !pathname.startsWith('/api');
+    
+    if (isStaticAsset) {
+      // Serve static assets directly
+      const fullPath = resolve(DIST_DIR, pathname.slice(1));
+      const result = serveFile(fullPath);
+      
+      if (result) {
+        res.writeHead(result.status, {
+          'Content-Type': result.mimeType,
+          'Cache-Control': 'public, max-age=31536000, immutable',
+        });
+        res.end(result.content);
+        return;
+      }
+    }
+    
+    // For HTML requests, use SSR if available, otherwise fall back to SPA
+    if (render && !isStaticAsset) {
+      try {
+        // Render the app server-side
+        const { html, dehydratedState } = await render(url, req, res);
+        
+        // Read the HTML template
+        const indexPath = resolve(DIST_DIR, 'index.html');
+        const indexResult = serveFile(indexPath);
+        
+        if (indexResult) {
+          let htmlContent = indexResult.content.toString();
+          
+          // Inject the rendered HTML into the root div
+          htmlContent = htmlContent.replace(
+            '<div id="root"></div>',
+            `<div id="root">${html}</div>`
+          );
+          
+          // Inject dehydrated state for React Query hydration
+          const stateScript = `<script>window.__REACT_QUERY_STATE__ = ${JSON.stringify(dehydratedState)};</script>`;
+          htmlContent = htmlContent.replace(
+            '</head>',
+            `${stateScript}</head>`
+          );
+          
+          res.writeHead(200, {
+            'Content-Type': 'text/html',
+            'Cache-Control': 'no-cache',
+          });
+          res.end(htmlContent);
+          return;
+        }
+      } catch (ssrError) {
+        console.error('SSR rendering error:', ssrError);
+        // Fall through to SPA fallback
+      }
+    }
+    
+    // Fallback to SPA mode: serve index.html
     const indexPath = resolve(DIST_DIR, 'index.html');
     const indexResult = serveFile(indexPath);
     
@@ -118,14 +146,16 @@ const server = createServer(async (req, res) => {
       res.writeHead(404, { 'Content-Type': 'text/plain' });
       res.end('File not found');
     }
+  } catch (error) {
+    console.error('Server error:', error);
+    res.writeHead(500, { 'Content-Type': 'text/plain' });
+    res.end('Internal Server Error');
   }
 });
 
 server.listen(PORT, HOST, () => {
   console.log(`Server running on http://${HOST}:${PORT}`);
-  if (ssrHandler) {
-    console.log('SSR enabled');
-  }
+  console.log(SSR_ENABLED && render ? 'SSR mode enabled' : 'Serving static files (SPA mode)');
 });
 
 server.on('error', (error) => {

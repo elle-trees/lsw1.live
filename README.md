@@ -93,7 +93,7 @@ A modern, fast, speedrunning leaderboard platform built with React, TypeScript, 
 - **Javascript Tools**: Oxc
 - **Styling**: Tailwind CSS + Catppuccin Mocha
 - **UI Components**: shadcn/ui
-- **Routing**: React Router
+- **Routing**: TanStack Router
 - **Database**: Firebase Firestore
 - **Authentication**: Firebase Auth
 - **File Uploads**: UploadThing
