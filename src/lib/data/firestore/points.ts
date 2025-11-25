@@ -5,7 +5,10 @@ import {
   setDoc, 
   getDocs, 
   query, 
-  limit as firestoreLimit
+  limit as firestoreLimit,
+  onSnapshot,
+  Unsubscribe,
+  QuerySnapshot
 } from "firebase/firestore";
 import { PointsConfig } from "@/types/database";
 import { pointsConfigConverter } from "./converters";
@@ -66,13 +69,78 @@ export const updatePointsConfigFirestore = async (config: PointsConfig): Promise
 };
 
 export const backfillPointsForAllRunsFirestore = async (): Promise<{ runsUpdated: number; playersUpdated: number; errors: string[] }> => {
-    // Stub implementation - complex logic involving recalculating all points for all runs
-    // TODO: Implement full backfill logic if needed
-    return { runsUpdated: 0, playersUpdated: 0, errors: [] };
+    try {
+        // Get current points config
+        const config = await getPointsConfigFirestore();
+        if (!config) {
+            return { runsUpdated: 0, playersUpdated: 0, errors: ["Points configuration not found"] };
+        }
+        
+        // Use the recalculation service
+        const { recalculateAllPlayerPointsFirestore } = await import("./points-realtime");
+        const result = await recalculateAllPlayerPointsFirestore(config);
+        
+        return {
+            runsUpdated: result.runsUpdated,
+            playersUpdated: result.playersUpdated,
+            errors: result.errors
+        };
+    } catch (error: any) {
+        console.error("Error in backfill points:", error);
+        return {
+            runsUpdated: 0,
+            playersUpdated: 0,
+            errors: [error.message || "Unknown error during backfill"]
+        };
+    }
 };
 
 export const wipeLeaderboardsFirestore = async (): Promise<boolean> => {
     // Stub implementation - dangerous operation disabled by default
     // TODO: Implement if needed with proper safeguards
     return false;
+};
+
+/**
+ * Subscribe to real-time updates for points configuration
+ * @param callback - Callback function that receives the points config or null if not found
+ * @returns Unsubscribe function to stop listening
+ */
+export const subscribeToPointsConfigFirestore = (
+  callback: (config: PointsConfig | null) => void
+): Unsubscribe | null => {
+  if (!db) return null;
+  try {
+    const q = query(
+      collection(db, "pointsConfig").withConverter(pointsConfigConverter),
+      firestoreLimit(1)
+    );
+    
+    return onSnapshot(q, (snapshot: QuerySnapshot<PointsConfig>) => {
+      if (!snapshot.empty) {
+        callback(snapshot.docs[0].data());
+      } else {
+        // Return default config if none exists
+        callback({
+          id: "default",
+          basePoints: 100,
+          rank1Bonus: 50,
+          rank2Bonus: 30,
+          rank3Bonus: 15,
+          coOpMultiplier: 0.5,
+          ilMultiplier: 1.0,
+          communityGoldsMultiplier: 1.0,
+          obsoleteMultiplier: 0.5,
+          applyRankBonusesToIL: false,
+          applyRankBonusesToCommunityGolds: false
+        });
+      }
+    }, (error) => {
+      console.error("Error in points config subscription:", error);
+      callback(null);
+    });
+  } catch (error) {
+    console.error("Error setting up points config subscription:", error);
+    return null;
+  }
 };

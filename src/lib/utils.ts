@@ -91,11 +91,45 @@ import type { PointsConfig } from "@/types/database";
 let cachedPointsConfig: PointsConfig | null = null;
 let configCacheTime: number = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+let configSubscription: (() => void) | null = null;
+let isSubscribed = false;
 
 /**
- * Get points configuration (with caching)
+ * Initialize real-time subscription for points config
+ * This ensures the cache is always up-to-date
+ */
+export function initializePointsConfigSubscription(): void {
+  if (isSubscribed) return;
+  
+  (async () => {
+    try {
+      const { subscribeToPointsConfigFirestore } = await import("@/lib/data/firestore/points");
+      const unsubscribe = subscribeToPointsConfigFirestore((config: PointsConfig | null) => {
+        if (config) {
+          cachedPointsConfig = config;
+          configCacheTime = Date.now();
+        }
+      });
+      
+      if (unsubscribe) {
+        configSubscription = unsubscribe;
+        isSubscribed = true;
+      }
+    } catch (error) {
+      console.error("Error initializing points config subscription:", error);
+    }
+  })();
+}
+
+/**
+ * Get points configuration (with caching and real-time updates)
  */
 async function getPointsConfigCached(): Promise<PointsConfig> {
+  // Initialize subscription if not already done
+  if (!isSubscribed) {
+    initializePointsConfigSubscription();
+  }
+  
   const now = Date.now();
   if (cachedPointsConfig && (now - configCacheTime) < CACHE_DURATION) {
     return cachedPointsConfig;
@@ -105,7 +139,19 @@ async function getPointsConfigCached(): Promise<PointsConfig> {
     const { getPointsConfigFirestore } = await import("@/lib/data/firestore/points");
     cachedPointsConfig = await getPointsConfigFirestore();
     configCacheTime = now;
-    return cachedPointsConfig;
+    return cachedPointsConfig || {
+      id: "default",
+      basePoints: 10,
+      rank1Bonus: 50,
+      rank2Bonus: 30,
+      rank3Bonus: 20,
+      coOpMultiplier: 0.5,
+      ilMultiplier: 1.0,
+      communityGoldsMultiplier: 1.0,
+      obsoleteMultiplier: 0.5,
+      applyRankBonusesToIL: false,
+      applyRankBonusesToCommunityGolds: false,
+    };
   } catch (_error) {
     // Return default config on error
     return {

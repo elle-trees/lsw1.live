@@ -45,6 +45,27 @@ const App = () => {
     initializeRoutePrefetches();
   }, []);
 
+  // Initialize real-time points system
+  useEffect(() => {
+    (async () => {
+      // Initialize points config subscription for real-time updates
+      const { initializePointsConfigSubscription } = await import("@/lib/utils");
+      initializePointsConfigSubscription();
+
+      // Start the points recalculation service (listens for config changes)
+      const { startPointsRecalculationService } = await import("@/lib/data/firestore/points-realtime");
+      startPointsRecalculationService();
+    })();
+
+    // Cleanup on unmount
+    return () => {
+      (async () => {
+        const { stopPointsRecalculationService } = await import("@/lib/data/firestore/points-realtime");
+        stopPointsRecalculationService();
+      })();
+    };
+  }, []);
+
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
