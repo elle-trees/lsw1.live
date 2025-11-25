@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Trophy, Timer, Calendar, Gamepad2, ExternalLink, CheckCircle2, XCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface PlayerStats {
   totalRuns: number;
@@ -22,6 +23,7 @@ interface PlayerProfileProps {
 }
 
 export function PlayerProfile({ playerName, joinDate, stats, nameColor, profilePicture, bio, pronouns, srcUsername }: PlayerProfileProps) {
+  const { t } = useTranslation();
   const isSRCLinked = !!srcUsername;
   const autoclaimEnabled = isSRCLinked; // Autoclaiming is enabled when SRC username is set
   
@@ -44,7 +46,7 @@ export function PlayerProfile({ playerName, joinDate, stats, nameColor, profileP
             </div>
             <p className="text-sm text-ctp-overlay0 flex items-center gap-1 mb-2">
               <Calendar className="h-4 w-4" />
-              Joined {joinDate}
+              {t("player.joined")} {joinDate}
             </p>
             {bio && (
               <p className="text-sm text-ctp-subtext1 mt-2 leading-relaxed">
@@ -57,7 +59,7 @@ export function PlayerProfile({ playerName, joinDate, stats, nameColor, profileP
                 <>
                   <Badge variant="outline" className="border-green-600/50 bg-green-600/10 text-green-400 text-xs px-2 py-0.5 flex items-center gap-1.5">
                     <CheckCircle2 className="h-3 w-3" />
-                    <span>Linked with Speedrun.com</span>
+                    <span>{t("player.linkedWithSpeedrunCom")}</span>
                     <a
                       href={`https://www.speedrun.com/users/${srcUsername}`}
                       target="_blank"
@@ -72,14 +74,14 @@ export function PlayerProfile({ playerName, joinDate, stats, nameColor, profileP
                   {autoclaimEnabled && (
                     <Badge variant="outline" className="border-blue-600/50 bg-blue-600/10 text-blue-400 text-xs px-2 py-0.5 flex items-center gap-1.5">
                       <CheckCircle2 className="h-3 w-3" />
-                      <span>Autoclaiming Enabled</span>
+                      <span>{t("player.autoclaimingEnabled")}</span>
                     </Badge>
                   )}
                 </>
               ) : (
                 <Badge variant="outline" className="border-ctp-surface1 text-ctp-subtext1 text-xs px-2 py-0.5 flex items-center gap-1.5">
                   <XCircle className="h-3 w-3" />
-                  <span>Not linked with Speedrun.com</span>
+                  <span>{t("player.notLinkedWithSpeedrunCom")}</span>
                 </Badge>
               )}
             </div>

@@ -10,6 +10,7 @@ import { useState, useEffect } from "react";
 import LegoStudIcon from "@/components/icons/LegoStudIcon";
 import { getPlatformName } from "@/lib/dataValidation";
 import { usePrefetchVisible } from "@/hooks/usePrefetch";
+import { useTranslation } from "react-i18next";
 
 interface RecentRunsProps {
   runs: LeaderboardEntry[];
@@ -19,6 +20,7 @@ interface RecentRunsProps {
 }
 
 export function RecentRuns({ runs, loading, showRankBadge = true, maxRuns }: RecentRunsProps) {
+  const { t } = useTranslation();
   const [platforms, setPlatforms] = useState<{ id: string; name: string }[]>([]);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
@@ -61,13 +63,13 @@ export function RecentRuns({ runs, loading, showRankBadge = true, maxRuns }: Rec
         <Table>
           <TableHeader>
             <TableRow className="border-b border-ctp-surface1/50 hover:bg-transparent bg-ctp-surface0/50">
-              {showRankBadge && <TableHead className="py-4 pl-4 pr-2 text-left text-base font-semibold text-ctp-text whitespace-nowrap w-20">Rank</TableHead>}
-              <TableHead className="py-4 pl-2 pr-3 text-left text-base font-semibold text-ctp-text min-w-[250px]">Player</TableHead>
-              <TableHead className="py-4 px-3 text-left text-base font-semibold text-ctp-text hidden sm:table-cell whitespace-nowrap w-32">Time</TableHead>
-              <TableHead className="py-4 px-3 text-left text-base font-semibold text-ctp-text hidden md:table-cell whitespace-nowrap w-36">Date</TableHead>
-              <TableHead className="py-4 px-3 text-left text-base font-semibold text-ctp-text hidden lg:table-cell whitespace-nowrap w-40">Platform</TableHead>
-              <TableHead className="py-4 px-3 text-left text-base font-semibold text-ctp-text hidden lg:table-cell whitespace-nowrap w-32">Type</TableHead>
-              <TableHead className="py-4 px-3 text-left text-base font-semibold text-ctp-text hidden lg:table-cell whitespace-nowrap w-40">Category</TableHead>
+              {showRankBadge && <TableHead className="py-4 pl-4 pr-2 text-left text-base font-semibold text-ctp-text whitespace-nowrap w-20">{t("components.rank")}</TableHead>}
+              <TableHead className="py-4 pl-2 pr-3 text-left text-base font-semibold text-ctp-text min-w-[250px]">{t("components.player")}</TableHead>
+              <TableHead className="py-4 px-3 text-left text-base font-semibold text-ctp-text hidden sm:table-cell whitespace-nowrap w-32">{t("components.time")}</TableHead>
+              <TableHead className="py-4 px-3 text-left text-base font-semibold text-ctp-text hidden md:table-cell whitespace-nowrap w-36">{t("components.date")}</TableHead>
+              <TableHead className="py-4 px-3 text-left text-base font-semibold text-ctp-text hidden lg:table-cell whitespace-nowrap w-40">{t("components.platform")}</TableHead>
+              <TableHead className="py-4 px-3 text-left text-base font-semibold text-ctp-text hidden lg:table-cell whitespace-nowrap w-32">{t("components.type")}</TableHead>
+              <TableHead className="py-4 px-3 text-left text-base font-semibold text-ctp-text hidden lg:table-cell whitespace-nowrap w-40">{t("components.category")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -108,7 +110,7 @@ export function RecentRuns({ runs, loading, showRankBadge = true, maxRuns }: Rec
     return (
       <div className="text-center py-16">
         <Sparkles className="h-16 w-16 mx-auto mb-4 text-ctp-overlay0 opacity-50" />
-        <p className="text-lg text-ctp-overlay0">No recent runs yet</p>
+        <p className="text-lg text-ctp-overlay0">{t("components.noRecentRuns")}</p>
       </div>
     );
   }
@@ -118,13 +120,13 @@ export function RecentRuns({ runs, loading, showRankBadge = true, maxRuns }: Rec
       <Table>
         <TableHeader>
           <TableRow className="border-b border-ctp-surface1/50 hover:bg-transparent bg-ctp-surface0/50">
-            {showRankBadge && <TableHead className="py-4 pl-4 pr-2 text-left text-base font-semibold text-ctp-text whitespace-nowrap w-20">Rank</TableHead>}
-            <TableHead className="py-4 pl-2 pr-3 text-left text-base font-semibold text-ctp-text min-w-[250px]">Player</TableHead>
-            <TableHead className="py-4 px-3 text-left text-base font-semibold text-ctp-text hidden sm:table-cell whitespace-nowrap w-32">Time</TableHead>
-            <TableHead className="py-4 px-3 text-left text-base font-semibold text-ctp-text hidden md:table-cell whitespace-nowrap w-36">Date</TableHead>
-            <TableHead className="py-4 px-3 text-left text-base font-semibold text-ctp-text hidden lg:table-cell whitespace-nowrap w-40">Platform</TableHead>
-            <TableHead className="py-4 px-3 text-left text-base font-semibold text-ctp-text hidden lg:table-cell whitespace-nowrap w-32">Type</TableHead>
-            <TableHead className="py-4 px-3 text-left text-base font-semibold text-ctp-text hidden lg:table-cell whitespace-nowrap w-40">Category</TableHead>
+            {showRankBadge && <TableHead className="py-4 pl-4 pr-2 text-left text-base font-semibold text-ctp-text whitespace-nowrap w-20">{t("components.rank")}</TableHead>}
+            <TableHead className="py-4 pl-2 pr-3 text-left text-base font-semibold text-ctp-text min-w-[250px]">{t("components.player")}</TableHead>
+            <TableHead className="py-4 px-3 text-left text-base font-semibold text-ctp-text hidden sm:table-cell whitespace-nowrap w-32">{t("components.time")}</TableHead>
+            <TableHead className="py-4 px-3 text-left text-base font-semibold text-ctp-text hidden md:table-cell whitespace-nowrap w-36">{t("components.date")}</TableHead>
+            <TableHead className="py-4 px-3 text-left text-base font-semibold text-ctp-text hidden lg:table-cell whitespace-nowrap w-40">{t("components.platform")}</TableHead>
+            <TableHead className="py-4 px-3 text-left text-base font-semibold text-ctp-text hidden lg:table-cell whitespace-nowrap w-32">{t("components.type")}</TableHead>
+            <TableHead className="py-4 px-3 text-left text-base font-semibold text-ctp-text hidden lg:table-cell whitespace-nowrap w-40">{t("components.category")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -163,7 +165,7 @@ export function RecentRuns({ runs, loading, showRankBadge = true, maxRuns }: Rec
                         )}
                         {run.isObsolete && (
                           <Badge variant="destructive" className="bg-red-800/50 text-red-200 text-xs px-2 py-1 border border-red-700/30">
-                            Obsolete
+                            {t("components.obsolete")}
                           </Badge>
                         )}
                       </div>
@@ -192,8 +194,8 @@ export function RecentRuns({ runs, loading, showRankBadge = true, maxRuns }: Rec
                             {rank === 1 && !run.isObsolete && (
                               <Badge className="bg-gradient-to-r from-[#0055BF] to-[#0070f3] text-white text-sm px-2 py-1 border border-[#0055BF]/50 flex items-center gap-1.5 font-semibold">
                                 <Trophy className="h-3.5 w-3.5" />
-                                <span className="hidden sm:inline">World Record</span>
-                                <span className="sm:hidden">WR</span>
+                                <span className="hidden sm:inline">{t("components.worldRecord")}</span>
+                                <span className="sm:hidden">{t("components.worldRecordShort")}</span>
                               </Badge>
                             )}
                           </>
@@ -233,8 +235,8 @@ export function RecentRuns({ runs, loading, showRankBadge = true, maxRuns }: Rec
                             {rank === 1 && !run.isObsolete && (
                               <Badge className="bg-gradient-to-r from-[#0055BF] to-[#0070f3] text-white text-sm px-2 py-1 border border-[#0055BF]/50 flex items-center gap-1.5 font-semibold">
                                 <Trophy className="h-3.5 w-3.5" />
-                                <span className="hidden sm:inline">World Record</span>
-                                <span className="sm:hidden">WR</span>
+                                <span className="hidden sm:inline">{t("components.worldRecord")}</span>
+                                <span className="sm:hidden">{t("components.worldRecordShort")}</span>
                               </Badge>
                             )}
                           </>
@@ -252,7 +254,7 @@ export function RecentRuns({ runs, loading, showRankBadge = true, maxRuns }: Rec
                       )}
                       <Badge variant="outline" className="border-ctp-surface1 bg-ctp-surface0 text-ctp-text flex items-center gap-1.5 w-fit text-sm px-2 py-1">
                         {run.runType === 'solo' ? <User className="h-4 w-4" /> : <Users className="h-4 w-4" />}
-                        {run.runType.charAt(0).toUpperCase() + run.runType.slice(1)}
+                        {run.runType === 'solo' ? t("stats.solo") : t("stats.coop")}
                       </Badge>
                     </div>
                   </div>
@@ -282,7 +284,7 @@ export function RecentRuns({ runs, loading, showRankBadge = true, maxRuns }: Rec
                   <PrefetchLink to={`/run/${run.id}`} params={{ runId: run.id }} className="block" onClick={(e) => e.stopPropagation()}>
                     <Badge variant="outline" className="border-ctp-surface1/50 bg-ctp-surface0/50 text-ctp-text flex items-center gap-1.5 w-fit text-sm px-2 py-1">
                       {run.runType === 'solo' ? <User className="h-4 w-4" /> : <Users className="h-4 w-4" />}
-                      {run.runType.charAt(0).toUpperCase() + run.runType.slice(1)}
+                      {run.runType === 'solo' ? t("stats.solo") : t("stats.coop")}
                     </Badge>
                   </PrefetchLink>
                 </TableCell>

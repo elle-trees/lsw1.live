@@ -18,12 +18,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { pageCache } from "@/lib/pageCache";
 import { AnimatePresence, motion } from "framer-motion";
 import { staggerContainerVariants, staggerItemVariants } from "@/lib/animations";
+import { useTranslation } from "react-i18next";
 
 const CACHE_KEY_PLAYERS = "points-leaderboard-players";
 const CACHE_KEY_CATEGORIES = "points-leaderboard-categories";
 const CACHE_KEY_PLATFORMS = "points-leaderboard-platforms";
 
 const PointsLeaderboard = () => {
+  const { t } = useTranslation();
   // Check cache first for instant display
   const cachedPlayers = pageCache.get<Player[]>(CACHE_KEY_PLAYERS);
   const cachedCategories = pageCache.get<{ id: string; name: string }[]>(CACHE_KEY_CATEGORIES);
@@ -292,10 +294,10 @@ const PointsLeaderboard = () => {
         >
           <CardHeader className="bg-gradient-to-r from-ctp-base to-ctp-mantle border-b border-ctp-surface1 py-4">
             <CardTitle className="flex items-center gap-2 text-lg text-[#fab387]">
-              <span>Top Players by Studs</span>
+              <span>{t("points.title")}</span>
               {players.length > 0 && !loading && (
                 <span className="ml-auto text-sm font-normal text-ctp-subtext1">
-                  {players.length} {players.length === 1 ? 'player' : 'players'}
+                  {players.length} {players.length === 1 ? t("points.player") : t("points.players")}
                 </span>
               )}
             </CardTitle>
@@ -313,9 +315,9 @@ const PointsLeaderboard = () => {
                 <div className="flex flex-col items-center gap-3">
                   <Sparkles className="h-8 w-8 text-ctp-subtext1" />
                   <div>
-                    <h3 className="text-base font-semibold mb-1 text-ctp-text">No players with studs yet</h3>
+                    <h3 className="text-base font-semibold mb-1 text-ctp-text">{t("points.noPlayersWithStuds")}</h3>
                     <p className="text-sm text-ctp-subtext1">
-                      Submit and verify runs to earn studs!
+                      {t("points.submitAndVerifyRuns")}
                     </p>
                   </div>
                 </div>
@@ -326,10 +328,10 @@ const PointsLeaderboard = () => {
                   <Table>
                     <TableHeader>
                       <TableRow className="border-b border-ctp-surface1/50 hover:bg-transparent bg-ctp-surface0/50">
-                        <TableHead className="py-5 pl-4 pr-2 text-left text-sm font-semibold text-ctp-text whitespace-nowrap w-20">Rank</TableHead>
-                        <TableHead className="py-5 pl-2 pr-4 text-left text-sm font-semibold text-ctp-text min-w-[200px]">Player</TableHead>
-                        <TableHead className="py-5 px-4 text-left text-sm font-semibold text-ctp-text hidden sm:table-cell whitespace-nowrap">Runs</TableHead>
-                        <TableHead className="py-5 pl-4 pr-8 text-right text-sm font-semibold text-ctp-text whitespace-nowrap">Studs</TableHead>
+                        <TableHead className="py-5 pl-4 pr-2 text-left text-sm font-semibold text-ctp-text whitespace-nowrap w-20">{t("points.rank")}</TableHead>
+                        <TableHead className="py-5 pl-2 pr-4 text-left text-sm font-semibold text-ctp-text min-w-[200px]">{t("leaderboards.player")}</TableHead>
+                        <TableHead className="py-5 px-4 text-left text-sm font-semibold text-ctp-text hidden sm:table-cell whitespace-nowrap">{t("points.runs")}</TableHead>
+                        <TableHead className="py-5 pl-4 pr-8 text-right text-sm font-semibold text-ctp-text whitespace-nowrap">{t("points.studs")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -372,7 +374,7 @@ const PointsLeaderboard = () => {
                             </TableCell>
                             <TableCell className="py-5 px-4 hidden sm:table-cell">
                               <span className="text-base text-ctp-subtext1 whitespace-nowrap">
-                                {player.totalRuns || 0} verified run{player.totalRuns !== 1 ? 's' : ''}
+                                {player.totalRuns || 0} {player.totalRuns !== 1 ? t("points.verifiedRuns") : t("points.verifiedRun")}
                               </span>
                             </TableCell>
                             <TableCell className="py-5 pl-4 pr-8 text-right">
@@ -412,63 +414,60 @@ const PointsLeaderboard = () => {
               <AccordionTrigger className="text-[#fab387] hover:text-[#fab387]/80 px-4 py-6">
                 <div className="flex items-center gap-2">
                   <Info className="h-5 w-5" />
-                  <span className="text-lg font-semibold">How Studs Work</span>
+                  <span className="text-lg font-semibold">{t("points.howStudsWork")}</span>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-6 text-ctp-text">
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-lg font-semibold text-[#fab387] mb-3">Overview</h3>
+                    <h3 className="text-lg font-semibold text-[#fab387] mb-3">{t("points.overview")}</h3>
                     <p className="text-ctp-text leading-relaxed">
-                      Studs are awarded for all verified runs across Full Game, Individual Levels, and Community Golds leaderboards. 
-                      All platforms and categories are eligible for studs. The points system is configurable by administrators.
+                      {t("points.overviewDescription")}
                     </p>
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-semibold text-[#fab387] mb-3">How Studs Are Calculated</h3>
+                    <h3 className="text-lg font-semibold text-[#fab387] mb-3">{t("points.howStudsCalculated")}</h3>
                     <div className="space-y-3 text-ctp-text">
                       <div>
-                        <p className="font-medium mb-2">Base Points:</p>
+                        <p className="font-medium mb-2">{t("points.basePoints")}</p>
                         <p className="text-ctp-subtext1 ml-2">
-                          All verified runs receive base points. This is the foundation for all stud calculations.
+                          {t("points.basePointsDescription")}
                         </p>
                       </div>
                       <div>
-                        <p className="font-medium mb-2">Rank Bonuses:</p>
+                        <p className="font-medium mb-2">{t("points.rankBonuses")}</p>
                         <p className="text-ctp-subtext1 ml-2">
-                          Full Game runs ranked 1st, 2nd, or 3rd receive additional bonus points. Rank bonuses can optionally be enabled for Individual Levels and Community Golds.
+                          {t("points.rankBonusesDescription")}
                         </p>
                       </div>
                       <div>
-                        <p className="font-medium mb-2">Multipliers:</p>
+                        <p className="font-medium mb-2">{t("points.multipliers")}</p>
                         <ul className="list-disc list-inside space-y-1 ml-2 text-ctp-subtext1">
-                          <li><strong>Co-op Multiplier:</strong> Applied to co-op runs to split points between players</li>
-                          <li><strong>IL Multiplier:</strong> Applied to Individual Level runs</li>
-                          <li><strong>Community Golds Multiplier:</strong> Applied to Community Golds runs</li>
-                          <li><strong>Obsolete Multiplier:</strong> Applied to obsolete runs (typically reduces points)</li>
+                          <li><strong>{t("points.coopMultiplier")}</strong></li>
+                          <li><strong>{t("points.ilMultiplier")}</strong></li>
+                          <li><strong>{t("points.communityGoldsMultiplier")}</strong></li>
+                          <li><strong>{t("points.obsoleteMultiplier")}</strong></li>
                         </ul>
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-semibold text-[#fab387] mb-3">Calculation Formula</h3>
+                    <h3 className="text-lg font-semibold text-[#fab387] mb-3">{t("points.calculationFormula")}</h3>
                     <div className="space-y-2 text-ctp-text">
                       <p className="text-ctp-subtext1">
-                        Studs = (Base Points × Multiplier) + Rank Bonus (if applicable)
+                        {t("points.formula")}
                       </p>
                       <p className="text-sm text-ctp-overlay0 mt-2 italic">
-                        For co-op runs, the final result is multiplied by the co-op multiplier to split points between players.
+                        {t("points.formulaNote")}
                       </p>
                     </div>
                   </div>
 
                   <div className="bg-[hsl(240,21%,18%)] border border-[hsl(235,13%,30%)] p-4 rounded-none">
                     <p className="text-sm text-ctp-text leading-relaxed">
-                      <strong className="text-[#fab387]">Note:</strong> Only verified runs count toward studs. 
-                      Studs are automatically calculated and updated when runs are verified. 
-                      The exact values for base points, rank bonuses, and multipliers can be configured by administrators in the Admin panel.
+                      <strong className="text-[#fab387]">{t("points.note")}</strong> {t("points.noteDescription")}
                     </p>
                   </div>
                 </div>
@@ -483,10 +482,15 @@ const PointsLeaderboard = () => {
             <DialogHeader>
               <DialogTitle className="text-2xl text-[#fab387] flex items-center gap-2">
                 <LegoStudIcon size={28} color="#fab387" />
-                {selectedPlayer?.displayName || "Unknown Player"}'s Studs Breakdown
+                {selectedPlayer?.displayName || t("player.profile")}'s {t("points.studsBreakdown")}
               </DialogTitle>
               <DialogDescription className="text-ctp-subtext1">
-                Total: {formatPoints(selectedPlayer?.totalPoints || 0)} studs from {selectedPlayer?.totalRuns || 0} verified run{selectedPlayer?.totalRuns !== 1 ? 's' : ''}
+                {t("points.total")}: {formatPoints(studsBreakdown?.total || selectedPlayer?.totalPoints || 0)} {t("points.studs")} {t("points.from")} {selectedPlayer?.totalRuns || 0} {selectedPlayer?.totalRuns !== 1 ? t("points.verifiedRuns") : t("points.verifiedRun")}
+                {studsBreakdown && studsBreakdown.total !== (selectedPlayer?.totalPoints || 0) && (
+                  <span className="block text-xs text-ctp-overlay1 mt-1">
+                    {t("points.recalculatedWithCurrentConfig")}
+                  </span>
+                )}
               </DialogDescription>
             </DialogHeader>
             
@@ -610,16 +614,16 @@ const PointsLeaderboard = () => {
                           <motion.div variants={staggerItemVariants}>
                             <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)]">
                               <CardHeader>
-                                <CardTitle className="text-lg text-[#fab387]">By Leaderboard Type</CardTitle>
+                                <CardTitle className="text-lg text-[#fab387]">{t("points.byLeaderboardType")}</CardTitle>
                               </CardHeader>
                               <CardContent>
                                 <Table>
                                   <TableHeader>
                                     <TableRow className="border-[hsl(235,13%,30%)]">
-                                      <TableHead className="text-ctp-text">Type</TableHead>
-                                      <TableHead className="text-ctp-text text-right">Studs</TableHead>
-                                      <TableHead className="text-ctp-text text-right">Runs</TableHead>
-                                      <TableHead className="text-ctp-text text-right">%</TableHead>
+                                      <TableHead className="text-ctp-text">{t("points.type")}</TableHead>
+                                      <TableHead className="text-ctp-text text-right">{t("points.studs")}</TableHead>
+                                      <TableHead className="text-ctp-text text-right">{t("points.runs")}</TableHead>
+                                      <TableHead className="text-ctp-text text-right">{t("points.percent")}</TableHead>
                                     </TableRow>
                                   </TableHeader>
                                   <TableBody>
@@ -647,16 +651,16 @@ const PointsLeaderboard = () => {
                           <motion.div variants={staggerItemVariants}>
                             <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)]">
                               <CardHeader>
-                                <CardTitle className="text-lg text-[#fab387]">By Category</CardTitle>
+                                <CardTitle className="text-lg text-[#fab387]">{t("points.byCategory")}</CardTitle>
                               </CardHeader>
                               <CardContent>
                                 <Table>
                                   <TableHeader>
                                     <TableRow className="border-[hsl(235,13%,30%)]">
-                                      <TableHead className="text-ctp-text">Category</TableHead>
-                                      <TableHead className="text-ctp-text text-right">Studs</TableHead>
-                                      <TableHead className="text-ctp-text text-right">Runs</TableHead>
-                                      <TableHead className="text-ctp-text text-right">%</TableHead>
+                                      <TableHead className="text-ctp-text">{t("points.category")}</TableHead>
+                                      <TableHead className="text-ctp-text text-right">{t("points.studs")}</TableHead>
+                                      <TableHead className="text-ctp-text text-right">{t("points.runs")}</TableHead>
+                                      <TableHead className="text-ctp-text text-right">{t("points.percent")}</TableHead>
                                     </TableRow>
                                   </TableHeader>
                                   <TableBody>
@@ -685,16 +689,16 @@ const PointsLeaderboard = () => {
                           <motion.div variants={staggerItemVariants}>
                             <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)]">
                               <CardHeader>
-                                <CardTitle className="text-lg text-[#fab387]">By Platform</CardTitle>
+                                <CardTitle className="text-lg text-[#fab387]">{t("points.byPlatform")}</CardTitle>
                               </CardHeader>
                               <CardContent>
                                 <Table>
                                   <TableHeader>
                                     <TableRow className="border-[hsl(235,13%,30%)]">
-                                      <TableHead className="text-ctp-text">Platform</TableHead>
-                                      <TableHead className="text-ctp-text text-right">Studs</TableHead>
-                                      <TableHead className="text-ctp-text text-right">Runs</TableHead>
-                                      <TableHead className="text-ctp-text text-right">%</TableHead>
+                                      <TableHead className="text-ctp-text">{t("points.platform")}</TableHead>
+                                      <TableHead className="text-ctp-text text-right">{t("points.studs")}</TableHead>
+                                      <TableHead className="text-ctp-text text-right">{t("points.runs")}</TableHead>
+                                      <TableHead className="text-ctp-text text-right">{t("points.percent")}</TableHead>
                                     </TableRow>
                                   </TableHeader>
                                   <TableBody>
@@ -722,16 +726,16 @@ const PointsLeaderboard = () => {
                           <motion.div variants={staggerItemVariants}>
                             <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)]">
                               <CardHeader>
-                                <CardTitle className="text-lg text-[#fab387]">By Run Type</CardTitle>
+                                <CardTitle className="text-lg text-[#fab387]">{t("points.byRunType")}</CardTitle>
                               </CardHeader>
                               <CardContent>
                                 <Table>
                                   <TableHeader>
                                     <TableRow className="border-[hsl(235,13%,30%)]">
-                                      <TableHead className="text-ctp-text">Type</TableHead>
-                                      <TableHead className="text-ctp-text text-right">Studs</TableHead>
-                                      <TableHead className="text-ctp-text text-right">Runs</TableHead>
-                                      <TableHead className="text-ctp-text text-right">%</TableHead>
+                                      <TableHead className="text-ctp-text">{t("points.type")}</TableHead>
+                                      <TableHead className="text-ctp-text text-right">{t("points.studs")}</TableHead>
+                                      <TableHead className="text-ctp-text text-right">{t("points.runs")}</TableHead>
+                                      <TableHead className="text-ctp-text text-right">{t("points.percent")}</TableHead>
                                     </TableRow>
                                   </TableHeader>
                                   <TableBody>
@@ -764,7 +768,7 @@ const PointsLeaderboard = () => {
                         exit={{ opacity: 0 }}
                         className="text-center py-12 text-ctp-subtext1"
                       >
-                        No runs found for this player.
+                        {t("points.noRunsFound")}
                       </motion.div>
                     )}
             </AnimatePresence>

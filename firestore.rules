@@ -163,5 +163,14 @@ service cloud.firestore {
       // Users can delete their own notifications
       allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
+    
+    // Admin Translations - language-specific overrides
+    match /adminTranslations/{translationId} {
+      // Anyone can read (needed for displaying translations)
+      // Allow all read operations for everyone (authenticated or not)
+      allow read: if true;
+      // Only admins can create/update/delete
+      allow create, update, delete: if isAdmin();
+    }
   }
 }

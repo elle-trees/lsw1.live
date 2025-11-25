@@ -16,6 +16,7 @@ import { AnimatedCard } from "@/components/ui/animated-card";
 import { fadeSlideUpVariants, scaleVariants, buttonVariants as motionButtonVariants, transitions } from "@/lib/animations";
 import { pageCache } from "@/lib/pageCache";
 import { PrefetchLink } from "@/components/PrefetchLink";
+import { useTranslation } from "react-i18next";
 
 const MotionLink = motion(PrefetchLink);
 
@@ -52,6 +53,7 @@ const formatTimeWithDays = (totalSeconds: number): string => {
 };
 
 const Index = () => {
+  const { t } = useTranslation();
   // Check cache first for instant display
   const cachedRecentRuns = pageCache.get<LeaderboardEntry[]>(CACHE_KEY_RECENT_RUNS);
   const cachedStats = pageCache.get<{ totalVerifiedRuns: number; totalTime: string }>(CACHE_KEY_STATS);
@@ -174,7 +176,7 @@ const Index = () => {
                 <CardHeader className="pb-2 pt-4 px-4 relative z-10">
                   <CardTitle className="flex items-center gap-2 text-card-foreground text-base sm:text-lg lg:text-xl whitespace-nowrap">
                     <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-ctp-green flex-shrink-0" />
-                    <span className="truncate font-semibold">Verified Runs</span>
+                    <span className="truncate font-semibold">{t("home.verifiedRuns")}</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-4 pb-4 pt-2 relative z-10">
@@ -186,12 +188,12 @@ const Index = () => {
                     </div>
                   )}
                   <p className="text-xs sm:text-sm lg:text-base text-muted-foreground mt-1.5 whitespace-nowrap">
-                    Total verified speedruns
+                    {t("home.totalVerifiedSpeedruns")}
                   </p>
                   <div className="mt-2">
                     <Badge variant="outline" className="border-green-600/50 bg-green-600/10 text-green-400 text-xs px-2 py-0.5 flex items-center gap-1.5 w-fit">
                       <CheckCircle className="h-3 w-3" />
-                      <span>Linked with Speedrun.com</span>
+                      <span>{t("home.linkedWithSpeedrunCom")}</span>
                       <a
                         href="https://www.speedrun.com/lsw1"
                         target="_blank"
@@ -222,9 +224,7 @@ const Index = () => {
                 animate="visible"
                 transition={{ ...transitions.spring, delay: 0.3 }}
               >
-                <span className="text-[#74c7ec]">
-                  lsw1.dev
-                </span>
+                <span className="text-[#74c7ec]">{t("home.title")}</span>
               </motion.h1>
               <motion.p 
                 className="text-lg sm:text-xl md:text-2xl lg:text-3xl mb-10 text-ctp-subtext1 max-w-3xl mx-auto px-2 leading-relaxed"
@@ -233,7 +233,7 @@ const Index = () => {
                 animate="visible"
                 transition={{ ...transitions.spring, delay: 0.4 }}
               >
-                The official site for the LEGO Star Wars: The Video Game speedrunning community. Track your progress and try to earn a stud on the leaderboards!
+                <span>{t("home.subtitle")}</span>
               </motion.p>
               <motion.div 
                 className="flex flex-col sm:flex-row justify-center gap-4 lg:gap-6 px-2"
@@ -253,7 +253,7 @@ const Index = () => {
                   whileHover="hover"
                   whileTap="tap"
                 >
-                  Submit Run
+                  {t("home.submitRun")}
                 </MotionLink>
                 <MotionLink 
                   to="/leaderboards"
@@ -266,7 +266,7 @@ const Index = () => {
                   whileHover="hover"
                   whileTap="tap"
                 >
-                  View All Leaderboards
+                  {t("home.viewLeaderboards")}
                 </MotionLink>
               </motion.div>
             </motion.div>
@@ -280,7 +280,7 @@ const Index = () => {
                 <CardHeader className="pb-2 pt-4 px-4 relative z-10">
                   <CardTitle className="flex items-center gap-2 text-card-foreground text-base sm:text-lg lg:text-xl whitespace-nowrap">
                     <Clock className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-ctp-mauve flex-shrink-0" />
-                    <span className="truncate font-semibold">Total Time</span>
+                    <span className="truncate font-semibold">{t("home.totalTime")}</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-4 pb-4 pt-2 relative z-10">
@@ -292,7 +292,7 @@ const Index = () => {
                     </div>
                   )}
                   <p className="text-xs sm:text-sm lg:text-base text-muted-foreground mt-1.5 whitespace-nowrap">
-                    Combined runtime
+                    {t("home.combinedRuntime")}
                   </p>
                 </CardContent>
               </AnimatedCard>
@@ -312,10 +312,10 @@ const Index = () => {
             <div className={`${isLive === true ? 'lg:col-span-4' : 'lg:col-span-12'} min-w-0 flex flex-col`}>
               <div className="mb-3 flex-shrink-0">
                 <h2 className="text-lg sm:text-xl lg:text-2xl font-bold mb-1.5 text-ctp-text">
-                  Recent Runs
+                  {t("home.recentRuns")}
                 </h2>
                 <p className="text-sm lg:text-base text-ctp-subtext1">
-                  Latest submissions
+                  {t("home.latestSubmissions")}
                 </p>
               </div>
 
@@ -358,7 +358,7 @@ const Index = () => {
                   whileHover="hover"
                   whileTap="tap"
                 >
-                  View Full Leaderboards
+                  {t("home.viewFullLeaderboards")}
                 </MotionLink>
               </div>
             </div>

@@ -10,6 +10,7 @@ import { motion } from "framer-motion";
 import { tableRowVariants } from "@/lib/animations";
 import { useState, useEffect } from "react";
 import { usePrefetchVisible } from "@/hooks/usePrefetch";
+import { useTranslation } from "react-i18next";
 
 const MotionTableRow = motion(TableRow);
 
@@ -22,6 +23,7 @@ interface LeaderboardTableProps {
 }
 
 export function LeaderboardTable({ data, platforms = [], categories = [], levels = [], leaderboardType }: LeaderboardTableProps) {
+  const { t } = useTranslation();
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const { prefetchItem } = usePrefetchVisible([]);
   // Determine if we should show level column (for IL and Community Golds)
@@ -46,7 +48,7 @@ export function LeaderboardTable({ data, platforms = [], categories = [], levels
     return (
       <div className="text-center py-12">
         <Trophy className="h-12 w-12 mx-auto mb-3 text-ctp-overlay0 opacity-50" />
-        <p className="text-base text-ctp-overlay0">No runs found for these filters</p>
+        <p className="text-base text-ctp-overlay0">{t("components.noRunsFoundForFilters")}</p>
       </div>
     );
   }
@@ -56,16 +58,16 @@ export function LeaderboardTable({ data, platforms = [], categories = [], levels
       <Table>
         <TableHeader>
           <TableRow className="border-b border-ctp-surface1/50 hover:bg-transparent bg-ctp-surface0/50">
-            <TableHead className="py-3 pl-3 pr-1 text-left text-sm font-semibold text-ctp-text whitespace-nowrap w-16">Rank</TableHead>
-            <TableHead className="py-3 pl-1 pr-2 text-left text-sm font-semibold text-ctp-text min-w-[200px]">Player</TableHead>
+            <TableHead className="py-3 pl-3 pr-1 text-left text-sm font-semibold text-ctp-text whitespace-nowrap w-16">{t("components.rank")}</TableHead>
+            <TableHead className="py-3 pl-1 pr-2 text-left text-sm font-semibold text-ctp-text min-w-[200px]">{t("components.player")}</TableHead>
             {showLevelColumn && (
-              <TableHead className="py-3 px-2 text-left text-sm font-semibold text-ctp-text hidden md:table-cell whitespace-nowrap w-32">Level</TableHead>
+              <TableHead className="py-3 px-2 text-left text-sm font-semibold text-ctp-text hidden md:table-cell whitespace-nowrap w-32">{t("components.level")}</TableHead>
             )}
-            <TableHead className="py-3 px-2 text-left text-sm font-semibold text-ctp-text hidden sm:table-cell whitespace-nowrap w-24">Time</TableHead>
-            <TableHead className="py-3 px-2 text-left text-sm font-semibold text-ctp-text hidden md:table-cell whitespace-nowrap w-28">Date</TableHead>
-            <TableHead className="py-3 px-2 text-left text-sm font-semibold text-ctp-text hidden lg:table-cell whitespace-nowrap w-32">Platform</TableHead>
-            <TableHead className="py-3 px-2 text-left text-sm font-semibold text-ctp-text hidden lg:table-cell whitespace-nowrap w-24">Type</TableHead>
-            <TableHead className="py-3 px-2 text-left text-sm font-semibold text-ctp-text whitespace-nowrap w-20">Video</TableHead>
+            <TableHead className="py-3 px-2 text-left text-sm font-semibold text-ctp-text hidden sm:table-cell whitespace-nowrap w-24">{t("components.time")}</TableHead>
+            <TableHead className="py-3 px-2 text-left text-sm font-semibold text-ctp-text hidden md:table-cell whitespace-nowrap w-28">{t("components.date")}</TableHead>
+            <TableHead className="py-3 px-2 text-left text-sm font-semibold text-ctp-text hidden lg:table-cell whitespace-nowrap w-32">{t("components.platform")}</TableHead>
+            <TableHead className="py-3 px-2 text-left text-sm font-semibold text-ctp-text hidden lg:table-cell whitespace-nowrap w-24">{t("components.type")}</TableHead>
+            <TableHead className="py-3 px-2 text-left text-sm font-semibold text-ctp-text whitespace-nowrap w-20">{t("components.video")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -111,7 +113,7 @@ export function LeaderboardTable({ data, platforms = [], categories = [], levels
                     )}
                     {entry.isObsolete && (
                       <Badge variant="destructive" className="bg-red-800/50 text-red-200 text-xs px-1.5 py-0.5 border border-red-700/30">
-                        Obsolete
+                        {t("components.obsolete")}
                       </Badge>
                     )}
                   </div>
@@ -139,8 +141,8 @@ export function LeaderboardTable({ data, platforms = [], categories = [], levels
                         {entry.rank === 1 && !entry.isObsolete && (
                           <Badge className="bg-gradient-to-r from-[#0055BF] to-[#0070f3] text-white text-xs px-1.5 py-0.5 border border-[#0055BF]/50 flex items-center gap-1 font-semibold">
                             <Trophy className="h-2.5 w-2.5" />
-                            <span className="hidden sm:inline">World Record</span>
-                            <span className="sm:hidden">WR</span>
+                            <span className="hidden sm:inline">{t("components.worldRecord")}</span>
+                            <span className="sm:hidden">{t("components.worldRecordShort")}</span>
                           </Badge>
                         )}
                       </>
@@ -180,8 +182,8 @@ export function LeaderboardTable({ data, platforms = [], categories = [], levels
                         {entry.rank === 1 && !entry.isObsolete && (
                           <Badge className="bg-gradient-to-r from-[#0055BF] to-[#0070f3] text-white text-xs px-1.5 py-0.5 border border-[#0055BF]/50 flex items-center gap-1 font-semibold">
                             <Trophy className="h-2.5 w-2.5" />
-                            <span className="hidden sm:inline">World Record</span>
-                            <span className="sm:hidden">WR</span>
+                            <span className="hidden sm:inline">{t("components.worldRecord")}</span>
+                            <span className="sm:hidden">{t("components.worldRecordShort")}</span>
                           </Badge>
                         )}
                       </>
@@ -197,7 +199,7 @@ export function LeaderboardTable({ data, platforms = [], categories = [], levels
                     </Badge>
                     <Badge variant="outline" className="border-ctp-surface1 bg-ctp-surface0 text-ctp-text flex items-center gap-1 w-fit text-xs px-1.5 py-0.5">
                       {entry.runType === 'solo' ? <User className="h-3 w-3" /> : <Users className="h-3 w-3" />}
-                      {entry.runType.charAt(0).toUpperCase() + entry.runType.slice(1)}
+                      {entry.runType === 'solo' ? t("stats.solo") : t("stats.coop")}
                     </Badge>
                   </div>
                 </div>
@@ -207,7 +209,7 @@ export function LeaderboardTable({ data, platforms = [], categories = [], levels
                   <PrefetchLink to={`/run/${entry.id}`} params={{ runId: entry.id }} className="flex items-center gap-1">
                     <MapPin className="h-3.5 w-3.5 text-ctp-overlay0" />
                     <span className="text-sm text-ctp-subtext1">
-                      {levelName || entry.srcLevelName || 'Unknown Level'}
+                      {levelName || entry.srcLevelName || t("notifications.unknownLevel")}
                     </span>
                   </PrefetchLink>
                 </TableCell>
@@ -233,9 +235,9 @@ export function LeaderboardTable({ data, platforms = [], categories = [], levels
               </TableCell>
               <TableCell className="py-2.5 px-2 hidden lg:table-cell">
                 <PrefetchLink to="/run/$runId" params={{ runId: entry.id }} className="block">
-                  <Badge variant="outline" className="border-ctp-surface1/50 bg-ctp-surface0/50 text-ctp-text flex items-center gap-1 w-fit text-xs px-1.5 py-0.5">
+                    <Badge variant="outline" className="border-ctp-surface1/50 bg-ctp-surface0/50 text-ctp-text flex items-center gap-1 w-fit text-xs px-1.5 py-0.5">
                     {entry.runType === 'solo' ? <User className="h-3 w-3" /> : <Users className="h-3 w-3" />}
-                    {entry.runType.charAt(0).toUpperCase() + entry.runType.slice(1)}
+                    {entry.runType === 'solo' ? t("stats.solo") : t("stats.coop")}
                   </Badge>
                 </PrefetchLink>
               </TableCell>
@@ -249,7 +251,7 @@ export function LeaderboardTable({ data, platforms = [], categories = [], levels
                     onClick={(e) => e.stopPropagation()}
                   >
                     <ExternalLink className="h-3 w-3" />
-                    <span className="text-xs">Watch</span>
+                    <span className="text-xs">{t("components.watch")}</span>
                   </a>
                 )}
               </TableCell>

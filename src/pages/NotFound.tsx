@@ -2,8 +2,10 @@ import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Home, AlertCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const NotFound = () => {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#1e1e2e] text-ctp-text py-8 px-4">
       <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-2xl max-w-lg w-full">
@@ -15,11 +17,11 @@ const NotFound = () => {
             </div>
           </div>
           <CardTitle className="text-7xl font-bold mb-2 bg-gradient-to-r from-[#cba6f7] via-[#f5c2e7] to-[#cba6f7] bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]">
-            404
+            {t("notFound.title")}
           </CardTitle>
-          <h2 className="text-3xl font-bold text-ctp-text mb-2">Page Not Found</h2>
+          <h2 className="text-3xl font-bold text-ctp-text mb-2">{t("notFound.heading")}</h2>
           <p className="text-lg text-ctp-overlay0">
-            The page you're looking for has been lost in the void. Let's get you back on track!
+            {t("notFound.description")}
           </p>
         </CardHeader>
         <CardContent className="text-center">
@@ -30,7 +32,7 @@ const NotFound = () => {
           >
         <Link to="/" params={undefined}>
             <Home className="mr-2 h-5 w-5" />
-            Return to Home
+            {t("notFound.returnToHome")}
             </Link>
           </Button>
         </CardContent>

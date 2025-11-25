@@ -19,8 +19,10 @@ import { Badge } from "@/components/ui/badge";
 import { formatDate, formatTime } from "@/lib/utils";
 import { useUploadThing } from "@/lib/uploadthing";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useTranslation } from "react-i18next";
 
 const UserSettings = () => {
+  const { t } = useTranslation();
   const { currentUser, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -62,8 +64,8 @@ const UserSettings = () => {
     if (!authLoading) {
       if (!currentUser) {
         toast({
-          title: "Authentication Required",
-          description: "Please log in to view your settings.",
+            title: t("settings.authenticationRequired"),
+            description: t("settings.pleaseLoginToView"),
           variant: "destructive",
         });
         navigate({ to: '/' }); // Redirect to home or login
@@ -121,8 +123,8 @@ const UserSettings = () => {
           // Only show error toast if the actual user data fetch fails
           console.error("Failed to load user data:", error);
           toast({
-            title: "Error",
-            description: "Failed to load user data.",
+            title: t("common.error"),
+            description: t("settings.failedToLoadUserData"),
             variant: "destructive",
           });
         } finally {
@@ -140,8 +142,8 @@ const UserSettings = () => {
     // Validate displayName
     if (!displayName || !displayName.trim()) {
       toast({
-        title: "Invalid Display Name",
-        description: "Please enter a display name.",
+        title: t("settings.invalidDisplayName"),
+        description: t("settings.pleaseEnterDisplayName"),
         variant: "destructive",
       });
       return;
@@ -216,8 +218,8 @@ const UserSettings = () => {
       }
 
       toast({
-        title: "Profile Updated",
-          description: "Your profile information has been saved.",
+        title: t("settings.profileUpdated"),
+        description: t("settings.profileSaved"),
         });
       
       // Refresh the auth context by manually triggering a refresh
@@ -233,8 +235,8 @@ const UserSettings = () => {
       }
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message || "Failed to update profile.",
+        title: t("common.error"),
+        description: error.message || t("settings.failedToUpdateProfile"),
         variant: "destructive",
       });
     }
@@ -246,8 +248,8 @@ const UserSettings = () => {
 
     if (email === currentUser.email) {
       toast({
-        title: "No Change",
-        description: "The email address is already the same.",
+        title: t("settings.noChange"),
+        description: t("settings.emailAlreadySame"),
       });
       return;
     }
@@ -262,13 +264,13 @@ const UserSettings = () => {
       await updateEmail(firebaseUser, email);
       await updatePlayerProfile(currentUser.uid, { email }); // Update in Firestore as well
       toast({
-        title: "Email Updated",
-        description: "Your email address has been updated. You may need to re-authenticate.",
+        title: t("settings.emailUpdated"),
+        description: t("settings.emailUpdatedDescription"),
       });
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message || "Failed to update email. Please log out and log in again to re-authenticate.",
+        title: t("common.error"),
+        description: error.message || t("settings.failedToUpdateEmail"),
         variant: "destructive",
       });
     }
@@ -280,8 +282,8 @@ const UserSettings = () => {
 
     if (newPassword !== confirmPassword) {
       toast({
-        title: "Password Mismatch",
-        description: "New password and confirm password do not match.",
+        title: t("settings.passwordMismatch"),
+        description: t("settings.passwordsDoNotMatch"),
         variant: "destructive",
       });
       return;
@@ -290,8 +292,8 @@ const UserSettings = () => {
     // Enhanced password validation
     if (newPassword.length < 8) {
       toast({
-        title: "Password Too Short",
-        description: "Password must be at least 8 characters long.",
+        title: t("settings.passwordTooShort"),
+        description: t("settings.passwordMinLength"),
         variant: "destructive",
       });
       return;
@@ -299,8 +301,8 @@ const UserSettings = () => {
 
     if (!/[A-Z]/.test(newPassword)) {
       toast({
-        title: "Password Requirements Not Met",
-        description: "Password must contain at least one uppercase letter.",
+        title: t("settings.passwordRequirementsNotMet"),
+        description: t("settings.passwordNeedsUppercase"),
         variant: "destructive",
       });
       return;
@@ -308,8 +310,8 @@ const UserSettings = () => {
 
     if (!/[a-z]/.test(newPassword)) {
       toast({
-        title: "Password Requirements Not Met",
-        description: "Password must contain at least one lowercase letter.",
+        title: t("settings.passwordRequirementsNotMet"),
+        description: t("settings.passwordNeedsLowercase"),
         variant: "destructive",
       });
       return;
@@ -317,8 +319,8 @@ const UserSettings = () => {
 
     if (!/[0-9]/.test(newPassword)) {
       toast({
-        title: "Password Requirements Not Met",
-        description: "Password must contain at least one number.",
+        title: t("settings.passwordRequirementsNotMet"),
+        description: t("settings.passwordNeedsNumber"),
         variant: "destructive",
       });
       return;
@@ -333,15 +335,15 @@ const UserSettings = () => {
       
       await updatePassword(firebaseUser, newPassword);
       toast({
-        title: "Password Updated",
-        description: "Your password has been changed successfully.",
+        title: t("settings.passwordUpdated"),
+        description: t("settings.passwordChangedSuccess"),
       });
       setNewPassword("");
       setConfirmPassword("");
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message || "Failed to update password. Please log out and log in again to re-authenticate.",
+        title: t("common.error"),
+        description: error.message || t("settings.failedToUpdatePassword"),
         variant: "destructive",
       });
     }
@@ -354,8 +356,8 @@ const UserSettings = () => {
       const success = await claimRun(runId, currentUser.uid);
       if (success) {
         toast({
-          title: "Run Claimed",
-          description: "This run has been linked to your account.",
+          title: t("player.runClaimed"),
+          description: t("player.runLinkedToAccount"),
         });
         // Refresh unclaimed runs list
         if (srcUsername) {
@@ -366,8 +368,8 @@ const UserSettings = () => {
       }
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message || "Failed to claim run.",
+        title: t("common.error"),
+        description: error.message || t("player.failedToClaimRun"),
         variant: "destructive",
       });
     }
@@ -383,21 +385,21 @@ const UserSettings = () => {
       
       if (claimedCount > 0) {
         toast({
-          title: "Runs Claimed",
-          description: `Successfully claimed ${claimedCount} run${claimedCount === 1 ? '' : 's'}!`,
+          title: t("settings.runsClaimed"),
+          description: t("settings.successfullyClaimed", { count: claimedCount }),
         });
         // Refresh unclaimed runs list
         fetchUnclaimedSRCRuns(srcUsername);
       } else {
         toast({
-          title: "No Runs to Claim",
-          description: "No unclaimed runs found matching your SRC username.",
+          title: t("settings.noRunsToClaim"),
+          description: t("settings.noUnclaimedRunsFound"),
         });
       }
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message || "Failed to claim runs.",
+          title: t("common.error"),
+          description: error.message || t("settings.failedToClaimRun"),
         variant: "destructive",
       });
     }
@@ -421,13 +423,13 @@ const UserSettings = () => {
           <Card className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-ctp-text">
-                Profile Information
+                {t("settings.profile")}
               </CardTitle>
             </CardHeader>
             <CardContent className="max-h-[calc(100vh-200px)] overflow-y-auto">
             <form onSubmit={handleUpdateProfile} className="space-y-3">
               <div>
-                <Label>Profile Picture</Label>
+                <Label>{t("settings.profilePicture")}</Label>
                 <div className="flex items-center gap-4 mb-2">
                   <Avatar className="h-20 w-20">
                     <AvatarImage src={profilePicture || `https://api.dicebear.com/7.x/lorelei-neutral/svg?seed=${displayName}`} />
@@ -448,8 +450,8 @@ const UserSettings = () => {
                           // Validate file size (4MB max)
                           if (file.size > 4 * 1024 * 1024) {
                             toast({
-                              title: "File Too Large",
-                              description: "Profile picture must be less than 4MB.",
+                              title: t("settings.fileTooLarge") || "File Too Large",
+                              description: t("settings.profilePictureMaxSize") || "Profile picture must be less than 4MB.",
                               variant: "destructive",
                             });
                             return;
@@ -458,8 +460,8 @@ const UserSettings = () => {
                           // Validate file type
                           if (!file.type.startsWith('image/')) {
                             toast({
-                              title: "Invalid File Type",
-                              description: "Please upload an image file.",
+                              title: t("settings.invalidFileType") || "Invalid File Type",
+                              description: t("settings.pleaseUploadImage") || "Please upload an image file.",
                               variant: "destructive",
                             });
                             return;
@@ -472,15 +474,15 @@ const UserSettings = () => {
                               if (fileUrl) {
                                 setProfilePicture(fileUrl);
                                 toast({
-                                  title: "Profile Picture Uploaded",
-                                  description: "Click 'Save Profile' to save your changes.",
+                                  title: t("settings.profilePictureUploaded") || "Profile Picture Uploaded",
+                                  description: t("settings.clickSaveToApply") || "Click 'Save Profile' to save your changes.",
                                 });
                               }
                             }
                           } catch (error) {
                             toast({
-                              title: "Upload Failed",
-                              description: "Failed to upload profile picture. Please try again.",
+                              title: t("settings.uploadFailed") || "Upload Failed",
+                              description: t("settings.failedToUploadPicture") || "Failed to upload profile picture. Please try again.",
                               variant: "destructive",
                             });
                           }
@@ -491,7 +493,7 @@ const UserSettings = () => {
                       className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] hover:bg-[hsl(234,14%,29%)]"
                     >
                       <Upload className="h-4 w-4 mr-2" />
-                      {isUploading ? "Uploading..." : "Upload Picture"}
+                      {isUploading ? t("settings.uploading") || "Uploading..." : t("settings.upload")}
                     </Button>
                     {profilePicture && (
                       <Button
@@ -501,39 +503,39 @@ const UserSettings = () => {
                         onClick={() => {
                           setProfilePicture("");
                           toast({
-                            title: "Profile Picture Removed",
-                            description: "Click 'Save Profile' to save your changes.",
+                            title: t("settings.profilePictureRemoved") || "Profile Picture Removed",
+                            description: t("settings.clickSaveToApply") || "Click 'Save Profile' to save your changes.",
                           });
                         }}
                         className="ml-2 text-red-400 hover:text-red-300 hover:bg-red-400/10"
                       >
                         <X className="h-4 w-4 mr-1" />
-                        Remove
+                        {t("settings.remove")}
                       </Button>
                     )}
                   </div>
                 </div>
                 <p className="text-xs text-ctp-overlay0 mt-1">
-                  Upload a profile picture (max 4MB). Click "Save Profile" to apply changes.
+                  {t("settings.profilePictureInstructions") || "Upload a profile picture (max 4MB). Click \"Save Profile\" to apply changes."}
                 </p>
               </div>
               <div>
-                <Label htmlFor="displayName">Display Name</Label>
+                <Label htmlFor="displayName">{t("settings.displayName")}</Label>
                 <Input
                   id="displayName"
                   type="text"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="Enter your display name"
+                  placeholder={t("settings.enterDisplayName") || "Enter your display name"}
                   className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
                   required
                 />
                 <p className="text-xs text-ctp-overlay0 mt-1">
-                  Choose a display name that will be displayed on leaderboards and your profile.
+                  {t("settings.displayNameDescription") || "Choose a display name that will be displayed on leaderboards and your profile."}
                 </p>
               </div>
               <div>
-                <Label htmlFor="nameColor">Name Color (Hex Code)</Label>
+                <Label htmlFor="nameColor">{t("settings.nameColor")}</Label>
                 <div className="flex items-center gap-2">
                   <Input
                     id="nameColor"
@@ -552,11 +554,11 @@ const UserSettings = () => {
                   />
                 </div>
                 <p className="text-xs text-ctp-overlay0 mt-1">
-                  This color will be used for your name on leaderboards.
+                  {t("settings.nameColorDescription") || "This color will be used for your name on leaderboards."}
                 </p>
               </div>
               <div>
-                <Label htmlFor="pronouns">Pronouns</Label>
+                <Label htmlFor="pronouns">{t("settings.pronouns")}</Label>
                 <Input
                   id="pronouns"
                   type="text"
@@ -567,11 +569,11 @@ const UserSettings = () => {
                   maxLength={50}
                 />
                 <p className="text-xs text-ctp-overlay0 mt-1">
-                  Your pronouns will be displayed next to your name on your profile.
+                  {t("settings.pronounsDescription")}
                 </p>
               </div>
               <div>
-                <Label htmlFor="bio">Bio</Label>
+                <Label htmlFor="bio">{t("settings.bio")}</Label>
                 <Textarea
                   id="bio"
                   value={bio}
@@ -586,7 +588,7 @@ const UserSettings = () => {
                 </p>
               </div>
               <div>
-                <Label htmlFor="twitchUsername">Twitch Username</Label>
+                <Label htmlFor="twitchUsername">{t("settings.twitchUsername")}</Label>
                 <Input
                   id="twitchUsername"
                   type="text"
@@ -597,11 +599,11 @@ const UserSettings = () => {
                   maxLength={50}
                 />
                 <p className="text-xs text-ctp-overlay0 mt-1">
-                  Your Twitch username (without @). If you're streaming, you'll appear on the live page when the official stream is offline.
+                  {t("settings.twitchUsernameDescription")}
                 </p>
               </div>
               <div>
-                <Label htmlFor="srcUsername">Speedrun.com Username</Label>
+                <Label htmlFor="srcUsername">{t("settings.srcUsername")}</Label>
                 <Input
                   id="srcUsername"
                   type="text"
@@ -612,11 +614,11 @@ const UserSettings = () => {
                   maxLength={50}
                 />
                 <p className="text-xs text-ctp-overlay0 mt-1">
-                  Your exact Speedrun.com username. This is required to claim runs imported from Speedrun.com. Make sure it matches exactly (case-sensitive).
+                  {t("settings.srcUsernameDescription")}
                 </p>
               </div>
               <Button type="submit" className="bg-[#cba6f7] hover:bg-[#b4a0e2] text-[hsl(240,21%,15%)] font-bold">
-                Save Profile
+                {t("settings.saveProfile")}
               </Button>
             </form>
           </CardContent>
@@ -626,19 +628,19 @@ const UserSettings = () => {
         <Card className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-ctp-text">
-              Claim Your Runs
+              {t("settings.claimYourRuns")}
             </CardTitle>
           </CardHeader>
           <CardContent className="max-h-[calc(100vh-200px)] overflow-y-auto">
             <p className="text-xs text-[hsl(222,15%,60%)] mb-3">
-              If runs were imported from Speedrun.com, you can claim them here to link them to your profile. Make sure your Speedrun.com username matches exactly (case-sensitive).
+              {t("settings.claimRunsDescription")}
             </p>
             
             {/* SRC Username Runs */}
             {srcUsername && (
               <>
                 <div className="flex items-center justify-between mb-3 mt-3">
-                  <h3 className="text-xs font-semibold text-ctp-text">Runs imported from Speedrun.com ({srcUsername})</h3>
+                  <h3 className="text-xs font-semibold text-ctp-text">{t("settings.runsImportedFromSRC", { username: srcUsername })}</h3>
                   {unclaimedSRCRuns.length > 0 && (
                     <Button
                       onClick={handleClaimAllRuns}
@@ -646,7 +648,7 @@ const UserSettings = () => {
                       disabled={loadingSRCUnclaimed}
                     >
                       <CheckCircle className="h-4 w-4 mr-2" />
-                      Claim All Runs ({unclaimedSRCRuns.length})
+                      {t("settings.claimAllRuns")} ({unclaimedSRCRuns.length})
                     </Button>
                   )}
                 </div>
@@ -656,7 +658,7 @@ const UserSettings = () => {
                   </div>
                 ) : unclaimedSRCRuns.length === 0 ? (
                   <p className="text-[hsl(222,15%,60%)] text-center py-4">
-                    No unclaimed runs found for your SRC username. Make sure you've entered your exact Speedrun.com username above.
+                    {t("settings.noUnclaimedRunsForSRC")}
                   </p>
                 ) : (
                 <>
@@ -719,7 +721,11 @@ const UserSettings = () => {
                         if (filteredRuns.length === 0) {
                           return (
                             <div className="text-center py-8">
-                              <p className="text-ctp-overlay0">No unclaimed {unclaimedLeaderboardType === 'regular' ? 'Full Game' : unclaimedLeaderboardType === 'individual-level' ? 'Individual Level' : 'Community Gold'} runs found</p>
+                              <p className="text-ctp-overlay0">{t("settings.noUnclaimedRunsForType", { 
+                                type: unclaimedLeaderboardType === 'regular' ? t("submit.fullGame") : 
+                                      unclaimedLeaderboardType === 'individual-level' ? t("submit.individualLevels") : 
+                                      t("submit.communityGolds")
+                              })}</p>
                             </div>
                           );
                         }
@@ -729,15 +735,15 @@ const UserSettings = () => {
                             <table className="w-full">
                               <thead>
                                 <tr className="border-b border-[hsl(235,13%,30%)]">
-                                  <th className="py-3 px-4 text-left">Category</th>
+                                  <th className="py-3 px-4 text-left">{t("leaderboards.category")}</th>
                                   {unclaimedLeaderboardType !== 'regular' && (
-                                    <th className="py-3 px-4 text-left">Level</th>
+                                    <th className="py-3 px-4 text-left">{t("leaderboards.level")}</th>
                                   )}
-                                  <th className="py-3 px-4 text-left">Time</th>
-                                  <th className="py-3 px-4 text-left">Date</th>
-                                  <th className="py-3 px-4 text-left">Platform</th>
-                                  <th className="py-3 px-4 text-left">Type</th>
-                                  <th className="py-3 px-4 text-left">Action</th>
+                                  <th className="py-3 px-4 text-left">{t("leaderboards.time")}</th>
+                                  <th className="py-3 px-4 text-left">{t("leaderboards.date")}</th>
+                                  <th className="py-3 px-4 text-left">{t("leaderboards.platform")}</th>
+                                  <th className="py-3 px-4 text-left">{t("leaderboards.runType")}</th>
+                                  <th className="py-3 px-4 text-left">{t("settings.action")}</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -787,7 +793,7 @@ const UserSettings = () => {
                                           className="bg-[#cba6f7] hover:bg-[#b4a0e2] text-[hsl(240,21%,15%)] font-bold"
                                         >
                                           <CheckCircle className="h-4 w-4 mr-2" />
-                                          Claim
+                                          {t("settings.claim")}
                                         </Button>
                                       </td>
                                     </tr>
@@ -806,7 +812,7 @@ const UserSettings = () => {
             
             {!srcUsername && (
               <p className="text-[hsl(222,15%,60%)] text-center py-4">
-                Set your Speedrun.com username above to find unclaimed runs imported from Speedrun.com.
+                {t("settings.setSRCUsernameToFindRuns") || "Set your Speedrun.com username above to find unclaimed runs imported from Speedrun.com."}
               </p>
             )}
           </CardContent>
@@ -817,13 +823,13 @@ const UserSettings = () => {
         <Card className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-ctp-text">
-              Change Email
+              {t("settings.changeEmail")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleUpdateEmail} className="space-y-4">
               <div>
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="email">{t("settings.email")}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -834,7 +840,7 @@ const UserSettings = () => {
                 />
               </div>
               <Button type="submit" className="bg-[#cba6f7] hover:bg-[#b4a0e2] text-[hsl(240,21%,15%)] font-bold">
-                Update Email
+                {t("settings.update")}
               </Button>
             </form>
           </CardContent>
@@ -844,13 +850,13 @@ const UserSettings = () => {
         <Card className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-ctp-text">
-              Change Password
+              {t("settings.changePassword")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleUpdatePassword} className="space-y-4">
               <div>
-                <Label htmlFor="newPassword">New Password</Label>
+                <Label htmlFor="newPassword">{t("settings.newPassword")}</Label>
                 <Input
                   id="newPassword"
                   type="password"
@@ -860,11 +866,11 @@ const UserSettings = () => {
                   className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
                 />
                 <p className="text-xs text-[hsl(222,15%,60%)] mt-1">
-                  Password must be at least 8 characters with uppercase, lowercase, and a number.
+                  {t("settings.passwordRequirements") || "Password must be at least 8 characters with uppercase, lowercase, and a number."}
                 </p>
               </div>
               <div>
-                <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                <Label htmlFor="confirmPassword">{t("settings.confirmPassword")}</Label>
                 <Input
                   id="confirmPassword"
                   type="password"
@@ -875,7 +881,7 @@ const UserSettings = () => {
                 />
               </div>
               <Button type="submit" className="bg-[#cba6f7] hover:bg-[#b4a0e2] text-[hsl(240,21%,15%)] font-bold">
-                Update Password
+                {t("settings.update")}
               </Button>
             </form>
           </CardContent>

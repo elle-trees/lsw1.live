@@ -16,11 +16,14 @@ import { useToast } from "@/hooks/use-toast";
 import { getErrorMessage } from "@/lib/errorUtils";
 import { getUnverifiedLeaderboardEntries, getUnclaimedRunsBySRCUsername, getPlayerByUid } from "@/lib/db";
 import { Notifications } from "@/components/Notifications";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import { fadeSlideDownVariants, iconVariants, transitions } from "@/lib/animations";
 import { cn } from "@/lib/utils";
 import { useScroll as useScrollHook } from "@/hooks/useScroll";
 import { Tabs, AnimatedTabsList, AnimatedTabsTrigger } from "@/components/ui/animated-tabs";
+import { useTranslation } from "react-i18next";
+import { getPlatformTranslation, getHeaderLinkTranslation } from "@/lib/i18n/entity-translations";
 
 interface GameDetailsProps {
   className?: string;
@@ -50,6 +53,7 @@ export function GameDetails({ className }: GameDetailsProps) {
   const { toast } = useToast();
   const headerRef = useRef<HTMLElement>(null);
   const { isScrolled } = useScrollHook({ threshold: 10 });
+  const { t } = useTranslation();
 
   // Framer Motion scroll tracking for smooth animations
   const { scrollY } = useScroll();
@@ -97,13 +101,13 @@ export function GameDetails({ className }: GameDetailsProps) {
       setUnclaimedRunsCount(0);
       setUnverifiedRunsCount(0);
       toast({
-        title: "Logged Out",
-        description: "You have been logged out successfully.",
+        title: t("components.loggedOut"),
+        description: t("components.loggedOutSuccess"),
       });
     } catch (error) {
       toast({
-        title: "Error",
-        description: getErrorMessage(error, "Failed to log out."),
+        title: t("common.error"),
+        description: getErrorMessage(error, t("components.logoutError")),
         variant: "destructive",
       });
     }
@@ -177,7 +181,7 @@ export function GameDetails({ className }: GameDetailsProps) {
       if (!hasAdminLink) {
         headerLinks.push({
           id: "admin",
-          label: "Admin",
+          label: t("components.admin"),
           route: "/admin",
           icon: "ShieldAlert",
           color: "#f2cdcd",
@@ -272,7 +276,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                   {/* Navigation Links Section - Show basic routes even when config is loading */}
                   <div className="px-2">
                     <div className="text-xs font-semibold text-ctp-subtext1 uppercase tracking-wider mb-2 px-2">
-                      Navigation
+                      {t("components.navigation")}
                     </div>
                     <nav className="flex flex-col gap-1">
                       <PrefetchLink
@@ -286,7 +290,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                         )}
                         style={location.pathname === "/" ? { borderLeft: "3px solid #89b4fa" } : {}}
                       >
-                        <span className="flex-1">Home</span>
+                        <span className="flex-1">{t("components.home")}</span>
                       </PrefetchLink>
                       <PrefetchLink
                         to="/leaderboards"
@@ -300,7 +304,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                         style={location.pathname.startsWith("/leaderboards") ? { borderLeft: "3px solid #f9e2af" } : {}}
                       >
                         <Trophy className="h-4 w-4 flex-shrink-0" style={{ color: location.pathname.startsWith("/leaderboards") ? "#f9e2af" : "#cdd6f4" }} />
-                        <span className="flex-1">Leaderboards</span>
+                        <span className="flex-1">{t("components.leaderboards")}</span>
                       </PrefetchLink>
                       <PrefetchLink
                         to="/submit"
@@ -314,7 +318,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                         style={location.pathname.startsWith("/submit") ? { borderLeft: "3px solid #a6e3a1" } : {}}
                       >
                         <Upload className="h-4 w-4 flex-shrink-0" style={{ color: location.pathname.startsWith("/submit") ? "#a6e3a1" : "#cdd6f4" }} />
-                        <span className="flex-1">Submit Run</span>
+                        <span className="flex-1">{t("components.submitRun")}</span>
                       </PrefetchLink>
                       {config && sortedHeaderLinks.length > 0 && sortedHeaderLinks.map((link) => {
                         const IconComponent = link.icon === "LegoStud" 
@@ -355,7 +359,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                                 />
                               )
                             )}
-                            <span className="flex-1">{link.label}</span>
+                            <span className="flex-1">{getHeaderLinkTranslation(link.id, link.label)}</span>
                           </PrefetchLink>
                         );
                       })}
@@ -364,10 +368,10 @@ export function GameDetails({ className }: GameDetailsProps) {
                   
                   <div className="px-2 pt-2 border-t border-ctp-surface1">
                     <div className="text-xs font-semibold text-ctp-subtext1 uppercase tracking-wider mb-2 px-2">
-                      Account
+                      {t("components.account")}
                     </div>
                     {authLoading ? (
-                      <div className="text-sm text-muted-foreground px-2">Loading...</div>
+                      <div className="text-sm text-muted-foreground px-2">{t("components.loading")}</div>
                     ) : currentUser ? (
                       <div className="flex flex-col gap-2">
                         <PrefetchLink 
@@ -376,7 +380,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                           className="text-sm text-ctp-text transition-colors px-2 py-1.5 rounded-md hover:bg-ctp-surface0"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
-                          Hi, {currentUser.displayName || currentUser.email?.split('@')[0]}
+                          {t("components.hi", { name: currentUser.displayName || currentUser.email?.split('@')[0] })}
                         </PrefetchLink>
                         {hasNotifications && (
                           <Button
@@ -386,11 +390,11 @@ export function GameDetails({ className }: GameDetailsProps) {
                               setIsMobileMenuOpen(false);
                             }}
                             className="relative w-full text-ctp-text hover:text-ctp-text border-yellow-600/50 hover:bg-yellow-600/20 hover:border-yellow-600 justify-start"
-                            title={currentUser.isAdmin ? `${unverifiedRunsCount} run(s) waiting for verification` : `${unclaimedRunsCount} unclaimed run(s)`}
+                            title={currentUser.isAdmin ? t("components.runsWaitingForVerification", { count: unverifiedRunsCount }) : t("components.unclaimedRunsCount", { count: unclaimedRunsCount })}
                           >
                             <Bell className="h-4 w-4 mr-2" />
                             <span className="flex-1 text-left">
-                              {currentUser.isAdmin ? 'Verify Runs' : 'Claim Runs'}
+                              {currentUser.isAdmin ? t("components.verifyRuns") : t("components.claimRuns")}
                             </span>
                             <Badge 
                               variant="destructive" 
@@ -408,7 +412,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                         >
                           <PrefetchLink to="/settings">
                             <Settings className="h-4 w-4 mr-2" />
-                            Settings
+                            {t("components.settings")}
                           </PrefetchLink>
                         </Button>
                         <Button 
@@ -419,7 +423,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                           }}
                           className="w-full text-ctp-text hover:text-ctp-text border-ctp-surface1 hover:bg-ctp-blue hover:border-ctp-blue justify-start"
                         >
-                          Logout
+                          {t("components.logout")}
                         </Button>
                       </div>
                     ) : (
@@ -432,7 +436,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                         className="w-full text-ctp-text hover:text-ctp-text border-ctp-surface1 hover:bg-ctp-blue hover:border-ctp-blue flex items-center gap-2 justify-start"
                       >
                         <User className="h-4 w-4" />
-                        Sign In
+                        {t("components.signIn")}
                       </Button>
                     )}
                   </div>
@@ -442,7 +446,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-[#5865F2] hover:text-[#5865F2] transition-all duration-300 hover:scale-110 p-2 -m-2"
-                      aria-label="Discord Server"
+                      aria-label={t("components.discordServer")}
                     >
                       <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
@@ -454,7 +458,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-[#F59E0B] hover:text-[#F59E0B] transition-all duration-300 hover:scale-110 p-2 -m-2"
-                        aria-label="Speedrun.com"
+                        aria-label={t("components.speedrunCom")}
                       >
                         <Trophy className="h-5 w-5" />
                       </a>
@@ -464,10 +468,13 @@ export function GameDetails({ className }: GameDetailsProps) {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-ctp-text hover:text-ctp-text transition-colors p-2 -m-2"
-                      aria-label="GitHub Repository"
+                      aria-label={t("components.githubRepository")}
                     >
                       <Github className="h-5 w-5" />
                     </a>
+                    <div className="px-2">
+                      <LanguageSwitcher />
+                    </div>
                   </div>
                 </div>
               </SheetContent>
@@ -506,9 +513,10 @@ export function GameDetails({ className }: GameDetailsProps) {
               >
                 <Github className="h-5 w-5 transition-transform duration-300 hover:rotate-12" />
               </a>
+              <LanguageSwitcher />
               {authLoading ? (
                 <Button variant="outline" className="text-ctp-text border-ctp-surface1">
-                  Loading...
+                  {t("components.loading")}
                 </Button>
               ) : currentUser ? (
                 <div className="flex items-center gap-2">
@@ -517,7 +525,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                     params={{ playerId: currentUser.uid }}
                     className="text-ctp-text hover:text-ctp-text mr-2 transition-all duration-300 hover:scale-105 cursor-pointer font-medium"
                   >
-                    Hi, {currentUser.displayName || currentUser.email?.split('@')[0]}
+                    {t("components.hi", { name: currentUser.displayName || currentUser.email?.split('@')[0] })}
                   </PrefetchLink>
                   <Notifications />
                   <Button 
@@ -527,7 +535,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                   >
                     <PrefetchLink to="/settings">
                       <Settings className="h-4 w-4 mr-2 transition-transform duration-300 group-hover:rotate-90" />
-                      Settings
+                      {t("components.settings")}
                     </PrefetchLink>
                   </Button>
                   <Button 
@@ -535,7 +543,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                     onClick={handleLogout}
                     className="text-ctp-text hover:text-ctp-text border-ctp-surface1 hover:bg-ctp-blue hover:border-ctp-blue transition-all duration-300 hover:scale-105 hover:shadow-lg"
                   >
-                    Logout
+                    {t("components.logout")}
                   </Button>
                 </div>
               ) : (
@@ -545,7 +553,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                   className="text-ctp-text hover:text-ctp-text border-ctp-surface1 hover:bg-ctp-blue hover:border-ctp-blue flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
                 >
                   <User className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
-                  Sign In
+                  {t("components.signIn")}
                 </Button>
               )}
             </div>
@@ -675,7 +683,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                             variant="outline"
                             className="bg-ctp-surface0 text-ctp-text border-ctp-surface1 hover:bg-ctp-surface1 hover:border-ctp-mauve/50 rounded-none text-[10px] sm:text-xs md:text-sm px-1.5 sm:px-2.5 py-0.5 sm:py-1 h-auto"
                           >
-                            {platform.label}
+                            {getPlatformTranslation(platform.id, platform.label)}
                           </Button>
                         </motion.div>
                       ))}
@@ -742,7 +750,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                                     />
                                   )
                                 )}
-                                <span>{link.label}</span>
+                                <span>{getHeaderLinkTranslation(link.id, link.label)}</span>
                               </AnimatedTabsTrigger>
                             );
                           })}
@@ -767,7 +775,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                       aria-label="Open navigation menu"
                     >
                       <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
-                      <span className="sr-only">Open menu</span>
+                      <span className="sr-only">{t("components.openMenu")}</span>
                     </Button>
                   </SheetTrigger>
                   <SheetContent side="left" className="w-[280px] sm:w-[320px] bg-[#1e1e2e] border-ctp-surface1 z-[100] overflow-y-auto">
@@ -781,7 +789,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                   {sortedHeaderLinks.length > 0 && (
                     <div className="px-2">
                       <div className="text-xs font-semibold text-ctp-subtext1 uppercase tracking-wider mb-2 px-2">
-                        Navigation
+                        {t("components.navigation")}
                       </div>
                       <nav className="flex flex-col gap-1">
                         {sortedHeaderLinks.map((link) => {
@@ -818,7 +826,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                                   />
                                 )
                               )}
-                              <span className="flex-1">{link.label}</span>
+                              <span className="flex-1">{getHeaderLinkTranslation(link.id, link.label)}</span>
                             </PrefetchLink>
                           );
                         })}
@@ -828,10 +836,10 @@ export function GameDetails({ className }: GameDetailsProps) {
                   
                   <div className="px-2 pt-2 border-t border-ctp-surface1">
                     <div className="text-xs font-semibold text-ctp-subtext1 uppercase tracking-wider mb-2 px-2">
-                      Account
+                      {t("components.account")}
                     </div>
                     {authLoading ? (
-                      <div className="text-sm text-muted-foreground px-2">Loading...</div>
+                      <div className="text-sm text-muted-foreground px-2">{t("components.loading")}</div>
                     ) : currentUser ? (
                       <div className="flex flex-col gap-2">
                         <PrefetchLink 
@@ -840,7 +848,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                           className="text-sm text-ctp-text transition-colors px-2 py-1.5 rounded-md hover:bg-ctp-surface0"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
-                          Hi, {currentUser.displayName || currentUser.email?.split('@')[0]}
+                          {t("components.hi", { name: currentUser.displayName || currentUser.email?.split('@')[0] })}
                         </PrefetchLink>
                         {hasNotifications && (
                           <Button
@@ -850,11 +858,11 @@ export function GameDetails({ className }: GameDetailsProps) {
                               setIsMobileMenuOpen(false);
                             }}
                             className="relative w-full text-ctp-text hover:text-ctp-text border-yellow-600/50 hover:bg-yellow-600/20 hover:border-yellow-600 justify-start"
-                            title={currentUser.isAdmin ? `${unverifiedRunsCount} run(s) waiting for verification` : `${unclaimedRunsCount} unclaimed run(s)`}
+                            title={currentUser.isAdmin ? t("components.runsWaitingForVerification", { count: unverifiedRunsCount }) : t("components.unclaimedRunsCount", { count: unclaimedRunsCount })}
                           >
                             <Bell className="h-4 w-4 mr-2" />
                             <span className="flex-1 text-left">
-                              {currentUser.isAdmin ? 'Verify Runs' : 'Claim Runs'}
+                              {currentUser.isAdmin ? t("components.verifyRuns") : t("components.claimRuns")}
                             </span>
                             <Badge 
                               variant="destructive" 
@@ -872,7 +880,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                         >
                           <PrefetchLink to="/settings">
                             <Settings className="h-4 w-4 mr-2" />
-                            Settings
+                            {t("components.settings")}
                           </PrefetchLink>
                         </Button>
                         <Button 
@@ -883,7 +891,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                           }}
                           className="w-full text-ctp-text hover:text-ctp-text border-ctp-surface1 hover:bg-ctp-blue hover:border-ctp-blue justify-start"
                         >
-                          Logout
+                          {t("components.logout")}
                         </Button>
                       </div>
                     ) : (
@@ -896,7 +904,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                         className="w-full text-ctp-text hover:text-ctp-text border-ctp-surface1 hover:bg-ctp-blue hover:border-ctp-blue flex items-center gap-2 justify-start"
                       >
                         <User className="h-4 w-4" />
-                        Sign In
+                        {t("components.signIn")}
                       </Button>
                     )}
                   </div>
@@ -906,7 +914,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-[#5865F2] hover:text-[#5865F2] transition-all duration-300 hover:scale-110 p-2 -m-2"
-                      aria-label="Discord Server"
+                      aria-label={t("components.discordServer")}
                     >
                       <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
@@ -918,7 +926,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-[#F59E0B] hover:text-[#F59E0B] transition-all duration-300 hover:scale-110 p-2 -m-2"
-                        aria-label="Speedrun.com"
+                        aria-label={t("components.speedrunCom")}
                       >
                         <Trophy className="h-5 w-5" />
                       </a>
@@ -928,10 +936,13 @@ export function GameDetails({ className }: GameDetailsProps) {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-ctp-text hover:text-ctp-text transition-colors p-2 -m-2"
-                      aria-label="GitHub Repository"
+                      aria-label={t("components.githubRepository")}
                     >
                       <Github className="h-5 w-5" />
                     </a>
+                    <div className="px-2">
+                      <LanguageSwitcher />
+                    </div>
                   </div>
                 </div>
               </SheetContent>
@@ -970,9 +981,10 @@ export function GameDetails({ className }: GameDetailsProps) {
               >
                 <Github className="h-5 w-5 transition-transform duration-300 hover:rotate-12" />
               </a>
+              <LanguageSwitcher />
               {authLoading ? (
                 <Button variant="outline" className="text-ctp-text border-ctp-surface1">
-                  Loading...
+                  {t("components.loading")}
                 </Button>
               ) : currentUser ? (
                 <div className="flex items-center gap-2">
@@ -981,7 +993,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                     params={{ playerId: currentUser.uid }}
                     className="text-ctp-text hover:text-ctp-text mr-2 transition-all duration-300 hover:scale-105 cursor-pointer font-medium"
                   >
-                    Hi, {currentUser.displayName || currentUser.email?.split('@')[0]}
+                    {t("components.hi", { name: currentUser.displayName || currentUser.email?.split('@')[0] })}
                   </PrefetchLink>
                   <Notifications />
                   <Button 
@@ -991,7 +1003,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                   >
                     <PrefetchLink to="/settings">
                       <Settings className="h-4 w-4 mr-2 transition-transform duration-300 group-hover:rotate-90" />
-                      Settings
+                      {t("components.settings")}
                     </PrefetchLink>
                   </Button>
                   <Button 
@@ -999,7 +1011,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                     onClick={handleLogout}
                     className="text-ctp-text hover:text-ctp-text border-ctp-surface1 hover:bg-ctp-blue hover:border-ctp-blue transition-all duration-300 hover:scale-105 hover:shadow-lg"
                   >
-                    Logout
+                    {t("components.logout")}
                   </Button>
                 </div>
               ) : (
@@ -1009,7 +1021,7 @@ export function GameDetails({ className }: GameDetailsProps) {
                   className="text-ctp-text hover:text-ctp-text border-ctp-surface1 hover:bg-ctp-blue hover:border-ctp-blue flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
                 >
                   <User className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
-                  Sign In
+                  {t("components.signIn")}
                 </Button>
               )}
               </div>

@@ -1,3 +1,6 @@
+// Import i18n FIRST before any other imports that might use translations
+import './lib/i18n'
+
 import { RouterProvider } from '@tanstack/react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from '@/components/ui/toaster'
@@ -69,12 +72,12 @@ export function App({ queryClient: providedQueryClient }: { queryClient?: QueryC
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <RouterProvider router={router} />
-            <Analytics />
-          </TooltipProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <RouterProvider router={router} />
+              <Analytics />
+            </TooltipProvider>
         </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>

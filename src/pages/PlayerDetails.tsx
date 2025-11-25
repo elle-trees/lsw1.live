@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FadeIn } from "@/components/ui/fade-in";
+import { useTranslation } from "react-i18next";
 
 interface PlayerDetailsProps {
   playerId: string;
@@ -28,6 +29,7 @@ const PlayerDetails = ({ playerId }: PlayerDetailsProps) => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [player, setPlayer] = useState<Player | null>(null);
   const [playerRuns, setPlayerRuns] = useState<LeaderboardEntry[]>([]);
   const [pendingRuns, setPendingRuns] = useState<LeaderboardEntry[]>([]);
@@ -242,8 +244,8 @@ const PlayerDetails = ({ playerId }: PlayerDetailsProps) => {
       const success = await claimRun(runId, currentUser.uid);
       if (success) {
         toast({
-          title: "Run Claimed",
-          description: "This run has been linked to your account.",
+          title: t("player.runClaimed"),
+          description: t("player.runLinkedToAccount"),
         });
         // Refresh player data to update the runs list
         const [fetchedPlayer, fetchedRuns] = await Promise.all([
@@ -263,12 +265,12 @@ const PlayerDetails = ({ playerId }: PlayerDetailsProps) => {
           }
         }
       } else {
-        throw new Error("Failed to claim run.");
+        throw new Error(t("player.failedToClaimRun"));
       }
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message || "Failed to claim run.",
+        title: t("common.error"),
+        description: error.message || t("player.failedToClaimRun"),
         variant: "destructive",
       });
     }
@@ -415,12 +417,12 @@ const PlayerDetails = ({ playerId }: PlayerDetailsProps) => {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[hsl(240,21%,15%)] to-[hsl(235,19%,13%)] text-[hsl(220,17%,92%)] py-8">
         <div className="max-w-6xl mx-auto px-4 text-center">
-          <h1 className="text-3xl font-bold mb-4">Player Not Found</h1>
-          <p className="text-[hsl(222,15%,60%)] mb-8">The requested player could not be found.</p>
+          <h1 className="text-3xl font-bold mb-4">{t("submit.playerNotFound")}</h1>
+          <p className="text-[hsl(222,15%,60%)] mb-8">{t("player.playerNotFoundDescription")}</p>
           <Button variant="outline" className="text-[hsl(220,17%,92%)] border-[hsl(235,13%,30%)] hover:bg-[hsl(234,14%,29%)]" asChild>
             <PrefetchLink to="/leaderboards">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Leaderboards
+              {t("player.backToLeaderboards")}
             </PrefetchLink>
           </Button>
         </div>
@@ -435,7 +437,7 @@ const PlayerDetails = ({ playerId }: PlayerDetailsProps) => {
           <Button variant="outline" className="text-ctp-text border-ctp-surface1/50 bg-glass hover:bg-ctp-surface0/50 hover:border-ctp-mauve/50 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-ctp-mauve/20 rounded-none backdrop-blur-sm" asChild>
             <PrefetchLink to="/leaderboards">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Leaderboards
+              {t("player.backToLeaderboards")}
             </PrefetchLink>
           </Button>
         </div>
@@ -462,17 +464,17 @@ const PlayerDetails = ({ playerId }: PlayerDetailsProps) => {
           <FadeIn className="mt-8" delay={0.15}>
             <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-ctp-text">
               <Clock className="h-5 w-5 text-ctp-yellow" />
-              Pending Submissions
+              {t("player.pendingRuns")}
             </h3>
             <div className="overflow-x-auto scrollbar-custom rounded-none border border-ctp-surface1/50">
               <Table>
                 <TableHeader>
                   <TableRow className="border-b border-ctp-surface1/50 hover:bg-transparent bg-ctp-surface0/50">
-                    <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text">Category</TableHead>
-                    <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text">Time</TableHead>
-                    <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text">Date</TableHead>
-                    <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text">Platform</TableHead>
-                    <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text">Type</TableHead>
+                    <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text">{t("leaderboards.category")}</TableHead>
+                    <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text">{t("leaderboards.time")}</TableHead>
+                    <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text">{t("leaderboards.date")}</TableHead>
+                    <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text">{t("leaderboards.platform")}</TableHead>
+                    <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text">{t("leaderboards.runType")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -513,7 +515,7 @@ const PlayerDetails = ({ playerId }: PlayerDetailsProps) => {
         <FadeIn className="mt-8" delay={0.2}>
             <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-ctp-text">
               <Trophy className="h-5 w-5 text-ctp-yellow" />
-              Runs
+              {t("player.runs")}
             </h3>
 
             {/* Leaderboard Type Tabs */}
@@ -524,24 +526,24 @@ const PlayerDetails = ({ playerId }: PlayerDetailsProps) => {
                   className="h-auto py-1.5 sm:py-2 px-2 sm:px-3 transition-all duration-200 font-medium text-xs sm:text-sm whitespace-nowrap data-[state=active]:text-[#f9e2af]"
                 >
                   <Trophy className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
-                  <span className="hidden min-[375px]:inline">Full Game</span>
-                  <span className="min-[375px]:hidden">Game</span>
+                  <span className="hidden min-[375px]:inline">{t("submit.fullGame")}</span>
+                  <span className="min-[375px]:hidden">{t("submit.game")}</span>
                 </AnimatedTabsTrigger>
                 <AnimatedTabsTrigger
                   value="individual-level"
                   className="h-auto py-1.5 sm:py-2 px-2 sm:px-3 transition-all duration-200 font-medium text-xs sm:text-sm whitespace-nowrap data-[state=active]:text-[#f9e2af]"
                 >
                   <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
-                  <span className="hidden sm:inline">Individual Levels</span>
-                  <span className="sm:hidden">ILs</span>
+                  <span className="hidden sm:inline">{t("submit.individualLevels")}</span>
+                  <span className="sm:hidden">{t("submit.ils")}</span>
                 </AnimatedTabsTrigger>
                 <AnimatedTabsTrigger
                   value="community-golds"
                   className="h-auto py-1.5 sm:py-2 px-2 sm:px-3 transition-all duration-200 font-medium text-xs sm:text-sm whitespace-nowrap data-[state=active]:text-[#f9e2af]"
                 >
                   <Gem className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
-                  <span className="hidden sm:inline">Community Golds</span>
-                  <span className="sm:hidden">CGs</span>
+                  <span className="hidden sm:inline">{t("submit.communityGolds")}</span>
+                  <span className="sm:hidden">{t("submit.golds")}</span>
                 </AnimatedTabsTrigger>
               </AnimatedTabsList>
             </Tabs>
@@ -669,10 +671,10 @@ const PlayerDetails = ({ playerId }: PlayerDetailsProps) => {
                       <Card className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl rounded-none overflow-hidden">
                         <CardHeader className="bg-gradient-to-r from-ctp-base to-ctp-mantle border-b border-ctp-surface1 py-4">
                           <CardTitle className="flex items-center gap-2 text-lg text-[#a6e3a1]">
-                            <span>Runs</span>
+                            <span>{t("player.runs")}</span>
                             {allRuns.length > 0 && (
                               <span className="ml-auto text-sm font-normal text-ctp-subtext1">
-                                {allRuns.length} {allRuns.length === 1 ? 'run' : 'runs'}
+                                {allRuns.length} {allRuns.length === 1 ? t("player.runs").toLowerCase() : t("player.runs").toLowerCase()}
                               </span>
                             )}
                           </CardTitle>
@@ -685,11 +687,11 @@ const PlayerDetails = ({ playerId }: PlayerDetailsProps) => {
                                 <div>
                                   <label className="block text-sm font-semibold mb-2 text-ctp-text flex items-center gap-2">
                                     <Sparkles className="h-4 w-4 text-ctp-mauve" />
-                                    Levels
+                                    {t("leaderboards.levels")}
                                   </label>
                                   <Select value={selectedLevel} onValueChange={setSelectedLevel}>
                                     <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-10 text-sm rounded-none focus:ring-ctp-mauve">
-                                      <SelectValue placeholder="Select level" />
+                                      <SelectValue placeholder={t("leaderboards.selectLevel")} />
                                     </SelectTrigger>
                                     <SelectContent>
                                       {levels.map((level) => (
@@ -704,11 +706,11 @@ const PlayerDetails = ({ playerId }: PlayerDetailsProps) => {
                               <div>
                                 <label className="block text-sm font-semibold mb-2 text-ctp-text flex items-center gap-2">
                                   <Gamepad2 className="h-4 w-4 text-ctp-mauve" />
-                                  Platform
+                                  {t("leaderboards.platform")}
                                 </label>
                                 <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
                                   <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-10 text-sm rounded-none focus:ring-ctp-mauve">
-                                    <SelectValue placeholder="Select platform" />
+                                    <SelectValue placeholder={t("submit.selectPlatform")} />
                                   </SelectTrigger>
                                   <SelectContent>
                                     {platforms.map((platform) => (
@@ -726,11 +728,11 @@ const PlayerDetails = ({ playerId }: PlayerDetailsProps) => {
                                   ) : (
                                     <Users className="h-4 w-4 text-ctp-mauve" />
                                   )}
-                                  Run Type
+                                  {t("leaderboards.runType")}
                                 </label>
                                 <Select value={selectedRunType} onValueChange={setSelectedRunType}>
                                   <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-10 text-sm rounded-none focus:ring-ctp-mauve">
-                                    <SelectValue placeholder="Select run type" />
+                                    <SelectValue placeholder={t("submit.selectRunType")} />
                                   </SelectTrigger>
                                   <SelectContent>
                                     {runTypes.map((type) => (
@@ -752,9 +754,9 @@ const PlayerDetails = ({ playerId }: PlayerDetailsProps) => {
                               <div className="flex flex-col items-center gap-3">
                                 <Trophy className="h-8 w-8 text-ctp-subtext1" />
                                 <div>
-                                  <h3 className="text-base font-semibold mb-1 text-ctp-text">No runs found</h3>
+                                  <h3 className="text-base font-semibold mb-1 text-ctp-text">{t("player.noRunsFound")}</h3>
                                   <p className="text-sm text-ctp-subtext1">
-                                    Try adjusting your filters to see more results
+                                    {t("leaderboards.tryAdjustingFilters")}
                                   </p>
                                 </div>
                               </div>
@@ -764,18 +766,18 @@ const PlayerDetails = ({ playerId }: PlayerDetailsProps) => {
                       <Table>
                         <TableHeader>
                           <TableRow className="border-b border-ctp-surface1/50 hover:bg-transparent bg-ctp-surface0/50">
-                            <TableHead className="py-3 pl-3 pr-1 text-left text-sm font-semibold text-ctp-text whitespace-nowrap w-16">Rank</TableHead>
-                            <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text">Category</TableHead>
+                            <TableHead className="py-3 pl-3 pr-1 text-left text-sm font-semibold text-ctp-text whitespace-nowrap w-16">{t("leaderboards.rank")}</TableHead>
+                            <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text">{t("leaderboards.category")}</TableHead>
                             {leaderboardType !== 'regular' && (
-                              <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text">Level</TableHead>
+                              <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text">{t("leaderboards.level")}</TableHead>
                             )}
-                            <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text">Time</TableHead>
-                            <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text hidden sm:table-cell">Date</TableHead>
-                            <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text hidden md:table-cell">Platform</TableHead>
-                            <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text hidden lg:table-cell">Type</TableHead>
-                            <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text">Video</TableHead>
+                            <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text">{t("leaderboards.time")}</TableHead>
+                            <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text hidden sm:table-cell">{t("leaderboards.date")}</TableHead>
+                            <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text hidden md:table-cell">{t("leaderboards.platform")}</TableHead>
+                            <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text hidden lg:table-cell">{t("leaderboards.runType")}</TableHead>
+                            <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text">{t("run.video")}</TableHead>
                             {isOwnProfile && (
-                              <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text">Action</TableHead>
+                              <TableHead className="py-3 px-4 text-left text-sm font-semibold text-ctp-text">{t("common.actions") || "Action"}</TableHead>
                             )}
                           </TableRow>
                         </TableHeader>
@@ -831,7 +833,7 @@ const PlayerDetails = ({ playerId }: PlayerDetailsProps) => {
                                     {categoryName}
                                     {isUnclaimed && (
                                       <Badge variant="outline" className="border-yellow-600/50 bg-yellow-600/10 text-yellow-400 text-xs">
-                                        Unclaimed
+                                        {t("notifications.unclaimed")}
                                       </Badge>
                                     )}
                                   </div>
@@ -871,7 +873,7 @@ const PlayerDetails = ({ playerId }: PlayerDetailsProps) => {
                                       onClick={(e) => e.stopPropagation()}
                                     >
                                       <ExternalLink className="h-3 w-3" />
-                                      <span className="text-xs hidden sm:inline">Watch</span>
+                                      <span className="text-xs hidden sm:inline">{t("run.watch") || "Watch"}</span>
                                     </a>
                                   )}
                                 </TableCell>
@@ -884,7 +886,7 @@ const PlayerDetails = ({ playerId }: PlayerDetailsProps) => {
                                         className="bg-[#cba6f7] hover:bg-[#b4a0e2] text-[hsl(240,21%,15%)] font-bold h-7 text-xs"
                                       >
                                         <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
-                                        Claim
+                                        {t("player.claim")}
                                       </Button>
                                     ) : (
                                       <Check className="h-4 w-4 text-green-500 opacity-0" /> // Spacer

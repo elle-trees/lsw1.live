@@ -16,8 +16,11 @@ import LegoGoldBrickIcon from "@/components/icons/LegoGoldBrickIcon";
 import { motion } from "framer-motion";
 import { staggerContainerVariants, staggerItemVariants, fadeSlideUpVariants, transitions } from "@/lib/animations";
 import { pageCache } from "@/lib/pageCache";
+import { useTranslation } from "react-i18next";
+import { getSubcategoryTranslation } from "@/lib/i18n/entity-translations";
 
 const Leaderboards = () => {
+  const { t } = useTranslation();
   const [leaderboardType, setLeaderboardType] = useState<'regular' | 'individual-level' | 'community-golds'>('regular');
   
   // Check cache for static data (levels and platforms are shared across all types)
@@ -237,8 +240,8 @@ const Leaderboards = () => {
               >
                 <div className="flex items-center justify-center gap-2">
                   <Trophy className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  <span className="hidden min-[375px]:inline font-medium">Full Game</span>
-                  <span className="min-[375px]:hidden font-medium">Game</span>
+                  <span className="hidden min-[375px]:inline font-medium">{t("submit.fullGame")}</span>
+                  <span className="min-[375px]:hidden font-medium">{t("submit.game")}</span>
                 </div>
               </AnimatedTabsTrigger>
               <AnimatedTabsTrigger
@@ -247,8 +250,8 @@ const Leaderboards = () => {
               >
                 <div className="flex items-center justify-center gap-2">
                   <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline font-medium">Individual Levels</span>
-                  <span className="sm:hidden font-medium">ILs</span>
+                  <span className="hidden sm:inline font-medium">{t("submit.individualLevels")}</span>
+                  <span className="sm:hidden font-medium">{t("submit.ils")}</span>
                 </div>
               </AnimatedTabsTrigger>
               <AnimatedTabsTrigger
@@ -257,8 +260,8 @@ const Leaderboards = () => {
               >
                 <div className="flex items-center justify-center gap-2">
                   <Gem className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline font-medium">Community Golds</span>
-                  <span className="sm:hidden font-medium">CGs</span>
+                  <span className="hidden sm:inline font-medium">{t("submit.communityGolds")}</span>
+                  <span className="sm:hidden font-medium">{t("submit.golds")}</span>
                 </div>
               </AnimatedTabsTrigger>
             </AnimatedTabsList>
@@ -382,7 +385,7 @@ const Leaderboards = () => {
                                   className="whitespace-nowrap px-4 py-2 h-8 text-xs sm:text-sm font-medium transition-all duration-200 data-[state=active]:text-[#cba6f7]"
                                   style={{ animationDelay: `${index * 50}ms` }}
                                 >
-                                  {subcategory.name}
+                                  {getSubcategoryTranslation(subcategory.id, subcategory.name)}
                                 </AnimatedTabsTrigger>
                               )})}
                             </AnimatedTabsList>
@@ -399,7 +402,7 @@ const Leaderboards = () => {
                 availableCategories.length > 0 && (
                   <div className="mb-4 p-4 bg-ctp-surface0 rounded-none border border-ctp-surface1">
                     <p className="text-sm text-ctp-subtext1">
-                      No categories available for the selected level. Please enable categories for this level in the admin panel.
+                      {t("leaderboards.noCategoriesAvailable")}
                     </p>
                   </div>
                 )
@@ -415,11 +418,11 @@ const Leaderboards = () => {
           <CardHeader className="bg-gradient-to-r from-ctp-base to-ctp-mantle border-b border-ctp-surface1 py-4">
             <CardTitle className="flex items-center gap-2 text-lg text-[#a6e3a1]">
               <span>
-                {availableCategories.find(c => c.id === selectedCategory)?.name || "Leaderboards"}
+                {availableCategories.find(c => c.id === selectedCategory)?.name || t("leaderboards.title")}
               </span>
               {leaderboardData.length > 0 && (
                 <span className="ml-auto text-sm font-normal text-ctp-subtext1">
-                  {leaderboardData.length} {leaderboardData.length === 1 ? 'entry' : 'entries'}
+                  {leaderboardData.length} {leaderboardData.length === 1 ? t("leaderboards.entry") : t("leaderboards.entries")}
                 </span>
               )}
             </CardTitle>
@@ -432,11 +435,11 @@ const Leaderboards = () => {
                   <div>
                     <label className="block text-sm font-semibold mb-2 text-ctp-text flex items-center gap-2">
                       <Sparkles className="h-4 w-4 text-ctp-mauve" />
-                      Levels
+                      {t("leaderboards.levels")}
                     </label>
                     <Select value={selectedLevel} onValueChange={setSelectedLevel}>
                       <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-10 text-sm rounded-none focus:ring-ctp-mauve">
-                        <SelectValue placeholder="Select level" />
+                        <SelectValue placeholder={t("leaderboards.selectLevel")} />
                       </SelectTrigger>
                       <SelectContent>
                         {availableLevels.map((level) => (
@@ -451,11 +454,11 @@ const Leaderboards = () => {
                 <div>
                   <label className="block text-sm font-semibold mb-2 text-ctp-text flex items-center gap-2">
                     <Gamepad2 className="h-4 w-4 text-ctp-mauve" />
-                    Platform
+                    {t("leaderboards.platform")}
                   </label>
                   <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
                     <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-10 text-sm rounded-none focus:ring-ctp-mauve">
-                      <SelectValue placeholder="Select platform" />
+                      <SelectValue placeholder={t("submit.selectPlatform")} />
                     </SelectTrigger>
                     <SelectContent>
                       {availablePlatforms.map((platform) => (
@@ -473,11 +476,11 @@ const Leaderboards = () => {
                     ) : (
                       <Users className="h-4 w-4 text-ctp-mauve" />
                     )}
-                    Run Type
+                    {t("leaderboards.runType")}
                   </label>
                   <Select value={selectedRunType} onValueChange={setSelectedRunType}>
                     <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-10 text-sm rounded-none focus:ring-ctp-mauve">
-                      <SelectValue placeholder="Select run type" />
+                      <SelectValue placeholder={t("submit.selectRunType")} />
                     </SelectTrigger>
                     <SelectContent>
                       {runTypes.map((type) => (
@@ -494,15 +497,15 @@ const Leaderboards = () => {
                 <div>
                   <label className="block text-sm font-semibold mb-2 text-ctp-text flex items-center gap-2">
                     <TrendingUp className="h-4 w-4 text-ctp-mauve" />
-                    Run Status
+                    {t("leaderboards.runStatus")}
                   </label>
                   <Select value={showObsoleteRuns} onValueChange={setShowObsoleteRuns}>
                     <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-10 text-sm rounded-none focus:ring-ctp-mauve">
-                      <SelectValue placeholder="Select status" />
+                      <SelectValue placeholder={t("leaderboards.selectStatus")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="false" className="text-sm">Current Runs</SelectItem>
-                      <SelectItem value="true" className="text-sm">All Runs (including obsolete)</SelectItem>
+                      <SelectItem value="false" className="text-sm">{t("leaderboards.currentRuns")}</SelectItem>
+                      <SelectItem value="true" className="text-sm">{t("leaderboards.allRunsIncludingObsolete")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -520,9 +523,9 @@ const Leaderboards = () => {
                 <div className="flex flex-col items-center gap-3">
                   <Trophy className="h-8 w-8 text-ctp-subtext1" />
                   <div>
-                    <h3 className="text-base font-semibold mb-1 text-ctp-text">No entries found</h3>
+                    <h3 className="text-base font-semibold mb-1 text-ctp-text">{t("leaderboards.noEntriesFound")}</h3>
                     <p className="text-sm text-ctp-subtext1">
-                      Try adjusting your filters to see more results
+                      {t("leaderboards.tryAdjustingFilters")}
                     </p>
                   </div>
                 </div>

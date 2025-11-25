@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { AnimatedCard } from '@/components/ui/animated-card';
 import { FadeIn } from '@/components/ui/fade-in';
 import { getPlayersWithTwitchUsernames } from '@/lib/db';
+import { useTranslation } from 'react-i18next';
 
 interface LiveRunner {
   uid: string;
@@ -21,6 +22,7 @@ interface LiveRunner {
 }
 
 const Live = () => {
+  const { t } = useTranslation();
   const [isLoaded, setIsLoaded] = useState(false);
   const [parentDomain, setParentDomain] = useState<string>('localhost');
   const [isLive, setIsLive] = useState<boolean | null>(null);
@@ -283,7 +285,7 @@ const Live = () => {
                   className="text-base font-medium px-4 py-2 bg-gradient-to-r from-[#89b4fa] to-[#74c7ec] text-white border-0 hover:from-[#74c7ec] hover:to-[#89b4fa] shadow-lg shadow-[#89b4fa]/30 animate-pulse"
                 >
                   <Radio className="h-4 w-4 mr-2 animate-pulse" />
-                  Live
+                  {t("live.live")}
                 </Badge>
               </div>
             </div>
@@ -308,7 +310,7 @@ const Live = () => {
               <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
                 <CardContent className="p-6 text-center">
                   <p className="text-ctp-subtext1">
-                    Chat is available on larger screens. View the stream on desktop to see the chat!
+                    {t("live.chatAvailableOnDesktop")}
                   </p>
                 </CardContent>
               </Card>
@@ -321,7 +323,7 @@ const Live = () => {
           <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
             <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
               <div className="flex items-center gap-2 text-xl text-[#f38ba8]">
-                <span>Community Streams</span>
+                <span>{t("live.communityStreams")}</span>
               </div>
             </CardHeader>
             <CardContent className="p-6">
@@ -387,7 +389,7 @@ const Live = () => {
                               </div>
                               <Badge variant="default" className="bg-red-600 text-white border-0 shadow-lg flex-shrink-0">
                                 <Radio className="h-3 w-3 mr-1.5 animate-pulse" />
-                                Live
+                                {t("live.live")}
                               </Badge>
                             </div>
                             <div className="relative group" style={{ paddingBottom: '56.25%' }}>
@@ -408,7 +410,7 @@ const Live = () => {
                                 <Badge variant="outline" className="text-xs border-[hsl(235,13%,30%)] bg-[hsl(235,13%,15%)]">
                                   <span className="font-semibold">{runner.viewerCount.toLocaleString()}</span>
                                   <span className="ml-1 text-ctp-subtext1">
-                                    {runner.viewerCount === 1 ? 'viewer' : 'viewers'}
+                                    {runner.viewerCount === 1 ? t("live.viewer") : t("live.viewers")}
                                   </span>
                                 </Badge>
                               </div>
@@ -423,9 +425,9 @@ const Live = () => {
                     <div className="flex flex-col items-center gap-3">
                       <Radio className="h-12 w-12 text-ctp-subtext1 opacity-50" />
                       <div>
-                        <h3 className="text-base font-semibold mb-1 text-ctp-text">No runners are live</h3>
+                        <h3 className="text-base font-semibold mb-1 text-ctp-text">{t("live.noRunnersLive")}</h3>
                         <p className="text-sm text-ctp-subtext1">
-                          Time to hit the start streaming button!
+                          {t("live.timeToStartStreaming")}
                         </p>
                       </div>
                     </div>

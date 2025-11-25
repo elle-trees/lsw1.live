@@ -28,6 +28,7 @@ import { getCategoryName, getPlatformName, getLevelName } from "@/lib/dataValida
 import { Link } from "@tanstack/react-router";
 import { FadeIn } from "@/components/ui/fade-in";
 import { lazy, Suspense } from "react";
+import { useTranslation } from "react-i18next";
 
 // Lazy load the chart component to reduce initial bundle size
 const WRProgressionChart = lazy(() => import("@/components/WRProgressionChart").then(m => ({ default: m.WRProgressionChart })));
@@ -77,6 +78,7 @@ interface StatsData {
 }
 
 const Stats = () => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<StatsData | null>(null);
   const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([]);
@@ -639,7 +641,7 @@ const Stats = () => {
       <div className="container mx-auto px-4 py-8">
         <Card>
           <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">Failed to load statistics.</p>
+            <p className="text-center text-muted-foreground">{t("stats.failedToLoad") || "Failed to load statistics."}</p>
           </CardContent>
         </Card>
       </div>
@@ -648,7 +650,7 @@ const Stats = () => {
 
   const chartConfig = {
     count: {
-      label: "World Records",
+      label: t("stats.worldRecords"),
       color: "hsl(var(--chart-1))",
     },
   };
@@ -661,13 +663,13 @@ const Stats = () => {
         <Card>
           <FadeIn delay={0.1}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Verified Runs</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("stats.totalRuns")}</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.verifiedRuns.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              {stats.totalRuns.toLocaleString()} total runs
+              {stats.totalRuns.toLocaleString()} {t("stats.totalRunsLabel")}
             </p>
           </CardContent>
           </FadeIn>
@@ -676,13 +678,13 @@ const Stats = () => {
         <Card>
           <FadeIn delay={0.2}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">World Records</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("stats.worldRecords")}</CardTitle>
             <Trophy className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.worldRecords.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              {((stats.worldRecords / stats.verifiedRuns) * 100).toFixed(1)}% of verified runs
+              {((stats.worldRecords / stats.verifiedRuns) * 100).toFixed(1)}% {t("stats.ofVerifiedRuns")}
             </p>
           </CardContent>
           </FadeIn>
@@ -691,13 +693,13 @@ const Stats = () => {
         <Card>
           <FadeIn delay={0.3}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Solo Runs</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("stats.solo")} {t("player.runs")}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.runsByRunType.solo.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              {((stats.runsByRunType.solo / stats.verifiedRuns) * 100).toFixed(1)}% of runs
+              {((stats.runsByRunType.solo / stats.verifiedRuns) * 100).toFixed(1)}% {t("stats.ofRuns")}
             </p>
           </CardContent>
           </FadeIn>
@@ -706,13 +708,13 @@ const Stats = () => {
         <Card>
           <FadeIn delay={0.4}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Co-op Runs</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("stats.coop")} {t("player.runs")}</CardTitle>
             <Gamepad2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.runsByRunType.coOp.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              {((stats.runsByRunType.coOp / stats.verifiedRuns) * 100).toFixed(1)}% of runs
+              {((stats.runsByRunType.coOp / stats.verifiedRuns) * 100).toFixed(1)}% {t("stats.ofRuns")}
             </p>
           </CardContent>
           </FadeIn>
@@ -726,13 +728,13 @@ const Stats = () => {
               value="overview"
               className="h-auto py-2 px-3 transition-all duration-300 border-r border-ctp-surface1 last:border-r-0 data-[state=active]:text-[#f9e2af]"
             >
-              <span className="font-medium text-xs sm:text-sm">Overview</span>
+              <span className="font-medium text-xs sm:text-sm">{t("stats.overview")}</span>
             </AnimatedTabsTrigger>
             <AnimatedTabsTrigger
               value="progression"
               className="h-auto py-2 px-3 transition-all duration-300 border-r border-ctp-surface1 last:border-r-0 data-[state=active]:text-[#f9e2af]"
             >
-              <span className="font-medium text-xs sm:text-sm">WR Progression</span>
+              <span className="font-medium text-xs sm:text-sm">{t("stats.wrProgression")}</span>
             </AnimatedTabsTrigger>
             <AnimatedTabsTrigger
               value="breakdown"
@@ -744,13 +746,13 @@ const Stats = () => {
               value="recent"
               className="h-auto py-2 px-3 transition-all duration-300 border-r border-ctp-surface1 last:border-r-0 data-[state=active]:text-[#f9e2af]"
             >
-              <span className="font-medium text-xs sm:text-sm">Recent WRs</span>
+              <span className="font-medium text-xs sm:text-sm">{t("stats.recent")}</span>
             </AnimatedTabsTrigger>
             <AnimatedTabsTrigger
               value="longest"
               className="h-auto py-2 px-3 transition-all duration-300 border-r border-ctp-surface1 last:border-r-0 data-[state=active]:text-[#f9e2af]"
             >
-              <span className="font-medium text-xs sm:text-sm">Longest WRs</span>
+              <span className="font-medium text-xs sm:text-sm">{t("stats.longestHeld")}</span>
             </AnimatedTabsTrigger>
           </AnimatedTabsList>
         </Tabs>
@@ -761,15 +763,15 @@ const Stats = () => {
             <Card>
             <FadeIn delay={0.2}>
               <CardHeader>
-                <CardTitle>Leaderboard Types</CardTitle>
-                <CardDescription>Distribution of runs by leaderboard type</CardDescription>
+                <CardTitle>{t("stats.leaderboardTypes") || "Leaderboard Types"}</CardTitle>
+                <CardDescription>{t("stats.distributionByType") || "Distribution of runs by leaderboard type"}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <BarChart3 className="h-4 w-4" />
-                      <span>Regular</span>
+                      <span>{t("leaderboards.regular")}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-2xl font-bold">{stats.runsByLeaderboardType.regular.toLocaleString()}</span>
@@ -781,7 +783,7 @@ const Stats = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Award className="h-4 w-4" />
-                      <span>Individual Levels</span>
+                      <span>{t("submit.individualLevels")}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-2xl font-bold">{stats.runsByLeaderboardType.individualLevel.toLocaleString()}</span>
@@ -793,7 +795,7 @@ const Stats = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Trophy className="h-4 w-4" />
-                      <span>Community Golds</span>
+                      <span>{t("submit.communityGolds")}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-2xl font-bold">{stats.runsByLeaderboardType.communityGolds.toLocaleString()}</span>
@@ -810,8 +812,8 @@ const Stats = () => {
             <Card>
             <FadeIn delay={0.3}>
               <CardHeader>
-                <CardTitle>Top Categories</CardTitle>
-                <CardDescription>Categories with the most runs</CardDescription>
+                <CardTitle>{t("stats.topCategories") || "Top Categories"}</CardTitle>
+                <CardDescription>{t("stats.categoriesWithMostRuns") || "Categories with the most runs"}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
@@ -835,8 +837,8 @@ const Stats = () => {
           <Card>
             <FadeIn delay={0.3}>
             <CardHeader>
-              <CardTitle>Top Platforms</CardTitle>
-              <CardDescription>Platforms with the most runs</CardDescription>
+              <CardTitle>{t("stats.topPlatforms")}</CardTitle>
+              <CardDescription>{t("stats.platformsWithMostRuns")}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -862,8 +864,8 @@ const Stats = () => {
           <Card>
             <FadeIn delay={0.3}>
             <CardHeader>
-              <CardTitle>World Record Time Progression</CardTitle>
-              <CardDescription>World record times improving over time (lower is better)</CardDescription>
+              <CardTitle>{t("stats.wrTimeProgression") || "World Record Time Progression"}</CardTitle>
+              <CardDescription>{t("stats.wrTimesImproving") || "World record times improving over time (lower is better)"}</CardDescription>
             </CardHeader>
             <CardContent>
               {/* Filters - Always show so users can switch leaderboard types even when no data */}
@@ -877,7 +879,7 @@ const Stats = () => {
                     >
                       <div className="flex items-center justify-center gap-2">
                         <Trophy className="h-4 w-4" />
-                        <span className="font-medium text-xs sm:text-sm">Full Game</span>
+                        <span className="font-medium text-xs sm:text-sm">{t("submit.fullGame")}</span>
                       </div>
                     </AnimatedTabsTrigger>
                     <AnimatedTabsTrigger
@@ -886,7 +888,7 @@ const Stats = () => {
                     >
                       <div className="flex items-center justify-center gap-2">
                         <Star className="h-4 w-4" />
-                        <span className="font-medium text-xs sm:text-sm">ILs</span>
+                        <span className="font-medium text-xs sm:text-sm">{t("submit.ils")}</span>
                       </div>
                     </AnimatedTabsTrigger>
                     <AnimatedTabsTrigger
@@ -895,7 +897,7 @@ const Stats = () => {
                     >
                       <div className="flex items-center justify-center gap-2">
                         <Gem className="h-4 w-4" />
-                        <span className="font-medium text-xs sm:text-sm">CGs</span>
+                        <span className="font-medium text-xs sm:text-sm">{t("submit.golds")}</span>
                       </div>
                     </AnimatedTabsTrigger>
                   </AnimatedTabsList>
@@ -930,7 +932,7 @@ const Stats = () => {
                 <Card className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl rounded-none">
                   <CardHeader className="bg-gradient-to-r from-ctp-base to-ctp-mantle border-b border-ctp-surface1 py-3">
                     <CardTitle className="flex items-center gap-2 text-lg">
-                      <span className="text-ctp-text">Filter Results</span>
+                      <span className="text-ctp-text">{t("stats.filter")}</span>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-3 sm:p-4">
@@ -939,11 +941,11 @@ const Stats = () => {
                         <div>
                           <label className="block text-sm font-semibold mb-1.5 text-ctp-text flex items-center gap-2">
                             <Star className="h-3.5 w-3.5 text-ctp-mauve" />
-                            Levels
+                            {t("leaderboards.level")}
                           </label>
                           <Select value={wrProgressionLevel} onValueChange={setWrProgressionLevel}>
                             <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-9 text-sm rounded-none">
-                              <SelectValue placeholder="Select level" />
+                              <SelectValue placeholder={t("submit.selectLevelPlaceholder")} />
                             </SelectTrigger>
                             <SelectContent>
                               {levels.map((level) => (
@@ -958,11 +960,11 @@ const Stats = () => {
                       <div>
                         <label className="block text-sm font-semibold mb-1.5 text-ctp-text flex items-center gap-2">
                           <Gamepad2 className="h-3.5 w-3.5 text-ctp-mauve" />
-                          Platform
+                          {t("leaderboards.platform")}
                         </label>
                         <Select value={wrProgressionPlatform} onValueChange={setWrProgressionPlatform}>
                           <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-9 text-sm rounded-none">
-                            <SelectValue placeholder="Select platform" />
+                            <SelectValue placeholder={t("submit.selectPlatformPlaceholder")} />
                           </SelectTrigger>
                           <SelectContent>
                             {platforms.map((platform) => (
@@ -980,11 +982,11 @@ const Stats = () => {
                           ) : (
                             <Users className="h-3.5 w-3.5 text-ctp-mauve" />
                           )}
-                          Run Type
+                          {t("leaderboards.runType")}
                         </label>
                         <Select value={wrProgressionRunType} onValueChange={setWrProgressionRunType}>
                           <SelectTrigger className="bg-ctp-base border-ctp-surface1 h-9 text-sm rounded-none">
-                            <SelectValue placeholder="Select run type" />
+                            <SelectValue placeholder={t("submit.selectRunTypePlaceholder")} />
                           </SelectTrigger>
                           <SelectContent>
                             {runTypes.map((type) => (
@@ -1008,7 +1010,7 @@ const Stats = () => {
                   {/* WR Statistics */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                       <div className="p-4 border rounded-none bg-muted/50">
-                        <div className="text-sm text-muted-foreground mb-1">First WR</div>
+                        <div className="text-sm text-muted-foreground mb-1">{t("stats.firstWR") || "First WR"}</div>
                         <div className="text-lg font-semibold">
                           {new Date(filteredWRTimeProgression[0].date).toLocaleDateString('en-US', { 
                             year: 'numeric', 
@@ -1021,7 +1023,7 @@ const Stats = () => {
                         </div>
                       </div>
                       <div className="p-4 border rounded-none bg-muted/50">
-                        <div className="text-sm text-muted-foreground mb-1">Current WR</div>
+                        <div className="text-sm text-muted-foreground mb-1">{t("stats.currentWR")}</div>
                         <div className="text-lg font-semibold">
                           {new Date(filteredWRTimeProgression[filteredWRTimeProgression.length - 1].date).toLocaleDateString('en-US', { 
                             year: 'numeric', 
@@ -1034,7 +1036,7 @@ const Stats = () => {
                         </div>
                       </div>
                       <div className="p-4 border rounded-none bg-muted/50">
-                        <div className="text-sm text-muted-foreground mb-1">Improvement</div>
+                        <div className="text-sm text-muted-foreground mb-1">{t("stats.improvement") || "Improvement"}</div>
                         <div className="text-lg font-semibold">
                           {(() => {
                             const firstTime = filteredWRTimeProgression[0].time;
@@ -1044,7 +1046,7 @@ const Stats = () => {
                           })()}
                         </div>
                         <div className="text-sm text-muted-foreground mt-1">
-                          {filteredWRTimeProgression.length} WR{filteredWRTimeProgression.length !== 1 ? 's' : ''} total
+                          {filteredWRTimeProgression.length} {t("stats.wrsTotal") || `${filteredWRTimeProgression.length !== 1 ? 'WRs' : 'WR'} total`}
                         </div>
                       </div>
                     </div>
@@ -1075,8 +1077,8 @@ const Stats = () => {
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>Runs by Category</CardTitle>
-                <CardDescription>Complete breakdown</CardDescription>
+                <CardTitle>{t("stats.runsByCategory") || "Runs by Category"}</CardTitle>
+                <CardDescription>{t("stats.completeBreakdown")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2 max-h-[600px] overflow-y-auto">
@@ -1105,8 +1107,8 @@ const Stats = () => {
             <Card>
             <FadeIn delay={0.3}>
               <CardHeader>
-                <CardTitle>Runs by Platform</CardTitle>
-                <CardDescription>Complete breakdown</CardDescription>
+                <CardTitle>{t("stats.runsByPlatform") || "Runs by Platform"}</CardTitle>
+                <CardDescription>{t("stats.completeBreakdown") || "Complete breakdown"}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2 max-h-[600px] overflow-y-auto">
@@ -1139,21 +1141,21 @@ const Stats = () => {
           <Card>
             <FadeIn delay={0.2}>
             <CardHeader>
-              <CardTitle>Recent World Records</CardTitle>
-              <CardDescription>Most recently achieved world records</CardDescription>
+              <CardTitle>{t("stats.recentWRs") || "Recent World Records"}</CardTitle>
+              <CardDescription>{t("stats.mostRecentWRs") || "Most recently achieved world records"}</CardDescription>
             </CardHeader>
             <CardContent>
               {stats.recentWorldRecords.length > 0 ? (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Player</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Platform</TableHead>
-                      <TableHead>Level</TableHead>
-                      <TableHead>Time</TableHead>
-                      <TableHead>Type</TableHead>
+                      <TableHead>{t("leaderboards.date")}</TableHead>
+                      <TableHead>{t("leaderboards.player")}</TableHead>
+                      <TableHead>{t("leaderboards.category")}</TableHead>
+                      <TableHead>{t("leaderboards.platform")}</TableHead>
+                      <TableHead>{t("leaderboards.level")}</TableHead>
+                      <TableHead>{t("leaderboards.time")}</TableHead>
+                      <TableHead>{t("leaderboards.runType")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1187,7 +1189,7 @@ const Stats = () => {
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <Badge variant={wr.runType === 'co-op' ? 'default' : 'secondary'}>
-                                {wr.runType === 'co-op' ? 'Co-op' : 'Solo'}
+                                {wr.runType === 'co-op' ? t("stats.coop") : t("stats.solo")}
                               </Badge>
                               <Badge variant="outline">{leaderboardTypeName}</Badge>
                             </div>
@@ -1199,7 +1201,7 @@ const Stats = () => {
                 </Table>
               ) : (
                 <p className="text-center text-muted-foreground py-8">
-                  No recent world records found
+                  {t("stats.noRecentWRs") || "No recent world records found"}
                 </p>
               )}
             </CardContent>
@@ -1213,10 +1215,10 @@ const Stats = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CalendarDays className="h-5 w-5" />
-                Longest-Held World Records
+                {t("stats.longestHeldWRs") || "Longest-Held World Records"}
               </CardTitle>
               <CardDescription>
-                Runs that held the world record for the longest duration
+                {t("stats.runsHeldWRLongest") || "Runs that held the world record for the longest duration"}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -1227,7 +1229,7 @@ const Stats = () => {
                   onCheckedChange={setFilterCurrentWROnly}
                 />
                 <Label htmlFor="filter-current-wr" className="cursor-pointer">
-                  Show only current world records
+                  {t("stats.showOnlyCurrentWR") || "Show only current world records"}
                 </Label>
               </div>
               {stats.longestHeldWRs.length > 0 ? (() => {
@@ -1244,8 +1246,8 @@ const Stats = () => {
                   return (
                     <p className="text-center text-muted-foreground py-8">
                       {filterCurrentWROnly 
-                        ? "No current world records found"
-                        : "No world record data available"}
+                        ? t("stats.noCurrentWRs") || "No current world records found"
+                        : t("stats.noWRDataAvailable") || "No world record data available"}
                     </p>
                   );
                 }
@@ -1254,14 +1256,14 @@ const Stats = () => {
                   <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Duration</TableHead>
-                      <TableHead>Player</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Platform</TableHead>
-                      <TableHead>Level</TableHead>
-                      <TableHead>Time</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Period</TableHead>
+                      <TableHead>{t("stats.duration") || "Duration"}</TableHead>
+                      <TableHead>{t("leaderboards.player")}</TableHead>
+                      <TableHead>{t("leaderboards.category")}</TableHead>
+                      <TableHead>{t("leaderboards.platform")}</TableHead>
+                      <TableHead>{t("leaderboards.level")}</TableHead>
+                      <TableHead>{t("leaderboards.time")}</TableHead>
+                      <TableHead>{t("leaderboards.runType")}</TableHead>
+                      <TableHead>{t("stats.period") || "Period"}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1303,7 +1305,7 @@ const Stats = () => {
                             <div className="flex items-center gap-2">
                               <span className="font-semibold">{durationText}</span>
                               <Badge variant="outline" className="text-xs">
-                                {longestWR.days} days
+                                {longestWR.days} {t("stats.days") || "days"}
                               </Badge>
                             </div>
                           </TableCell>
@@ -1333,7 +1335,7 @@ const Stats = () => {
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <Badge variant={longestWR.run.runType === 'co-op' ? 'default' : 'secondary'}>
-                                {longestWR.run.runType === 'co-op' ? 'Co-op' : 'Solo'}
+                                {longestWR.run.runType === 'co-op' ? t("stats.coop") : t("stats.solo")}
                               </Badge>
                               <Badge variant="outline">{leaderboardTypeName}</Badge>
                             </div>
@@ -1343,7 +1345,7 @@ const Stats = () => {
                               <div>{startDate.toLocaleDateString()}</div>
                               <div className="text-muted-foreground">
                                 {isCurrentWR ? (
-                                  <span className="text-green-500 font-semibold">Current WR</span>
+                                  <span className="text-green-500 font-semibold">{t("stats.currentWR") || "Current WR"}</span>
                                 ) : (
                                   `→ ${endDate.toLocaleDateString()}`
                                 )}
@@ -1358,7 +1360,7 @@ const Stats = () => {
                 );
               })() : (
                 <p className="text-center text-muted-foreground py-8">
-                  No world record data available
+                  {t("stats.noWRDataAvailable") || "No world record data available"}
                 </p>
               )}
             </CardContent>

@@ -8,8 +8,11 @@ import { getDownloadEntries, getDownloadCategories } from "@/lib/db";
 import { DownloadEntry } from "@/types/database";
 import { FadeIn } from "@/components/ui/fade-in";
 import { AnimatedCard } from "@/components/ui/animated-card";
+import { useTranslation } from "react-i18next";
+import { getCategoryTranslation } from "@/lib/i18n/entity-translations";
 
 const Downloads = () => {
+  const { t } = useTranslation();
   const [downloadEntries, setDownloadEntries] = useState<DownloadEntry[]>([]);
   const [downloadCategories, setDownloadCategories] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +54,7 @@ const Downloads = () => {
       .filter(cat => grouped[cat.id] && grouped[cat.id].length > 0)
       .map(cat => ({
         id: cat.id,
-        name: cat.name,
+        name: getCategoryTranslation(cat.id, cat.name),
         downloads: grouped[cat.id]
       }));
 
@@ -82,7 +85,7 @@ const Downloads = () => {
           >
             <CardContent className="p-12 text-center">
               <Download className="h-16 w-16 text-ctp-subtext1 opacity-50 mx-auto mb-4" />
-              <p className="text-ctp-subtext1 text-lg">No download entries available yet.</p>
+              <p className="text-ctp-subtext1 text-lg">{t("downloads.noDownloadEntries")}</p>
             </CardContent>
           </AnimatedCard>
         ) : (
@@ -130,7 +133,7 @@ const Downloads = () => {
                               rel="noopener noreferrer" 
                               className="flex items-center justify-center gap-2"
                             >
-                              <span>{entry.fileUrl ? "Download" : "View"}</span>
+                              <span>{entry.fileUrl ? t("downloads.download") : t("downloads.view")}</span>
                               {entry.fileUrl ? (
                                 <Download className="h-4 w-4" />
                               ) : (

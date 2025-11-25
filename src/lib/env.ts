@@ -19,6 +19,9 @@ interface EnvConfig {
   // Admin
   VITE_ADMIN_UID?: string;
   
+  // Google Translate API (optional - for auto-translation)
+  VITE_GOOGLE_TRANSLATE_API_KEY?: string;
+  
   // Server
   PORT?: string;
 }
@@ -63,6 +66,7 @@ function validateEnv(): EnvConfig {
     UPLOADTHING_SECRET: import.meta.env.UPLOADTHING_SECRET,
     UPLOADTHING_APP_ID: import.meta.env.UPLOADTHING_APP_ID,
     VITE_ADMIN_UID: import.meta.env.VITE_ADMIN_UID,
+    VITE_GOOGLE_TRANSLATE_API_KEY: import.meta.env.VITE_GOOGLE_TRANSLATE_API_KEY,
     PORT: import.meta.env.PORT,
   };
 }

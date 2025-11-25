@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Bell, Check, ExternalLink, Trash2, X } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -37,6 +38,7 @@ import type { Unsubscribe } from "firebase/firestore";
 
 export function Notifications() {
   const { currentUser } = useAuth();
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [pendingRuns, setPendingRuns] = useState<LeaderboardEntry[]>([]);
@@ -140,7 +142,7 @@ export function Notifications() {
           variant="outline"
           size="icon"
           className="relative text-ctp-text hover:text-ctp-text border-ctp-surface1 hover:bg-ctp-surface1"
-          aria-label="Notifications"
+          aria-label={t("notifications.title")}
         >
           <Bell className="h-5 w-5" />
           {totalCount > 0 && (
@@ -156,7 +158,7 @@ export function Notifications() {
       <PopoverContent className="w-80 sm:w-96 p-0 bg-[#1e1e2e] border-ctp-surface1 text-ctp-text" align="end">
         <Tabs defaultValue={currentUser?.isAdmin && pendingRuns.length > 0 ? "pending" : "notifications"} className="w-full" onValueChange={setActiveTab}>
           <div className="flex items-center justify-between px-4 py-2 border-b border-ctp-surface1">
-            <h4 className="font-semibold">Notifications</h4>
+            <h4 className="font-semibold">{t("notifications.title")}</h4>
             {activeTab === "notifications" && notifications.length > 0 && (
               <Button
                 variant="ghost"
@@ -164,7 +166,7 @@ export function Notifications() {
                 className="text-xs h-8 px-2 text-ctp-subtext1 hover:text-ctp-text"
                 onClick={handleMarkAllAsRead}
               >
-                Mark all read
+                {t("notifications.markAllRead")}
               </Button>
             )}
           </div>
@@ -175,14 +177,14 @@ export function Notifications() {
                 value="notifications"
                 className="flex-1 px-4 py-2 data-[state=active]:text-ctp-blue"
               >
-                Alerts ({notifications.length})
+                {t("notifications.alerts")} ({notifications.length})
               </AnimatedTabsTrigger>
               {currentUser?.isAdmin && (
                 <AnimatedTabsTrigger
                   value="pending"
                   className="flex-1 px-4 py-2 data-[state=active]:text-ctp-blue"
                 >
-                  Pending ({pendingRuns.length})
+                  {t("notifications.pending")} ({pendingRuns.length})
                 </AnimatedTabsTrigger>
               )}
               {!currentUser?.isAdmin && unclaimedRunsCount > 0 && (
@@ -190,7 +192,7 @@ export function Notifications() {
                   value="unclaimed"
                   className="flex-1 px-4 py-2 data-[state=active]:text-ctp-blue"
                 >
-                  Unclaimed ({unclaimedRunsCount})
+                  {t("notifications.unclaimed")} ({unclaimedRunsCount})
                 </AnimatedTabsTrigger>
               )}
             </AnimatedTabsList>
@@ -201,7 +203,7 @@ export function Notifications() {
               {notifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full p-8 text-ctp-subtext1">
                   <Bell className="h-8 w-8 mb-2 opacity-50" />
-                  <p>No new notifications</p>
+                  <p>{t("notifications.noNewNotifications")}</p>
                 </div>
               ) : (
                 <div className="flex flex-col">
@@ -226,7 +228,7 @@ export function Notifications() {
                                 className="text-xs text-ctp-blue hover:underline flex items-center gap-1 mt-2"
                                 onClick={() => setOpen(false)}
                             >
-                                View Details <ExternalLink className="h-3 w-3" />
+                                {t("notifications.viewDetails")} <ExternalLink className="h-3 w-3" />
                             </Link>
                         )}
                       </div>
@@ -236,7 +238,7 @@ export function Notifications() {
                             size="icon"
                             className="h-6 w-6 text-ctp-subtext1 hover:text-ctp-green"
                             onClick={() => handleMarkAsRead(notification.id)}
-                            title="Mark as read"
+                            title={t("notifications.markAsRead")}
                         >
                             <Check className="h-4 w-4" />
                         </Button>
@@ -263,7 +265,7 @@ export function Notifications() {
                 {pendingRuns.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full p-8 text-ctp-subtext1">
                     <Check className="h-8 w-8 mb-2 opacity-50" />
-                    <p>No pending runs</p>
+                    <p>{t("notifications.noPendingRuns")}</p>
                   </div>
                 ) : (
                   <div className="flex flex-col">
@@ -273,16 +275,16 @@ export function Notifications() {
                         className="flex flex-col p-4 border-b border-ctp-surface1 last:border-0 hover:bg-ctp-surface0/50 transition-colors"
                       >
                         <div className="flex justify-between items-start mb-1">
-                          <span className="font-medium text-sm">{run.game || "Game"}</span>
+                          <span className="font-medium text-sm">{run.game || t("notifications.game")}</span>
                           <Badge variant="outline" className="text-xs border-ctp-yellow text-ctp-yellow">
-                            Pending
+                            {t("notifications.pending")}
                           </Badge>
                         </div>
                         <p className="text-sm text-ctp-subtext1 mb-1">
                           {run.category} - {run.time}
                         </p>
                         <p className="text-xs text-ctp-subtext0">
-                          by <span className="text-ctp-blue">{run.playerName}</span> • {run.date}
+                          {t("notifications.by")} <span className="text-ctp-blue">{run.playerName}</span> • {run.date}
                         </p>
                         <div className="flex gap-2 mt-3">
                            <Button 
@@ -292,7 +294,7 @@ export function Notifications() {
                                 asChild
                                 onClick={() => setOpen(false)}
                            >
-                               <Link to="/admin" params={undefined}>Review in Admin</Link>
+                               <Link to="/admin" params={undefined}>{t("notifications.reviewInAdmin")}</Link>
                            </Button>
                         </div>
                       </div>
@@ -306,14 +308,14 @@ export function Notifications() {
           {unclaimedRunsCount > 0 && (
              <AnimatedTabsContent value="unclaimed" className="m-0">
                 <div className="p-4 flex flex-col items-center text-center">
-                    <p className="mb-4 text-sm">You have {unclaimedRunsCount} unclaimed run(s) imported from Speedrun.com.</p>
+                    <p className="mb-4 text-sm">{t("notifications.youHaveUnclaimedRuns", { count: unclaimedRunsCount })}</p>
                     <Button 
                         variant="default" 
                         className="w-full bg-ctp-green text-ctp-base hover:bg-ctp-green/80"
                         asChild
                         onClick={() => setOpen(false)}
                     >
-                        <Link to="/settings" params={undefined}>Go to Settings to Claim</Link>
+                        <Link to="/settings" params={undefined}>{t("notifications.goToSettingsToClaim")}</Link>
                     </Button>
                 </div>
              </AnimatedTabsContent>

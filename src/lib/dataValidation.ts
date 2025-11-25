@@ -1,4 +1,5 @@
 import { LeaderboardEntry } from "@/types/database";
+import { getCategoryTranslation, getPlatformTranslation, getLevelTranslation } from "@/lib/i18n/entity-translations";
 
 /**
  * Normalize category ID to string
@@ -152,6 +153,7 @@ export function normalizeLeaderboardEntry(entry: Partial<LeaderboardEntry>): Par
 /**
  * Get category name from ID, with fallback
  * For imported runs, uses srcCategoryName if ID lookup fails
+ * Uses translation system if available
  */
 export function getCategoryName(
   categoryId: string | undefined | null,
@@ -165,7 +167,10 @@ export function getCategoryName(
     return "Unknown Category";
   }
   const category = categories.find(c => c.id === normalizedId);
-  if (category) return category.name;
+  if (category) {
+    // Use translation helper to get translated name
+    return getCategoryTranslation(category.id, category.name);
+  }
   // If ID lookup failed but we have SRC name, use it
   if (srcCategoryName) return String(srcCategoryName);
   return normalizedId;
@@ -174,6 +179,7 @@ export function getCategoryName(
 /**
  * Get platform name from ID, with fallback
  * For imported runs, uses srcPlatformName if ID lookup fails
+ * Uses translation system if available
  */
 export function getPlatformName(
   platformId: string | undefined | null,
@@ -187,7 +193,10 @@ export function getPlatformName(
     return "Unknown Platform";
   }
   const platform = platforms.find(p => p.id === normalizedId);
-  if (platform) return platform.name;
+  if (platform) {
+    // Use translation helper to get translated name
+    return getPlatformTranslation(platform.id, platform.name);
+  }
   // If ID lookup failed but we have SRC name, use it
   if (srcPlatformName) return String(srcPlatformName);
   return normalizedId;
@@ -196,6 +205,7 @@ export function getPlatformName(
 /**
  * Get level name from ID, with fallback
  * For imported runs, uses srcLevelName if ID lookup fails
+ * Uses translation system if available
  */
 export function getLevelName(
   levelId: string | undefined | null,
@@ -209,7 +219,10 @@ export function getLevelName(
     return "Unknown Level";
   }
   const level = levels.find(l => l.id === normalizedId);
-  if (level) return level.name;
+  if (level) {
+    // Use translation helper to get translated name
+    return getLevelTranslation(level.id, level.name);
+  }
   // If ID lookup failed but we have SRC name, use it
   if (srcLevelName) return String(srcLevelName);
   return normalizedId || "Unknown Level";

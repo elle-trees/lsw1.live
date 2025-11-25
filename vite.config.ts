@@ -32,6 +32,9 @@ export default defineConfig(({ mode }) => {
         'lucide-react',
         'framer-motion',
         'date-fns',
+        'i18next',
+        'react-i18next',
+        'i18next-browser-languagedetector',
       ],
       // Exclude dependencies from pre-bundling (let them be handled by the bundler)
       exclude: ['recharts'], // Large library, better to code-split

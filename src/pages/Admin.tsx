@@ -28,6 +28,12 @@ import { useNavigate } from "@tanstack/react-router";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { formatTime } from "@/lib/utils";
 import { getCategoryName, getPlatformName, getLevelName, normalizeCategoryId, normalizePlatformId, normalizeLevelId } from "@/lib/dataValidation";
+import { TranslationManager } from "@/components/TranslationManager";
+import { getCategoryTranslation, getLevelTranslation, getPlatformTranslation, getSubcategoryTranslation } from "@/lib/i18n/entity-translations";
+import { setAdminTranslation, getAllAdminTranslations } from "@/lib/data/firestore/translations";
+import { useTranslation } from "react-i18next";
+import i18n from "@/lib/i18n";
+import { Languages, Wand2 } from "lucide-react";
 
 const Admin = () => {
   const { currentUser, loading: authLoading } = useAuth();
@@ -194,6 +200,19 @@ const Admin = () => {
   const [addingHeaderLink, setAddingHeaderLink] = useState(false);
   const [updatingHeaderLink, setUpdatingHeaderLink] = useState(false);
   const [reorderingHeaderLink, setReorderingHeaderLink] = useState<string | null>(null);
+
+  // Translation management state
+  const { t } = useTranslation();
+  const [editingEntityTranslation, setEditingEntityTranslation] = useState<{
+    type: 'category' | 'subcategory' | 'level' | 'platform';
+    id: string;
+    originalName: string;
+    language: string;
+  } | null>(null);
+  const [editingTranslationValue, setEditingTranslationValue] = useState("");
+  const [savingTranslation, setSavingTranslation] = useState(false);
+  const [adminTranslations, setAdminTranslations] = useState<Record<string, Record<string, string>>>({});
+  const [selectedTranslationLanguage, setSelectedTranslationLanguage] = useState<string>(i18n.language || 'en');
 
   // This useEffect will be moved after function definitions to avoid initialization errors
 
@@ -979,6 +998,19 @@ const Admin = () => {
       });
     }
   }, [toast]);
+
+  // Load admin translations
+  useEffect(() => {
+    const loadTranslations = async () => {
+      try {
+        const translations = await getAllAdminTranslations();
+        setAdminTranslations(translations);
+      } catch (error) {
+        console.error("Error loading admin translations:", error);
+      }
+    };
+    loadTranslations();
+  }, []);
 
   // Initialize data on mount - moved here after function definitions to avoid initialization errors
   useEffect(() => {
@@ -2348,6 +2380,86 @@ const Admin = () => {
     setEditingCategoryName("");
     setEditingCategorySrcId("");
   };
+
+  // Translation management helpers
+  const handleStartEditTranslation = (
+    type: 'category' | 'subcategory' | 'level' | 'platform',
+    id: string,
+    originalName: string
+  ) => {
+    const translationKey = `entities.${type}.${id}`;
+    const currentTranslation = adminTranslations[selectedTranslationLanguage]?.[translationKey] || 
+                               i18n.t(translationKey, { lng: selectedTranslationLanguage });
+    const value = currentTranslation && currentTranslation !== translationKey ? currentTranslation : '';
+    
+    setEditingEntityTranslation({ type, id, originalName, language: selectedTranslationLanguage });
+    setEditingTranslationValue(value);
+  };
+
+  const handleSaveTranslation = async () => {
+    if (!editingEntityTranslation || !editingTranslationValue.trim()) {
+      toast({
+        title: "Error",
+        description: "Translation value cannot be empty.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSavingTranslation(true);
+    try {
+      // Handle download categories with composite ID
+      const translationKey = editingEntityTranslation.id.startsWith('downloadCategory.') 
+        ? `entities.${editingEntityTranslation.id}`
+        : `entities.${editingEntityTranslation.type}.${editingEntityTranslation.id}`;
+      await setAdminTranslation(
+        translationKey,
+        editingEntityTranslation.language,
+        editingTranslationValue.trim(),
+        currentUser?.uid
+      );
+
+      // Update local state
+      setAdminTranslations(prev => ({
+        ...prev,
+        [editingEntityTranslation.language]: {
+          ...prev[editingEntityTranslation.language],
+          [translationKey]: editingTranslationValue.trim(),
+        },
+      }));
+
+      // Update i18n resources immediately
+      i18n.addResourceBundle(
+        editingEntityTranslation.language,
+        'translation',
+        { [translationKey]: editingTranslationValue.trim() },
+        true,
+        true
+      );
+
+      toast({
+        title: "Translation Saved",
+        description: `Translation saved for ${editingEntityTranslation.language}.`,
+      });
+
+      setEditingEntityTranslation(null);
+      setEditingTranslationValue("");
+    } catch (error) {
+      console.error("Error saving translation:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save translation.",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingTranslation(false);
+    }
+  };
+
+  const handleCancelEditTranslation = () => {
+    setEditingEntityTranslation(null);
+    setEditingTranslationValue("");
+  };
   
   const handleSaveEditCategory = async () => {
     if (!editingCategory || !editingCategoryName.trim()) {
@@ -3688,6 +3800,12 @@ const Admin = () => {
               className="transition-all duration-300 font-medium text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap data-[state=active]:text-[#f9e2af]"
             >
               Tools
+            </AnimatedTabsTrigger>
+            <AnimatedTabsTrigger 
+              value="translations" 
+              className="transition-all duration-300 font-medium text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 whitespace-nowrap data-[state=active]:text-[#f9e2af]"
+            >
+              Translations
             </AnimatedTabsTrigger>
           </AnimatedTabsList>
 
@@ -5419,6 +5537,11 @@ const Admin = () => {
 
           </AnimatedTabsContent>
 
+          {/* Translations Section */}
+          <AnimatedTabsContent value="translations" className="space-y-4 animate-fade-in">
+            <TranslationManager />
+          </AnimatedTabsContent>
+
         {/* Confirm Clear Unverified Runs Dialog */}
         <Dialog open={showConfirmClearUnverifiedDialog} onOpenChange={setShowConfirmClearUnverifiedDialog}>
           <DialogContent className="bg-[hsl(240,21%,16%)] border-[hsl(235,13%,30%)]">
@@ -5733,6 +5856,25 @@ const Admin = () => {
                     </AnimatedTabsList>
 
                     <AnimatedTabsContent value="categories" className="mt-0">
+                <div className="mb-4 flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Languages className="h-4 w-4 text-[hsl(222,15%,60%)]" />
+                    <Label htmlFor="translation-language" className="text-sm">Translation Language:</Label>
+                    <Select
+                      value={selectedTranslationLanguage}
+                      onValueChange={setSelectedTranslationLanguage}
+                    >
+                      <SelectTrigger id="translation-language" className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] h-8 text-sm w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="en">English</SelectItem>
+                        <SelectItem value="es">Español</SelectItem>
+                        <SelectItem value="pt-BR">Português</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div>
                     <h3 className="text-base font-semibold mb-3">Add New Category</h3>
@@ -5775,7 +5917,10 @@ const Admin = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {firestoreCategories.map((category, index) => (
+                    {firestoreCategories.map((category, index) => {
+                      const translatedName = getCategoryTranslation(category.id, category.name);
+                      const hasTranslation = translatedName !== category.name;
+                      return (
                               <TableRow key={category.id} className="border-b border-[hsl(235,13%,30%)] hover:bg-[hsl(235,19%,13%)] transition-all duration-200 hover:shadow-sm">
                                 <TableCell className="py-2 px-3 font-medium text-sm">
                           {editingCategory?.id === category.id ? (
@@ -5786,7 +5931,12 @@ const Admin = () => {
                               autoFocus
                             />
                           ) : (
-                            category.name
+                            <div className="flex flex-col gap-1">
+                              <span>{translatedName}</span>
+                              {hasTranslation && (
+                                <span className="text-xs text-[hsl(222,15%,60%)]">Original: {category.name}</span>
+                              )}
+                            </div>
                           )}
                         </TableCell>
                                 <TableCell className="py-2 px-3 text-sm">
@@ -5858,6 +6008,15 @@ const Admin = () => {
                               <Button
                                 variant="ghost"
                                 size="sm"
+                                onClick={() => handleStartEditTranslation('category', category.id, category.name)}
+                                  className="text-[#94e2d5] hover:bg-teal-900/20 h-7 w-7 p-0 transition-all duration-200 hover:scale-110"
+                                title="Manage translations"
+                              >
+                                  <Languages className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={() => handleDeleteCategory(category.id)}
                                   className="text-red-500 hover:bg-red-900/20 h-7 w-7 p-0 transition-all duration-200 hover:scale-110"
                               >
@@ -5867,7 +6026,8 @@ const Admin = () => {
                           )}
                         </TableCell>
                       </TableRow>
-                    ))}
+                    );
+                    })}
                   </TableBody>
                 </Table>
               </div>
@@ -6173,151 +6333,263 @@ const Admin = () => {
                   </Tabs>
                 ) : (
                   // For non-regular categories, just show the regular category management
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div>
-                      <h3 className="text-base font-semibold mb-3">Add New Category</h3>
-                      <form onSubmit={handleAddCategory} className="space-y-3">
-                        <div>
-                          <Label htmlFor="categoryName" className="text-sm">Category Name</Label>
-                          <Input
-                            id="categoryName"
-                            type="text"
-                            value={newCategoryName}
-                            onChange={(e) => setNewCategoryName(e.target.value)}
-                            placeholder="e.g., 100% Glitchless"
-                            required
-                            className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] h-9 text-sm"
-                          />
-                        </div>
-                        <Button 
-                          type="submit" 
-                          disabled={addingCategory}
-                          size="sm"
-                          className="bg-gradient-to-r from-[#cba6f7] to-[#b4a0e2] hover:from-[#b4a0e2] hover:to-[#cba6f7] text-[hsl(240,21%,15%)] font-bold flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                  <>
+                    <div className="mb-4 flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <Languages className="h-4 w-4 text-[hsl(222,15%,60%)]" />
+                        <Label htmlFor="translation-language-2" className="text-sm">Translation Language:</Label>
+                        <Select
+                          value={selectedTranslationLanguage}
+                          onValueChange={setSelectedTranslationLanguage}
                         >
-                          <PlusCircle className="h-3 w-3" />
-                          {addingCategory ? "Adding..." : "Add Category"}
-                        </Button>
-                      </form>
+                          <SelectTrigger id="translation-language-2" className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] h-8 text-sm w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="en">English</SelectItem>
+                            <SelectItem value="es">Español</SelectItem>
+                            <SelectItem value="pt-BR">Português</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-base font-semibold mb-3">Existing Categories</h3>
-                      {firestoreCategories.length === 0 ? (
-                        <p className="text-[hsl(222,15%,60%)] text-center py-4 text-sm">No categories found. Add your first category!</p>
-                      ) : (
-                        <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow className="border-b border-[hsl(235,13%,30%)] hover:bg-transparent">
-                                <TableHead className="py-2 px-3 text-left text-xs">Name</TableHead>
-                                <TableHead className="py-2 px-3 text-left text-xs">SRC Category ID</TableHead>
-                                <TableHead className="py-2 px-3 text-center text-xs">Actions</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {firestoreCategories.map((category, index) => (
-                                <TableRow key={category.id} className="border-b border-[hsl(235,13%,30%)] hover:bg-[hsl(235,19%,13%)] transition-all duration-200 hover:shadow-sm">
-                                  <TableCell className="py-2 px-3 font-medium text-sm">
-                                    {editingCategory?.id === category.id ? (
-                                      <Input
-                                        value={editingCategoryName}
-                                        onChange={(e) => setEditingCategoryName(e.target.value)}
-                                        className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] h-8 text-sm"
-                                        autoFocus
-                                      />
-                                    ) : (
-                                      category.name
-                                    )}
-                                  </TableCell>
-                                  <TableCell className="py-2 px-3 text-sm">
-                                    {editingCategory?.id === category.id ? (
-                                      <Input
-                                        value={editingCategorySrcId}
-                                        onChange={(e) => setEditingCategorySrcId(e.target.value)}
-                                        placeholder="e.g., 9kj3k0x8"
-                                        className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] h-8 text-sm"
-                                      />
-                                    ) : (
-                                      <span className="text-[hsl(222,15%,60%)]">
-                                        {(category as Category).srcCategoryId || "—"}
-                                      </span>
-                                    )}
-                                  </TableCell>
-                                  <TableCell className="py-2 px-3 text-center space-x-1">
-                                    {editingCategory?.id === category.id ? (
-                                      <>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={handleSaveEditCategory}
-                                          disabled={updatingCategory}
-                                          className="text-green-500 hover:bg-green-900/20"
-                                        >
-                                          Save
-                                        </Button>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={handleCancelEditCategory}
-                                          disabled={updatingCategory}
-                                          className="text-gray-500 hover:bg-gray-900/20"
-                                        >
-                                          Cancel
-                                        </Button>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => handleMoveCategoryUp(category.id)}
-                                          disabled={reorderingCategory === category.id || index === 0}
-                                          className="text-purple-500 hover:bg-purple-900/20 disabled:opacity-50 h-7 w-7 p-0 transition-all duration-200 hover:scale-110"
-                                          title="Move up"
-                                        >
-                                          <ArrowUp className="h-3 w-3" />
-                                        </Button>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => handleMoveCategoryDown(category.id)}
-                                          disabled={reorderingCategory === category.id || index === firestoreCategories.length - 1}
-                                          className="text-purple-500 hover:bg-purple-900/20 disabled:opacity-50 h-7 w-7 p-0 transition-all duration-200 hover:scale-110"
-                                          title="Move down"
-                                        >
-                                          <ArrowDown className="h-3 w-3" />
-                                        </Button>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => handleStartEditCategory(category)}
-                                          className="text-blue-500 hover:bg-blue-900/20 h-7 w-7 p-0 transition-all duration-200 hover:scale-110"
-                                        >
-                                          <Edit2 className="h-3 w-3" />
-                                        </Button>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => handleDeleteCategory(category.id)}
-                                          className="text-red-500 hover:bg-red-900/20 h-7 w-7 p-0 transition-all duration-200 hover:scale-110"
-                                        >
-                                          <Trash2 className="h-3 w-3" />
-                                        </Button>
-                                      </>
-                                    )}
-                                  </TableCell>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <div>
+                        <h3 className="text-base font-semibold mb-3">Add New Category</h3>
+                        <form onSubmit={handleAddCategory} className="space-y-3">
+                          <div>
+                            <Label htmlFor="categoryName" className="text-sm">Category Name</Label>
+                            <Input
+                              id="categoryName"
+                              type="text"
+                              value={newCategoryName}
+                              onChange={(e) => setNewCategoryName(e.target.value)}
+                              placeholder="e.g., 100% Glitchless"
+                              required
+                              className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] h-9 text-sm"
+                            />
+                          </div>
+                          <Button 
+                            type="submit" 
+                            disabled={addingCategory}
+                            size="sm"
+                            className="bg-gradient-to-r from-[#cba6f7] to-[#b4a0e2] hover:from-[#b4a0e2] hover:to-[#cba6f7] text-[hsl(240,21%,15%)] font-bold flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                          >
+                            <PlusCircle className="h-3 w-3" />
+                            {addingCategory ? "Adding..." : "Add Category"}
+                          </Button>
+                        </form>
+                      </div>
+                      <div>
+                        <h3 className="text-base font-semibold mb-3">Existing Categories</h3>
+                        {firestoreCategories.length === 0 ? (
+                          <p className="text-[hsl(222,15%,60%)] text-center py-4 text-sm">No categories found. Add your first category!</p>
+                        ) : (
+                          <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
+                            <Table>
+                              <TableHeader>
+                                <TableRow className="border-b border-[hsl(235,13%,30%)] hover:bg-transparent">
+                                  <TableHead className="py-2 px-3 text-left text-xs">Name</TableHead>
+                                  <TableHead className="py-2 px-3 text-left text-xs">SRC Category ID</TableHead>
+                                  <TableHead className="py-2 px-3 text-center text-xs">Actions</TableHead>
                                 </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      )}
+                              </TableHeader>
+                              <TableBody>
+                                {firestoreCategories.map((category, index) => {
+                                  const translatedName = getCategoryTranslation(category.id, category.name);
+                                  const hasTranslation = translatedName !== category.name;
+                                  return (
+                                    <TableRow key={category.id} className="border-b border-[hsl(235,13%,30%)] hover:bg-[hsl(235,19%,13%)] transition-all duration-200 hover:shadow-sm">
+                                      <TableCell className="py-2 px-3 font-medium text-sm">
+                                        {editingCategory?.id === category.id ? (
+                                          <Input
+                                            value={editingCategoryName}
+                                            onChange={(e) => setEditingCategoryName(e.target.value)}
+                                            className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] h-8 text-sm"
+                                            autoFocus
+                                          />
+                                        ) : (
+                                          <div className="flex flex-col gap-1">
+                                            <span>{translatedName}</span>
+                                            {hasTranslation && (
+                                              <span className="text-xs text-[hsl(222,15%,60%)]">Original: {category.name}</span>
+                                            )}
+                                          </div>
+                                        )}
+                                      </TableCell>
+                                      <TableCell className="py-2 px-3 text-sm">
+                                        {editingCategory?.id === category.id ? (
+                                          <Input
+                                            value={editingCategorySrcId}
+                                            onChange={(e) => setEditingCategorySrcId(e.target.value)}
+                                            placeholder="e.g., 9kj3k0x8"
+                                            className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] h-8 text-sm"
+                                          />
+                                        ) : (
+                                          <span className="text-[hsl(222,15%,60%)]">
+                                            {(category as Category).srcCategoryId || "—"}
+                                          </span>
+                                        )}
+                                      </TableCell>
+                                      <TableCell className="py-2 px-3 text-center space-x-1">
+                                        {editingCategory?.id === category.id ? (
+                                          <>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={handleSaveEditCategory}
+                                              disabled={updatingCategory}
+                                              className="text-green-500 hover:bg-green-900/20"
+                                            >
+                                              Save
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={handleCancelEditCategory}
+                                              disabled={updatingCategory}
+                                              className="text-gray-500 hover:bg-gray-900/20"
+                                            >
+                                              Cancel
+                                            </Button>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => handleMoveCategoryUp(category.id)}
+                                              disabled={reorderingCategory === category.id || index === 0}
+                                              className="text-purple-500 hover:bg-purple-900/20 disabled:opacity-50 h-7 w-7 p-0 transition-all duration-200 hover:scale-110"
+                                              title="Move up"
+                                            >
+                                              <ArrowUp className="h-3 w-3" />
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => handleMoveCategoryDown(category.id)}
+                                              disabled={reorderingCategory === category.id || index === firestoreCategories.length - 1}
+                                              className="text-purple-500 hover:bg-purple-900/20 disabled:opacity-50 h-7 w-7 p-0 transition-all duration-200 hover:scale-110"
+                                              title="Move down"
+                                            >
+                                              <ArrowDown className="h-3 w-3" />
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => handleStartEditCategory(category)}
+                                              className="text-blue-500 hover:bg-blue-900/20 h-7 w-7 p-0 transition-all duration-200 hover:scale-110"
+                                            >
+                                              <Edit2 className="h-3 w-3" />
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => handleStartEditTranslation('category', category.id, category.name)}
+                                              className="text-[#94e2d5] hover:bg-teal-900/20 h-7 w-7 p-0 transition-all duration-200 hover:scale-110"
+                                              title="Manage translations"
+                                            >
+                                              <Languages className="h-3 w-3" />
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => handleDeleteCategory(category.id)}
+                                              className="text-red-500 hover:bg-red-900/20 h-7 w-7 p-0 transition-all duration-200 hover:scale-110"
+                                            >
+                                              <Trash2 className="h-3 w-3" />
+                                            </Button>
+                                          </>
+                                        )}
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                })}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  </>
                 )}
             </div>
           </CardContent>
         </Card>
+
+        {/* Translation Dialog */}
+        <Dialog open={editingEntityTranslation !== null} onOpenChange={(open) => {
+          if (!open) {
+            handleCancelEditTranslation();
+          }
+        }}>
+          <DialogContent className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]">
+            <DialogHeader>
+              <DialogTitle className="text-[#f2cdcd]">
+                Manage Translation - {editingEntityTranslation?.type}
+              </DialogTitle>
+            </DialogHeader>
+            {editingEntityTranslation && (
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-sm">Original Name</Label>
+                  <p className="text-sm text-[hsl(222,15%,60%)] mt-1">{editingEntityTranslation.originalName}</p>
+                </div>
+                <div>
+                  <Label className="text-sm">Language</Label>
+                  <Select
+                    value={editingEntityTranslation.language}
+                    onValueChange={(value) => {
+                      setEditingEntityTranslation(prev => prev ? { ...prev, language: value } : null);
+                      const translationKey = editingEntityTranslation.id.startsWith('downloadCategory.') 
+                        ? `entities.${editingEntityTranslation.id}`
+                        : `entities.${editingEntityTranslation.type}.${editingEntityTranslation.id}`;
+                      const currentTranslation = adminTranslations[value]?.[translationKey] || 
+                                                 i18n.t(translationKey, { lng: value });
+                      setEditingTranslationValue(currentTranslation && currentTranslation !== translationKey ? currentTranslation : '');
+                    }}
+                  >
+                    <SelectTrigger className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="es">Español</SelectItem>
+                      <SelectItem value="pt-BR">Português</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm">Translation</Label>
+                  <Textarea
+                    value={editingTranslationValue}
+                    onChange={(e) => setEditingTranslationValue(e.target.value)}
+                    placeholder={`Enter translation for ${editingEntityTranslation.originalName}`}
+                    className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] mt-1"
+                    rows={3}
+                  />
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={handleCancelEditTranslation}
+                disabled={savingTranslation}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSaveTranslation}
+                disabled={savingTranslation || !editingTranslationValue.trim()}
+                className="bg-gradient-to-r from-[#94e2d5] to-[#7dd3c7] hover:from-[#7dd3c7] hover:to-[#94e2d5] text-[hsl(240,21%,15%)] font-bold"
+              >
+                {savingTranslation ? "Saving..." : "Save Translation"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
           </AnimatedTabsContent>
 
           {/* Level Management Section */}
@@ -6357,6 +6629,25 @@ const Admin = () => {
                   </AnimatedTabsList>
                 </Tabs>
 
+                <div className="mb-4 flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Languages className="h-4 w-4 text-[hsl(222,15%,60%)]" />
+                    <Label htmlFor="translation-language-levels" className="text-sm">Translation Language:</Label>
+                    <Select
+                      value={selectedTranslationLanguage}
+                      onValueChange={setSelectedTranslationLanguage}
+                    >
+                      <SelectTrigger id="translation-language-levels" className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] h-8 text-sm w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="en">English</SelectItem>
+                        <SelectItem value="es">Español</SelectItem>
+                        <SelectItem value="pt-BR">Português</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
                 <div className="mt-0">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       <div>
@@ -6399,7 +6690,10 @@ const Admin = () => {
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
-                                {availableLevels.map((level, index) => (
+                                {availableLevels.map((level, index) => {
+                                  const translatedName = getLevelTranslation(level.id, level.name);
+                                  const hasTranslation = translatedName !== level.name;
+                                  return (
                               <TableRow key={level.id} className="border-b border-[hsl(235,13%,30%)] hover:bg-[hsl(235,19%,13%)] transition-all duration-200 hover:shadow-sm">
                                 <TableCell className="py-2 px-3 font-medium text-sm">
                                   {editingLevel?.id === level.id ? (
@@ -6410,7 +6704,12 @@ const Admin = () => {
                                       autoFocus
                                     />
                                   ) : (
-                                    level.name
+                                    <div className="flex flex-col gap-1">
+                                      <span>{translatedName}</span>
+                                      {hasTranslation && (
+                                        <span className="text-xs text-[hsl(222,15%,60%)]">Original: {level.name}</span>
+                                      )}
+                                    </div>
                                   )}
                                 </TableCell>
                                 <TableCell className="py-2 px-3 text-center space-x-1">
@@ -6468,6 +6767,15 @@ const Admin = () => {
                                       <Button
                                         variant="ghost"
                                         size="sm"
+                                        onClick={() => handleStartEditTranslation('level', level.id, level.name)}
+                                        className="text-[#94e2d5] hover:bg-teal-900/20 h-7 w-7 p-0 transition-all duration-200 hover:scale-110"
+                                        title="Manage translations"
+                                      >
+                                        <Languages className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
                                         onClick={() => handleDeleteLevel(level.id)}
                                         className="text-red-500 hover:bg-red-900/20 h-7 w-7 p-0 transition-all duration-200 hover:scale-110"
                                       >
@@ -6477,7 +6785,8 @@ const Admin = () => {
                                   )}
                                 </TableCell>
                               </TableRow>
-                            ))}
+                                );
+                                })}
                           </TableBody>
                         </Table>
                       </div>
@@ -6600,6 +6909,25 @@ const Admin = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4">
+            <div className="mb-4 flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Languages className="h-4 w-4 text-[hsl(222,15%,60%)]" />
+                <Label htmlFor="translation-language-platforms" className="text-sm">Translation Language:</Label>
+                <Select
+                  value={selectedTranslationLanguage}
+                  onValueChange={setSelectedTranslationLanguage}
+                >
+                  <SelectTrigger id="translation-language-platforms" className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] h-8 text-sm w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="es">Español</SelectItem>
+                    <SelectItem value="pt-BR">Português</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div>
                 <h3 className="text-base font-semibold mb-3">Add New Platform</h3>
@@ -6641,7 +6969,10 @@ const Admin = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {firestorePlatforms.map((platform, index) => (
+                    {firestorePlatforms.map((platform, index) => {
+                      const translatedName = getPlatformTranslation(platform.id, platform.name);
+                      const hasTranslation = translatedName !== platform.name;
+                      return (
                           <TableRow key={platform.id} className="border-b border-[hsl(235,13%,30%)] hover:bg-[hsl(235,19%,13%)] transition-all duration-200 hover:shadow-sm">
                             <TableCell className="py-2 px-3 font-medium text-sm">
                           {editingPlatform?.id === platform.id ? (
@@ -6652,7 +6983,12 @@ const Admin = () => {
                               autoFocus
                             />
                           ) : (
-                            platform.name
+                            <div className="flex flex-col gap-1">
+                              <span>{translatedName}</span>
+                              {hasTranslation && (
+                                <span className="text-xs text-[hsl(222,15%,60%)]">Original: {platform.name}</span>
+                              )}
+                            </div>
                           )}
                         </TableCell>
                             <TableCell className="py-2 px-3 text-center space-x-1">
@@ -6710,6 +7046,15 @@ const Admin = () => {
                               <Button
                                 variant="ghost"
                                 size="sm"
+                                onClick={() => handleStartEditTranslation('platform', platform.id, platform.name)}
+                                    className="text-[#94e2d5] hover:bg-teal-900/20 h-7 w-7 p-0 transition-all duration-200 hover:scale-110"
+                                title="Manage translations"
+                              >
+                                    <Languages className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={() => handleDeletePlatform(platform.id)}
                                     className="text-red-500 hover:bg-red-900/20 h-7 w-7 p-0 transition-all duration-200 hover:scale-110"
                               >
@@ -6719,7 +7064,8 @@ const Admin = () => {
                           )}
                         </TableCell>
                       </TableRow>
-                    ))}
+                    );
+                    })}
                   </TableBody>
                 </Table>
               </div>
@@ -7455,6 +7801,25 @@ const Admin = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-6">
+                <div className="mb-4 flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Languages className="h-4 w-4 text-[hsl(222,15%,60%)]" />
+                    <Label htmlFor="translation-language-downloads" className="text-sm">Translation Language:</Label>
+                    <Select
+                      value={selectedTranslationLanguage}
+                      onValueChange={setSelectedTranslationLanguage}
+                    >
+                      <SelectTrigger id="translation-language-downloads" className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] h-8 text-sm w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="en">English</SelectItem>
+                        <SelectItem value="es">Español</SelectItem>
+                        <SelectItem value="pt-BR">Português</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
                 <h3 className="text-xl font-semibold mb-4">Add New Category</h3>
                 <form onSubmit={handleAddDownloadCategory} className="space-y-4 mb-8">
                   <div className="flex gap-4">
@@ -7490,7 +7855,14 @@ const Admin = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {downloadCategories.map((category) => (
+                        {downloadCategories.map((category) => {
+                          // For download categories, use a custom translation key
+                          const translationKey = `entities.downloadCategory.${category.id}`;
+                          const translatedName = adminTranslations[selectedTranslationLanguage]?.[translationKey] || 
+                                                 i18n.t(translationKey, { lng: selectedTranslationLanguage });
+                          const displayName = translatedName && translatedName !== translationKey ? translatedName : category.name;
+                          const hasTranslation = translatedName && translatedName !== translationKey;
+                          return (
                           <TableRow key={category.id} className="border-b border-[hsl(235,13%,30%)] hover:bg-[hsl(235,19%,13%)] transition-all duration-200 hover:shadow-sm">
                             <TableCell className="py-3 px-4">
                               {editingDownloadCategory?.id === category.id ? (
@@ -7509,7 +7881,12 @@ const Admin = () => {
                                   autoFocus
                                 />
                               ) : (
-                                <span className="font-medium">{category.name}</span>
+                                <div className="flex flex-col gap-1">
+                                  <span className="font-medium">{displayName}</span>
+                                  {hasTranslation && (
+                                    <span className="text-xs text-[hsl(222,15%,60%)]">Original: {category.name}</span>
+                                  )}
+                                </div>
                               )}
                             </TableCell>
                             <TableCell className="py-3 px-4 text-center">
@@ -7548,6 +7925,28 @@ const Admin = () => {
                                     <Button 
                                       variant="ghost" 
                                       size="sm" 
+                                      onClick={() => {
+                                        // Use a custom type for download categories
+                                        const translationKey = `entities.downloadCategory.${category.id}`;
+                                        const currentTranslation = adminTranslations[selectedTranslationLanguage]?.[translationKey] || 
+                                                                   i18n.t(translationKey, { lng: selectedTranslationLanguage });
+                                        const value = currentTranslation && currentTranslation !== translationKey ? currentTranslation : '';
+                                        setEditingEntityTranslation({ 
+                                          type: 'category', // Reuse category type for the dialog
+                                          id: `downloadCategory.${category.id}`, // Use a composite ID
+                                          originalName: category.name, 
+                                          language: selectedTranslationLanguage 
+                                        });
+                                        setEditingTranslationValue(value);
+                                      }}
+                                      className="text-[#94e2d5] hover:bg-teal-900/20 transition-all duration-200 hover:scale-110"
+                                      title="Manage translations"
+                                    >
+                                      <Languages className="h-4 w-4" />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
                                       onClick={() => handleDeleteDownloadCategory(category.id)}
                                       className="text-red-500 hover:bg-red-900/20 transition-all duration-200 hover:scale-110"
                                     >
@@ -7558,7 +7957,8 @@ const Admin = () => {
                               </div>
                             </TableCell>
                           </TableRow>
-                        ))}
+                        );
+                        })}
                       </TableBody>
                     </Table>
                   </div>

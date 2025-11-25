@@ -16,11 +16,14 @@ import { useToast } from "@/hooks/use-toast";
 import { addLeaderboardEntry, getCategories, getCategoriesFromFirestore, getPlatforms, runTypes, getPlayerByDisplayName, getLevels } from "@/lib/db";
 import { Category } from "@/types/database";
 import { useNavigate } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
+import { getSubcategoryTranslation } from "@/lib/i18n/entity-translations";
 
 const SubmitRun = () => {
   const { currentUser } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   
   const [availableCategories, setAvailableCategories] = useState<Category[]>([]);
   const [availableLevels, setAvailableLevels] = useState<{ id: string; name: string }[]>([]);
@@ -168,8 +171,8 @@ const SubmitRun = () => {
     
     if (!currentUser) {
       toast({
-        title: "Authentication Required",
-        description: "Please log in to submit a run.",
+        title: t("auth.authenticationRequired"),
+        description: t("auth.pleaseLoginToSubmit"),
         variant: "destructive",
       });
       return;
@@ -177,8 +180,8 @@ const SubmitRun = () => {
     
     if (!formData.playerName || !formData.playerName.trim()) {
       toast({
-        title: "Missing Information",
-        description: "Please enter your player name.",
+        title: t("submit.missingInformation"),
+        description: t("submit.pleaseEnterPlayerName"),
         variant: "destructive",
       });
       return;
@@ -186,8 +189,8 @@ const SubmitRun = () => {
 
     if (!formData.category || !formData.platform || !formData.runType || !formData.time || !formData.date) {
       toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields.",
+        title: t("submit.missingInformation"),
+        description: t("submit.pleaseFillAllRequiredFields"),
         variant: "destructive",
       });
       return;
@@ -196,8 +199,8 @@ const SubmitRun = () => {
     // For regular runs, subcategory is required if the category has subcategories
     if (leaderboardType === 'regular' && availableSubcategories.length > 0 && !formData.subcategory) {
       toast({
-        title: "Missing Information",
-        description: "Please select a subcategory for this category.",
+        title: t("submit.missingInformation"),
+        description: t("submit.pleaseSelectSubcategory"),
         variant: "destructive",
       });
       return;
@@ -206,8 +209,8 @@ const SubmitRun = () => {
     // For ILs and Community Golds, level is required
     if ((leaderboardType === 'individual-level' || leaderboardType === 'community-golds') && !formData.level) {
       toast({
-        title: "Missing Information",
-        description: "Please select a level for Individual Level or Community Gold runs.",
+        title: t("submit.missingInformation"),
+        description: t("submit.pleaseSelectLevel"),
         variant: "destructive",
       });
       return;
@@ -215,8 +218,8 @@ const SubmitRun = () => {
 
     if (formData.runType === 'co-op' && !formData.player2Name) {
       toast({
-        title: "Missing Information",
-        description: "Please enter the second player's name for co-op runs.",
+        title: t("submit.missingInformation"),
+        description: t("submit.pleaseEnterSecondPlayerName"),
         variant: "destructive",
       });
       return;
@@ -233,8 +236,8 @@ const SubmitRun = () => {
     // Video is required for all categories except Nocuts Noships
     if (!isNocutsNoships && (!formData.videoUrl || !formData.videoUrl.trim())) {
       toast({
-        title: "Missing Information",
-        description: "Video proof is required for this category.",
+        title: t("submit.missingInformation"),
+        description: t("submit.videoProofRequired"),
         variant: "destructive",
       });
       return;
@@ -258,8 +261,8 @@ const SubmitRun = () => {
         } else {
           // Player doesn't exist - prevent submission to avoid assigning run to wrong account
           toast({
-            title: "Player Not Found",
-            description: `Player "${formData.playerName.trim()}" does not have an account. Please create the player account first, or use the Admin panel to add the run manually.`,
+            title: t("submit.playerNotFound"),
+            description: `${t("leaderboards.player")} "${formData.playerName.trim()}" ${t("submit.playerDoesNotHaveAccount")}`,
             variant: "destructive",
           });
           setLoading(false);
@@ -322,17 +325,17 @@ const SubmitRun = () => {
       
       if (result) {
         toast({
-          title: "Run Submitted",
-          description: "Your run has been submitted successfully and is awaiting verification.",
+          title: t("submit.success"),
+          description: t("submit.success"),
         });
         navigate({ to: '/leaderboards' });
       } else {
-        throw new Error("Failed to submit run");
+        throw new Error(t("submit.error"));
       }
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message || error.code || "Failed to submit run. Please check your connection and try again.",
+        title: t("common.error"),
+        description: error.message || error.code || t("submit.error"),
         variant: "destructive",
       });
     } finally {
@@ -352,13 +355,13 @@ const SubmitRun = () => {
             <CardContent className="p-12 text-center">
               <div className="mb-6">
                 <Sparkles className="h-16 w-16 mx-auto mb-4 text-ctp-subtext1 opacity-50" />
-                <h2 className="text-3xl font-bold mb-4 text-ctp-text">Authentication Required</h2>
+                <h2 className="text-3xl font-bold mb-4 text-ctp-text">{t("auth.authenticationRequired")}</h2>
                 <p className="text-lg text-ctp-subtext1 mb-8">
-                  Please log in to submit your run to the leaderboard.
+                  {t("auth.pleaseLoginToSubmit")}
                 </p>
               </div>
               <Button className="button-click-animation bg-gradient-to-r from-ctp-mauve to-ctp-lavender hover:from-ctp-lavender hover:to-ctp-mauve text-ctp-crust font-bold px-8 py-6 text-lg transition-all duration-300 hover:scale-105 hover:shadow-lg">
-                Log In to Submit
+                {t("nav.login")} {t("common.submit")}
               </Button>
             </CardContent>
           </AnimatedCard>
@@ -367,7 +370,7 @@ const SubmitRun = () => {
             <AnimatedCard className="bg-gradient-to-br from-[hsl(240,21%,16%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl" hover={false}>
               <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)] py-4">
                 <CardTitle className="flex items-center gap-2 text-xl text-[#eba0ac]">
-                  <span>Run Details</span>
+                  <span>{t("submit.runDetails")}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-6">
@@ -409,7 +412,7 @@ const SubmitRun = () => {
                 <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)] py-4">
                   <CardTitle className="flex items-center gap-2 text-xl text-[#eba0ac]">
                     <span>
-                      Run Details
+                      {t("submit.runDetails")}
                     </span>
                 </CardTitle>
               </CardHeader>
@@ -417,7 +420,7 @@ const SubmitRun = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Leaderboard Type Tabs */}
                 <div>
-                  <Label className="text-sm font-semibold mb-2 block">Leaderboard Type *</Label>
+                  <Label className="text-sm font-semibold mb-2 block">{t("submit.leaderboardType")} *</Label>
                   <Tabs 
                     value={leaderboardType} 
                     onValueChange={(value) => {
@@ -438,8 +441,8 @@ const SubmitRun = () => {
                       >
                         <div className="flex items-center justify-center gap-2">
                           <Trophy className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                          <span className="hidden min-[375px]:inline">Full Game</span>
-                          <span className="min-[375px]:hidden">Game</span>
+                          <span className="hidden min-[375px]:inline">{t("submit.fullGame")}</span>
+                          <span className="min-[375px]:hidden">{t("submit.game")}</span>
                         </div>
                       </AnimatedTabsTrigger>
                       <AnimatedTabsTrigger 
@@ -448,8 +451,8 @@ const SubmitRun = () => {
                       >
                         <div className="flex items-center justify-center gap-2">
                           <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                          <span className="hidden sm:inline">Individual Levels</span>
-                          <span className="sm:hidden">ILs</span>
+                          <span className="hidden sm:inline">{t("submit.individualLevels")}</span>
+                          <span className="sm:hidden">{t("submit.ils")}</span>
                         </div>
                       </AnimatedTabsTrigger>
                       <AnimatedTabsTrigger 
@@ -458,8 +461,8 @@ const SubmitRun = () => {
                       >
                         <div className="flex items-center justify-center gap-2">
                           <Gem className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                          <span className="hidden sm:inline">Community Golds</span>
-                          <span className="sm:hidden">Golds</span>
+                          <span className="hidden sm:inline">{t("submit.communityGolds")}</span>
+                          <span className="sm:hidden">{t("submit.golds")}</span>
                         </div>
                       </AnimatedTabsTrigger>
                     </AnimatedTabsList>
@@ -467,19 +470,19 @@ const SubmitRun = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <FadeIn delay={0}>
-                    <Label htmlFor="playerName" className="text-sm font-semibold mb-1.5">Player 1 Name *</Label>
+                    <Label htmlFor="playerName" className="text-sm font-semibold mb-1.5">{t("submit.player1Name")} *</Label>
                     <Input
                       id="playerName"
                       name="playerName"
                       value={formData.playerName}
                       onChange={handleChange}
-                      placeholder="Enter your username"
+                      placeholder={t("submit.enterYourUsername")}
                       required
                       className="bg-gradient-to-br from-[hsl(240,21%,18%)] to-[hsl(240,21%,16%)] border-[hsl(235,13%,30%)] h-10 text-sm hover:border-[#cba6f7] hover:bg-gradient-to-br hover:from-[hsl(240,21%,20%)] hover:to-[hsl(240,21%,18%)] transition-all duration-300"
                     />
                   </FadeIn>
                   <FadeIn delay={0.05}>
-                    <Label htmlFor="time" className="text-sm font-semibold mb-1.5">Completion Time *</Label>
+                    <Label htmlFor="time" className="text-sm font-semibold mb-1.5">{t("submit.completionTime")} *</Label>
                     <div className="relative">
                       <Timer className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[hsl(222,15%,60%)]" />
                       <Input
@@ -487,7 +490,7 @@ const SubmitRun = () => {
                         name="time"
                         value={formData.time}
                         onChange={handleChange}
-                        placeholder="HH:MM:SS"
+                        placeholder={t("submit.timePlaceholderFormat")}
                         required
                         className="bg-gradient-to-br from-[hsl(240,21%,18%)] to-[hsl(240,21%,16%)] border-[hsl(235,13%,30%)] h-10 text-sm pl-10 text-left hover:border-[#cba6f7] hover:bg-gradient-to-br hover:from-[hsl(240,21%,20%)] hover:to-[hsl(240,21%,18%)] transition-all duration-300"
                       />
@@ -496,7 +499,7 @@ const SubmitRun = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <FadeIn delay={0.1}>
-                    <Label htmlFor="date" className="text-sm font-semibold mb-1.5">Run Date *</Label>
+                    <Label htmlFor="date" className="text-sm font-semibold mb-1.5">{t("submit.runDate")} *</Label>
                     <div className="relative">
                       <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[hsl(222,15%,60%)]" />
                       <Input
@@ -512,10 +515,10 @@ const SubmitRun = () => {
                     </div>
                   </FadeIn>
                   <FadeIn delay={0.1}>
-                    <Label htmlFor="runType" className="text-sm font-semibold mb-1.5">Run Type *</Label>
+                    <Label htmlFor="runType" className="text-sm font-semibold mb-1.5">{t("submit.runType")} *</Label>
                     <Select value={formData.runType} onValueChange={(value) => handleSelectChange("runType", value)}>
                       <SelectTrigger className="bg-[hsl(240,21%,18%)] border-[hsl(235,13%,30%)] h-10 text-sm hover:border-[hsl(var(--mocha-mauve))] transition-colors">
-                        <SelectValue placeholder="Select run type" />
+                        <SelectValue placeholder={t("submit.selectRunType")} />
                       </SelectTrigger>
                       <SelectContent>
                         {runTypes.map((type) => (
@@ -532,13 +535,13 @@ const SubmitRun = () => {
                 </div>
                 {formData.runType === 'co-op' && (
                   <FadeIn delay={0.15}>
-                    <Label htmlFor="player2Name" className="text-sm font-semibold mb-1.5">Player 2 Name *</Label>
+                    <Label htmlFor="player2Name" className="text-sm font-semibold mb-1.5">{t("submit.player2Name")} *</Label>
                     <Input
                       id="player2Name"
                       name="player2Name"
                       value={formData.player2Name}
                       onChange={handleChange}
-                      placeholder="Enter second player's username"
+                      placeholder={t("submit.enterSecondPlayerUsername")}
                       required
                       className="bg-gradient-to-br from-[hsl(240,21%,18%)] to-[hsl(240,21%,16%)] border-[hsl(235,13%,30%)] h-10 text-sm hover:border-[#cba6f7] hover:bg-gradient-to-br hover:from-[hsl(240,21%,20%)] hover:to-[hsl(240,21%,18%)] transition-all duration-300"
                     />
@@ -552,17 +555,17 @@ const SubmitRun = () => {
                       {leaderboardType === 'individual-level' ? (
                         <>
                           <BookOpen className="h-3.5 w-3.5 text-[#cba6f7]" />
-                          Category Type * (Story or Free Play)
+                          {t("submit.categoryTypeStoryOrFreePlay")}
                         </>
                       ) : leaderboardType === 'community-golds' ? (
                         <>
                           <Trophy className="h-3.5 w-3.5 text-[#FFD700]" />
-                          Full Game Category *
+                          {t("submit.fullGameCategory")}
                         </>
                       ) : (
                         <>
                           <Trophy className="h-3.5 w-3.5 text-[#cba6f7]" />
-                          Category *
+                          {t("submit.categoryLabel")}
                         </>
                       )}
                     </Label>
@@ -588,12 +591,12 @@ const SubmitRun = () => {
                     </Tabs>
                     {leaderboardType === 'individual-level' && (
                       <p className="text-xs text-[hsl(222,15%,60%)] mt-1">
-                        Choose "Story" for story mode levels or "Free Play" for free play levels
+                        {t("submit.chooseStoryOrFreePlay")}
                       </p>
                     )}
                     {leaderboardType === 'community-golds' && (
                       <p className="text-xs text-[hsl(222,15%,60%)] mt-1">
-                        Select the full game category this Community Gold applies to
+                        {t("submit.selectFullGameCategoryForCG")}
                       </p>
                     )}
                   </FadeIn>
@@ -632,7 +635,7 @@ const SubmitRun = () => {
                       <FadeIn delay={0.2}>
                         <Label className="text-sm font-semibold mb-2 block flex items-center gap-2">
                           <Trophy className="h-3.5 w-3.5 text-[#cba6f7]" />
-                          Subcategory *
+                          {t("submit.subcategory")}
                         </Label>
                         <Tabs value={formData.subcategory} onValueChange={(value) => handleSelectChange("subcategory", value)} className="w-full">
                           <AnimatedTabsList 
@@ -648,14 +651,14 @@ const SubmitRun = () => {
                                   className="whitespace-nowrap px-4 py-2 h-8 text-xs sm:text-sm font-medium transition-all duration-200 data-[state=active]:text-[#cba6f7]"
                                   style={{ animationDelay: `${index * 50}ms` }}
                                 >
-                                  {subcategory.name}
+                                  {getSubcategoryTranslation(subcategory.id, subcategory.name)}
                                 </AnimatedTabsTrigger>
                               );
                             })}
                           </AnimatedTabsList>
                         </Tabs>
                         <p className="text-xs text-[hsl(222,15%,60%)] mt-1">
-                          Select a subcategory for this run (e.g., Glitchless, No Major Glitches)
+                          {t("submit.selectSubcategoryHint")}
                         </p>
                       </FadeIn>
                     );
@@ -670,11 +673,11 @@ const SubmitRun = () => {
                   <FadeIn delay={0.2}>
                     <Label htmlFor="level" className="text-sm font-semibold mb-1.5 flex items-center gap-2">
                       <Sparkles className="h-3.5 w-3.5 text-[#cba6f7]" />
-                      Level *
+                      {t("submit.levelLabel")}
                     </Label>
                     <Select value={formData.level} onValueChange={(value) => handleSelectChange("level", value)}>
                       <SelectTrigger className="bg-gradient-to-br from-[hsl(240,21%,18%)] to-[hsl(240,21%,16%)] border-[hsl(235,13%,30%)] h-10 text-sm hover:border-[#cba6f7] hover:bg-gradient-to-br hover:from-[hsl(240,21%,20%)] hover:to-[hsl(240,21%,18%)] transition-all duration-300 hover:shadow-lg hover:shadow-[#cba6f7]/20">
-                        <SelectValue placeholder="Select level" />
+                        <SelectValue placeholder={t("submit.selectLevel")} />
                       </SelectTrigger>
                       <SelectContent>
                         {availableLevels.map((level) => (
@@ -686,18 +689,18 @@ const SubmitRun = () => {
                     </Select>
                     <p className="text-xs text-[hsl(222,15%,60%)] mt-1">
                       {leaderboardType === 'individual-level' 
-                        ? "Select the level for this Individual Level run"
-                        : "Select the level for this Community Gold run"}
+                        ? t("submit.selectLevelForIL")
+                        : t("submit.selectLevelForCG")}
                     </p>
                   </FadeIn>
                 )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <FadeIn delay={0.25}>
-                    <Label htmlFor="platform" className="text-sm font-semibold mb-1.5">Platform *</Label>
+                    <Label htmlFor="platform" className="text-sm font-semibold mb-1.5">{t("submit.platformLabel")}</Label>
                     <Select value={formData.platform} onValueChange={(value) => handleSelectChange("platform", value)}>
                       <SelectTrigger className="bg-[hsl(240,21%,18%)] border-[hsl(235,13%,30%)] h-10 text-sm hover:border-[hsl(var(--mocha-mauve))] transition-colors">
-                        <SelectValue placeholder="Select platform" />
+                        <SelectValue placeholder={t("submit.selectPlatform")} />
                       </SelectTrigger>
                       <SelectContent>
                         {availablePlatforms.map((platform) => (
@@ -725,13 +728,13 @@ const SubmitRun = () => {
                     
                     return (
                       <>
-                        <Label htmlFor="videoUrl" className="text-sm font-semibold mb-1.5">Video Proof {isVideoRequired ? "*" : ""}</Label>
+                        <Label htmlFor="videoUrl" className="text-sm font-semibold mb-1.5">{t("submit.videoProof")} {isVideoRequired ? "*" : ""}</Label>
                         <Input
                           id="videoUrl"
                           name="videoUrl"
                           value={formData.videoUrl}
                           onChange={handleChange}
-                          placeholder="https://youtube.com/watch?v=..."
+                          placeholder={t("submit.videoUrlPlaceholderExample")}
                           required={isVideoRequired}
                           className="bg-gradient-to-br from-[hsl(240,21%,18%)] to-[hsl(240,21%,16%)] border-[hsl(235,13%,30%)] h-10 text-sm hover:border-[#cba6f7] hover:bg-gradient-to-br hover:from-[hsl(240,21%,20%)] hover:to-[hsl(240,21%,18%)] transition-all duration-300"
                         />
@@ -739,10 +742,10 @@ const SubmitRun = () => {
                           {isNocutsNoships ? (
                             <>
                               <CheckCircle className="h-3 w-3 text-[hsl(var(--mocha-green))]" />
-                              Video proof is optional for Nocuts Noships runs, but recommended.
+                              {t("submit.videoProofOptional")}
                             </>
                           ) : (
-                            "Upload your run to YouTube and provide the link for verification"
+                            t("submit.uploadVideoHint")
                           )}
                         </p>
                       </>
@@ -751,33 +754,33 @@ const SubmitRun = () => {
                 </FadeIn>
 
                 <FadeIn delay={0.2}>
-                  <Label htmlFor="comment" className="text-sm font-semibold mb-1.5">Run Comment</Label>
+                  <Label htmlFor="comment" className="text-sm font-semibold mb-1.5">{t("submit.runComment")}</Label>
                   <Textarea
                     id="comment"
                     name="comment"
                     value={formData.comment}
                     onChange={handleChange}
-                    placeholder="Add a comment about your run (optional)..."
+                    placeholder={t("submit.addCommentPlaceholder")}
                     className="bg-gradient-to-br from-[hsl(240,21%,18%)] to-[hsl(240,21%,16%)] border-[hsl(235,13%,30%)] hover:border-[#cba6f7] hover:bg-gradient-to-br hover:from-[hsl(240,21%,20%)] hover:to-[hsl(240,21%,18%)] transition-all duration-300 min-h-[80px] resize-none text-sm"
                     rows={3}
                   />
                   <p className="text-xs text-[hsl(222,15%,70%)] mt-1">
-                    Share any details about your run, strategies, or highlights
+                    {t("submit.shareDetailsHint")}
                   </p>
                 </FadeIn>
 
                 <FadeIn delay={0.25}>
-                  <Label htmlFor="srcLink" className="text-sm font-semibold mb-1.5">Speedrun.com Link (Optional)</Label>
+                  <Label htmlFor="srcLink" className="text-sm font-semibold mb-1.5">{t("submit.speedrunComLink")}</Label>
                   <Input
                     id="srcLink"
                     name="srcLink"
                     value={formData.srcLink}
                     onChange={handleChange}
-                    placeholder="https://www.speedrun.com/runs/abc123xyz"
+                    placeholder={t("submit.speedrunComLinkPlaceholder")}
                     className="bg-gradient-to-br from-[hsl(240,21%,18%)] to-[hsl(240,21%,16%)] border-[hsl(235,13%,30%)] h-10 text-sm hover:border-[#cba6f7] hover:bg-gradient-to-br hover:from-[hsl(240,21%,20%)] hover:to-[hsl(240,21%,18%)] transition-all duration-300"
                   />
                   <p className="text-xs text-[hsl(222,15%,70%)] mt-1">
-                    If this run is also on Speedrun.com, paste the link here to link it to your submission
+                    {t("submit.speedrunComLinkHint")}
                   </p>
                 </FadeIn>
 
@@ -788,7 +791,7 @@ const SubmitRun = () => {
                     disabled={loading}
                     className="button-click-animation w-full bg-gradient-to-r from-[#cba6f7] via-[#f5c2e7] to-[#cba6f7] hover:from-[#f5c2e7] hover:via-[#cba6f7] hover:to-[#f5c2e7] text-[hsl(240,21%,15%)] font-bold py-3 text-base transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-[#cba6f7]/50 disabled:opacity-50 disabled:cursor-not-allowed animate-gradient bg-[length:200%_auto] rounded-none"
                   >
-                    {loading ? "Submitting..." : "Submit Run for Review"}
+                    {loading ? t("submit.submitting") : t("submit.submitRunForReview")}
                   </Button>
                   </FadeIn>
                 </div>
@@ -803,7 +806,7 @@ const SubmitRun = () => {
                   <AccordionTrigger className="text-[#eba0ac] hover:text-[#eba0ac]/80 px-4 py-6">
                     <div className="flex items-center gap-2">
                       <FileText className="h-5 w-5" />
-                      <span className="text-lg font-semibold">Submission Guidelines</span>
+                      <span className="text-lg font-semibold">{t("submit.submissionGuidelines")}</span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="px-4 pb-6 text-ctp-text">
@@ -811,61 +814,61 @@ const SubmitRun = () => {
                         <div>
                           <h3 className="text-lg font-semibold text-[hsl(220,17%,92%)] mb-3 flex items-center gap-2">
                             <span className="w-7 h-7 rounded-none bg-[hsl(240,21%,18%)] flex items-center justify-center text-sm font-bold border border-[hsl(235,13%,30%)] flex-shrink-0">1</span>
-                            Game Rules
+                            {t("submit.gameRules")}
                           </h3>
                           <ul className="list-disc pl-6 space-y-2 text-sm">
-                            <li>Time starts when you select "New Game".</li>
-                            <li>Time ends when you lose control of your character.</li>
-                            <li>Using codes in the diner is not allowed.</li>
-                            <li>Runs must be single segment.</li>
-                            <li>Runs done with a USB loader are prohibited.</li>
-                            <li>Runs using Swiss to launch the game are allowed.</li>
-                            <li>Runs using the debug menu are prohibited.</li>
+                            <li>{t("submit.timeStartsWhen")}</li>
+                            <li>{t("submit.timeEndsWhen")}</li>
+                            <li>{t("submit.codesNotAllowed")}</li>
+                            <li>{t("submit.mustBeSingleSegment")}</li>
+                            <li>{t("submit.usbLoaderProhibited")}</li>
+                            <li>{t("submit.swissAllowed")}</li>
+                            <li>{t("submit.debugMenuProhibited")}</li>
                           </ul>
                         </div>
 
                         <div>
                           <h3 className="text-lg font-semibold text-[hsl(220,17%,92%)] mb-3 flex items-center gap-2">
                             <span className="w-7 h-7 rounded-none bg-[hsl(240,21%,18%)] flex items-center justify-center text-sm font-bold border border-[hsl(235,13%,30%)] flex-shrink-0">2</span>
-                            Video Rules
+                            {t("submit.videoRules")}
                           </h3>
                           <ul className="list-disc pl-6 space-y-2 text-sm">
-                            <li>Runs must have video proof with game audio.</li>
-                            <li><strong className="text-[hsl(220,17%,92%)]">Nocuts Noships</strong> runs do not require video proof.</li>
-                            <li>Twitch VODs will not be accepted as video proof.</li>
-                            <li>All runs must be done RTA; timer may not be paused.</li>
+                            <li>{t("submit.videoRule1")}</li>
+                            <li><strong className="text-[hsl(220,17%,92%)]">Nocuts Noships</strong> {t("submit.videoRule2")}</li>
+                            <li>{t("submit.videoRule3")}</li>
+                            <li>{t("submit.videoRule4")}</li>
                           </ul>
                         </div>
 
                         <div>
                           <h3 className="text-lg font-semibold text-[hsl(220,17%,92%)] mb-3 flex items-center gap-2">
                             <span className="w-7 h-7 rounded-none bg-[hsl(240,21%,18%)] flex items-center justify-center text-sm font-bold border border-[hsl(235,13%,30%)] flex-shrink-0">3</span>
-                            Emulator Rules
+                            {t("submit.emulatorRules")}
                           </h3>
                           <ul className="list-disc pl-6 space-y-2 text-sm">
-                            <li>Dolphin emulator must use version 5.0 or later.</li>
-                            <li>"Speed Up Disc Transfer Rate" must be turned off.</li>
-                            <li>"CPU Clock Override" must be set to 100%.</li>
+                            <li>{t("submit.emulatorRule1")}</li>
+                            <li>{t("submit.emulatorRule2")}</li>
+                            <li>{t("submit.emulatorRule3")}</li>
                           </ul>
                         </div>
 
                         <div>
                           <h3 className="text-lg font-semibold text-[hsl(220,17%,92%)] mb-3 flex items-center gap-2">
                             <span className="w-7 h-7 rounded-none bg-[hsl(240,21%,18%)] flex items-center justify-center text-sm font-bold border border-[hsl(235,13%,30%)] flex-shrink-0">4</span>
-                            PC Rules
+                            {t("submit.pcRules")}
                           </h3>
                           <ul className="list-disc pl-6 space-y-2 text-sm">
-                            <li>FPS must be capped at 60.</li>
+                            <li>{t("submit.pcRule1")}</li>
                           </ul>
                         </div>
 
                         <div>
                           <h3 className="text-lg font-semibold text-[hsl(220,17%,92%)] mb-3 flex items-center gap-2">
                             <span className="w-7 h-7 rounded-none bg-[hsl(240,21%,18%)] flex items-center justify-center text-sm font-bold border border-[hsl(235,13%,30%)] flex-shrink-0">5</span>
-                            Solo Rules
+                            {t("submit.soloRules")}
                           </h3>
                           <ul className="list-disc pl-6 space-y-2 text-sm">
-                            <li>One player, the number of controllers used does not matter.</li>
+                            <li>{t("submit.soloRule1")}</li>
                           </ul>
                         </div>
                       </div>

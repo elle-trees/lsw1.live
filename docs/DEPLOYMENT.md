@@ -37,13 +37,18 @@ The project is configured for Vercel deployment via `vercel.json`:
 
 See `.env.example` for all required variables. Set these in Vercel:
 - Firebase configuration (VITE_*)
-- UploadThing configuration (UPLOADTHING_*)
+- UploadThing configuration (UPLOADTHING_*) - Optional
 - Admin UID (VITE_ADMIN_UID) - Optional
+- Google Translate API Key (VITE_GOOGLE_TRANSLATE_API_KEY) - Optional, required for auto-translation feature
 
 ### Deployment Steps
 
 1. Connect your repository to Vercel
-2. Set environment variables in Vercel dashboard
+2. Set environment variables in Vercel dashboard:
+   - Go to Project Settings → Environment Variables
+   - Add all required variables (see `.env.example`)
+   - **Important**: For `VITE_GOOGLE_TRANSLATE_API_KEY`, set it to: `AIzaSyA4nWDyPRbm4y8Mkb1NaWPYzApwGjCklJk`
+   - Make sure to set variables for all environments (Production, Preview, Development)
 3. Vercel will automatically:
    - Run `npm install`
    - Run `npm run build`

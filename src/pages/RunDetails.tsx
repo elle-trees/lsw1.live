@@ -17,6 +17,8 @@ import { VideoEmbed } from "@/components/VideoEmbed";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { formatDate, calculatePoints, formatTime } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
+import { getSubcategoryTranslation } from "@/lib/i18n/entity-translations";
 
 interface RunDetailsProps {
   runId: string;
@@ -26,6 +28,7 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { currentUser } = useAuth();
+  const { t } = useTranslation();
   const [run, setRun] = useState<LeaderboardEntry | null>(null);
   const [player, setPlayer] = useState<Player | null>(null);
   const [player2, setPlayer2] = useState<Player | null>(null);
@@ -59,8 +62,8 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
     const fetchRunData = async () => {
       if (!runId) {
         toast({
-          title: "Error",
-          description: "Run ID is missing.",
+          title: t("common.error"),
+          description: t("run.runIdMissing"),
           variant: "destructive",
         });
         navigate({ to: '/leaderboards' });
@@ -77,8 +80,8 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
         
         if (!runData) {
           toast({
-            title: "Run Not Found",
-            description: "This run could not be found.",
+            title: t("run.runNotFound"),
+            description: t("run.runNotFoundDescription"),
             variant: "destructive",
           });
           navigate({ to: '/leaderboards' });
@@ -137,8 +140,8 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
         }
       } catch (error) {
         toast({
-          title: "Error",
-          description: "Failed to load run details.",
+          title: t("common.error"),
+          description: t("run.failedToLoadDetails"),
           variant: "destructive",
         });
         navigate({ to: '/leaderboards' });
@@ -384,13 +387,13 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
         setIsEditing(false);
         setIsOwnerEdit(false);
       } else {
-        throw new Error("Failed to update run");
+        throw new Error(t("run.failedToUpdate"));
       }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       toast({
-        title: "Error",
-        description: errorMessage || "Failed to update run information.",
+        title: t("common.error"),
+        description: errorMessage || t("run.failedToUpdateInformation"),
         variant: "destructive",
       });
     } finally {
@@ -404,7 +407,7 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
     const categoryName = categories.find((c) => c.id === run.category)?.name || run.category;
     
     // Confirm deletion
-    if (!window.confirm(`Are you sure you want to delete this run?\n\nPlayer: ${run.playerName}\nTime: ${run.time}\nCategory: ${categoryName}\n\nThis action cannot be undone.`)) {
+    if (!window.confirm(t("run.deleteConfirm", { playerName: run.playerName, time: run.time, category: categoryName }))) {
       return;
     }
     
@@ -414,18 +417,18 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
       
       if (success) {
         toast({
-          title: "Run Deleted",
-          description: "The run has been successfully deleted.",
+          title: t("run.runDeleted"),
+          description: t("run.runDeletedDescription"),
         });
         navigate({ to: '/leaderboards' });
       } else {
-        throw new Error("Failed to delete run");
+        throw new Error(t("run.failedToDelete"));
       }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       toast({
-        title: "Error",
-        description: errorMessage || "Failed to delete run.",
+        title: t("common.error"),
+        description: errorMessage || t("run.failedToDelete"),
         variant: "destructive",
       });
     } finally {
@@ -490,7 +493,7 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
           className="mb-6 text-ctp-overlay0 hover:text-ctp-text"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Leaderboards
+          {t("player.backToLeaderboards")}
         </Button>
 
         <div className="flex flex-col lg:flex-row gap-6 items-start">
@@ -504,7 +507,7 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
             ) : (
               <Card className="bg-card border-border">
                 <CardContent className="p-12 text-center text-muted-foreground text-lg">
-                  No video available
+                  {t("run.noVideoAvailable")}
                 </CardContent>
               </Card>
             )}
@@ -512,7 +515,7 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
             {run.comment && (
               <Card className="bg-card border-border" id="comment-card">
                 <CardHeader className="pb-4 px-5 pt-5">
-                  <CardTitle className="text-xl text-card-foreground">Description</CardTitle>
+                  <CardTitle className="text-xl text-card-foreground">{t("run.description")}</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0 px-5 pb-5">
                   <p className="text-card-foreground whitespace-pre-wrap text-base leading-relaxed">{run.comment}</p>
@@ -525,7 +528,7 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
             <Card ref={detailsCardRef} className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] overflow-y-auto shadow-xl">
               <CardHeader className="pb-6 px-6 pt-6">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-2xl text-[#a6e3a1]">Run Details</CardTitle>
+                  <CardTitle className="text-2xl text-[#a6e3a1]">{t("run.runDetails")}</CardTitle>
                   {!isEditing && (
                     <div className="flex gap-2">
                       {/* Show edit button for run owner (non-admin) */}
@@ -550,7 +553,7 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
                             className="border-[hsl(235,13%,30%)] bg-gradient-to-r from-transparent via-[hsl(237,16%,24%)]/50 to-transparent hover:from-[hsl(237,16%,24%)] hover:via-[hsl(237,16%,28%)] hover:to-[hsl(237,16%,24%)] hover:border-[#cba6f7]/50"
                       >
                         <Edit2 className="h-4 w-4 mr-2" />
-                        Edit
+                        {t("common.edit")}
                       </Button>
                       <Button
                         variant="outline"
@@ -560,7 +563,7 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
                             className="border-red-500/50 text-red-500 bg-gradient-to-r from-transparent via-red-500/10 to-transparent hover:from-red-500/20 hover:via-red-500/30 hover:to-red-500/20 hover:bg-red-500 hover:text-white hover:border-red-500"
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
-                        {deleting ? "Deleting..." : "Delete"}
+                        {deleting ? t("run.deleting") : t("common.delete")}
                       </Button>
                         </>
                       )}
@@ -576,7 +579,7 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
                         className="border-border"
                       >
                         <X className="h-4 w-4 mr-2" />
-                        Cancel
+                        {t("common.cancel")}
                       </Button>
                       <Button
                         size="sm"
@@ -585,7 +588,7 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
                         className="bg-[#cba6f7] hover:bg-[#b4a0e2] text-[hsl(240,21%,15%)]"
                       >
                         <Save className="h-4 w-4 mr-2" />
-                        {saving ? "Saving..." : "Save"}
+                        {saving ? t("run.saving") : t("common.save")}
                       </Button>
                     </div>
                   )}
@@ -598,7 +601,7 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
                       // Owner edit mode: only comment and date
                       <>
                         <div>
-                          <Label htmlFor="edit-date">Date</Label>
+                          <Label htmlFor="edit-date">{t("leaderboards.date")}</Label>
                           <Input
                             id="edit-date"
                             type="date"
@@ -610,14 +613,14 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
                         </div>
 
                         <div>
-                          <Label htmlFor="edit-comment">Comment</Label>
+                          <Label htmlFor="edit-comment">{t("run.comment")}</Label>
                           <Textarea
                             id="edit-comment"
                             value={editFormData.comment}
                             onChange={(e) => setEditFormData({ ...editFormData, comment: e.target.value })}
                             className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
                             rows={3}
-                            placeholder="Add a description or comment about this run..."
+                            placeholder={t("run.commentPlaceholder")}
                           />
                         </div>
                       </>
@@ -625,7 +628,7 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
                       // Admin edit mode: all fields
                   <>
                     <div>
-                      <Label htmlFor="edit-playerName">Player 1 Name</Label>
+                      <Label htmlFor="edit-playerName">{t("submit.player1Name")}</Label>
                       <Input
                         id="edit-playerName"
                         value={editFormData.playerName}
@@ -636,7 +639,7 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
 
                     {editFormData.runType === 'co-op' && (
                       <div>
-                        <Label htmlFor="edit-player2Name">Player 2 Name</Label>
+                        <Label htmlFor="edit-player2Name">{t("run.player2Name")}</Label>
                         <Input
                           id="edit-player2Name"
                           value={editFormData.player2Name}
@@ -647,7 +650,7 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
                     )}
 
                     <div>
-                      <Label htmlFor="edit-time">Time</Label>
+                      <Label htmlFor="edit-time">{t("leaderboards.time")}</Label>
                       <Input
                         id="edit-time"
                         value={editFormData.time}
@@ -658,7 +661,7 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
                     </div>
 
                     <div>
-                      <Label htmlFor="edit-category">Category</Label>
+                      <Label htmlFor="edit-category">{t("leaderboards.category")}</Label>
                       <Select
                         value={editFormData.category}
                         onValueChange={(value) => setEditFormData({ ...editFormData, category: value, subcategory: "" })}
@@ -677,7 +680,7 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
                     </div>
 
                       <div>
-                        <Label className="text-sm font-semibold mb-2 block">Subcategory (Optional)</Label>
+                        <Label className="text-sm font-semibold mb-2 block">{t("leaderboards.subcategory")} ({t("common.optional")})</Label>
                         <div className="flex w-full p-1 gap-2 overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-thumb-ctp-surface1 scrollbar-track-transparent pb-3" style={{ minWidth: 'max-content' }}>
                           <Button
                             variant={(!editFormData.subcategory || editFormData.subcategory === "none") ? "default" : "outline"}
@@ -688,7 +691,7 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
                                 : "bg-ctp-surface0 text-ctp-text border-ctp-surface1 hover:bg-ctp-surface1 hover:text-ctp-text hover:border-[#cba6f7]/50"
                             }`}
                           >
-                            None
+                            {t("common.none")}
                           </Button>
                           {availableSubcategories.map((subcategory) => {
                             const isSelected = editFormData.subcategory === subcategory.id;
@@ -703,7 +706,7 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
                                     : "bg-ctp-surface0 text-ctp-text border-ctp-surface1 hover:bg-ctp-surface1 hover:text-ctp-text hover:border-[#cba6f7]/50"
                                 }`}
                               >
-                                {subcategory.name}
+                                {getSubcategoryTranslation(subcategory.id, subcategory.name)}
                               </Button>
                             );
                           })}
@@ -711,7 +714,7 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
                       </div>
 
                     <div>
-                      <Label htmlFor="edit-platform">Platform</Label>
+                      <Label htmlFor="edit-platform">{t("leaderboards.platform")}</Label>
                       <Select
                         value={editFormData.platform}
                         onValueChange={(value) => setEditFormData({ ...editFormData, platform: value })}
@@ -730,7 +733,7 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
                     </div>
 
                     <div>
-                      <Label htmlFor="edit-runType">Run Type</Label>
+                      <Label htmlFor="edit-runType">{t("leaderboards.runType")}</Label>
                       <Select
                         value={editFormData.runType}
                         onValueChange={(value) => setEditFormData({ ...editFormData, runType: value as 'solo' | 'co-op' })}
@@ -749,7 +752,7 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
                     </div>
 
                     <div>
-                      <Label htmlFor="edit-date">Date</Label>
+                      <Label htmlFor="edit-date">{t("leaderboards.date")}</Label>
                       <Input
                         id="edit-date"
                         type="date"
@@ -760,7 +763,7 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
                     </div>
 
                     <div>
-                      <Label htmlFor="edit-videoUrl">Video URL</Label>
+                      <Label htmlFor="edit-videoUrl">{t("run.videoUrl")}</Label>
                       <Input
                         id="edit-videoUrl"
                         value={editFormData.videoUrl}
@@ -771,7 +774,7 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
                     </div>
 
                     <div>
-                      <Label htmlFor="edit-comment">Comment</Label>
+                      <Label htmlFor="edit-comment">{t("run.comment")}</Label>
                       <Textarea
                         id="edit-comment"
                         value={editFormData.comment}
@@ -786,7 +789,7 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
                 ) : (
                   <>
                     <div>
-                      <div className="text-base text-muted-foreground mb-2 font-medium">Player{run.runType === 'co-op' ? 's' : ''}</div>
+                      <div className="text-base text-muted-foreground mb-2 font-medium">{run.runType === 'co-op' ? t("run.players") : t("run.player")}</div>
                       <div className="flex items-center gap-3 flex-wrap">
                         {(() => {
                           // Check if run is unclaimed - simply check if playerId is empty/null
@@ -807,7 +810,7 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
                                     </>
                                   )}
                                   <Badge variant="outline" className="border-yellow-600/50 bg-yellow-600/10 text-yellow-400 text-xs">
-                                    Unclaimed
+                                    {t("notifications.unclaimed")}
                                   </Badge>
                                 </div>
                               </>
@@ -854,7 +857,7 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
                     </div>
 
                     <div>
-                      <div className="text-base text-muted-foreground mb-2 font-medium">Time</div>
+                      <div className="text-base text-muted-foreground mb-2 font-medium">{t("leaderboards.time")}</div>
                       <div className="text-3xl font-bold text-ctp-text flex items-center gap-3">
                         {formatTime(run.time)}
                       </div>
@@ -862,7 +865,7 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
 
                     {run.rank && (
                       <div>
-                        <div className="text-base text-muted-foreground mb-2 font-medium">Rank</div>
+                        <div className="text-base text-muted-foreground mb-2 font-medium">{t("leaderboards.rank")}</div>
                         <div className="flex items-center gap-2">
                           {run.rank === 1 ? (
                             <>
@@ -895,21 +898,21 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
                     )}
 
                     <div>
-                      <div className="text-base text-muted-foreground mb-2 font-medium">Category</div>
+                      <div className="text-base text-muted-foreground mb-2 font-medium">{t("leaderboards.category")}</div>
                       <Badge variant="outline" className="border-border text-base px-3 py-1.5">
                         {category?.name || run.category}
                       </Badge>
                     </div>
 
                     <div>
-                      <div className="text-base text-muted-foreground mb-2 font-medium">Platform</div>
+                      <div className="text-base text-muted-foreground mb-2 font-medium">{t("leaderboards.platform")}</div>
                       <Badge variant="outline" className="border-border text-base px-3 py-1.5">
                         {platform?.name || run.platform.toUpperCase()}
                       </Badge>
                     </div>
 
                     <div>
-                      <div className="text-base text-muted-foreground mb-2 font-medium">Run Type</div>
+                      <div className="text-base text-muted-foreground mb-2 font-medium">{t("leaderboards.runType")}</div>
                       <Badge variant="outline" className="border-border flex items-center gap-2 w-fit text-base px-3 py-1.5">
                         {run.runType === 'solo' ? <User className="h-4 w-4" /> : <Users className="h-4 w-4" />}
                         {runType?.name || run.runType.charAt(0).toUpperCase() + run.runType.slice(1)}
@@ -917,7 +920,7 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
                     </div>
 
                     <div>
-                      <div className="text-base text-muted-foreground mb-2 font-medium">Date</div>
+                      <div className="text-base text-muted-foreground mb-2 font-medium">{t("leaderboards.date")}</div>
                       <div className="flex items-center gap-2 text-card-foreground text-lg">
                         <Calendar className="h-5 w-5" />
                         {formatDate(run.date)}
@@ -929,15 +932,15 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
                 {/* Studs */}
                 {run.verified && !run.isObsolete && finalDisplayPoints > 0 && (
                   <div>
-                    <div className="text-base text-muted-foreground mb-2 font-medium">Studs Earned</div>
+                    <div className="text-base text-muted-foreground mb-2 font-medium">{t("points.studsEarned")}</div>
                     <div className="flex items-center gap-2 text-lg">
                       <LegoStudIcon size={20} color="#fab387" />
                       <span className="font-bold text-[#fab387]">
                         +{finalDisplayPoints.toLocaleString()}
                       </span>
-                      <span className="text-muted-foreground text-sm">studs</span>
+                      <span className="text-muted-foreground text-sm">{t("points.studs")}</span>
                       {run.runType === 'co-op' && (
-                        <span className="text-muted-foreground text-xs">(split between both players)</span>
+                        <span className="text-muted-foreground text-xs">{t("run.splitBetweenPlayers")}</span>
                       )}
                     </div>
                   </div>
@@ -945,11 +948,11 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
 
                 {/* Verification Status */}
                 <div>
-                  <div className="text-base text-muted-foreground mb-2 font-medium">Verification Status</div>
+                  <div className="text-base text-muted-foreground mb-2 font-medium">{t("run.verificationStatus")}</div>
                   {run.importedFromSRC ? (
                     <div className="flex items-center gap-3">
                       <CheckCircle className="h-5 w-5 text-blue-500" />
-                      <span className="text-blue-500 text-lg">Imported from Speedrun.com</span>
+                      <span className="text-blue-500 text-lg">{t("run.importedFromSRC")}</span>
                       {run.srcRunId && (
                         <div className="text-base text-muted-foreground ml-2">
                           <a
@@ -958,7 +961,7 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
                             rel="noopener noreferrer"
                             className="hover:text-[hsl(var(--mocha-mauve))] transition-colors underline"
                           >
-                            View on SRC
+                            {t("run.viewOnSRC")}
                           </a>
                         </div>
                       )}
@@ -966,10 +969,10 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
                   ) : run.verified ? (
                     <div className="flex items-center gap-3">
                       <CheckCircle className="h-5 w-5 text-green-500" />
-                      <span className="text-green-500 text-lg">Verified</span>
+                      <span className="text-green-500 text-lg">{t("run.verified")}</span>
                       {run.verifiedBy && (
                         <div className="text-base text-muted-foreground ml-2">
-                          by {verifier ? (
+                          {t("run.by")} {verifier ? (
                             <PrefetchLink
                               to="/player/$playerId"
                               params={{ playerId: verifier.uid }}
@@ -986,7 +989,7 @@ const RunDetails = ({ runId }: RunDetailsProps) => {
                   ) : (
                     <div className="flex items-center gap-3">
                       <div className="h-5 w-5 rounded-full border-2 border-muted-foreground"></div>
-                      <span className="text-muted-foreground text-lg">Pending Verification</span>
+                      <span className="text-muted-foreground text-lg">{t("run.pendingVerification")}</span>
                     </div>
                   )}
                 </div>

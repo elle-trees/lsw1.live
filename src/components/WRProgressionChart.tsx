@@ -5,6 +5,7 @@ import { LeaderboardEntry } from "@/types/database";
 import { formatTime, formatSecondsToTime } from "@/lib/utils";
 import { getCategoryName, getPlatformName, getLevelName } from "@/lib/dataValidation";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Brush } from "recharts";
+import { useTranslation } from "react-i18next";
 
 interface WRProgressionChartProps {
   data: Array<{ date: string; time: number; timeString: string; run: LeaderboardEntry }>;
@@ -37,6 +38,7 @@ const getCategoryNameWithOverride = (
 };
 
 export const WRProgressionChart = ({ data, categories, platforms, levels, chartConfig }: WRProgressionChartProps) => {
+  const { t } = useTranslation();
   return (
     <ChartContainer config={chartConfig} className="h-[600px] w-full [&_.recharts-brush]:fill-[hsl(var(--muted))] [&_.recharts-brush]:stroke-[hsl(var(--border))] [&_.recharts-brush-slide]:fill-[hsl(var(--muted))] [&_.recharts-brush-traveller]:fill-[hsl(var(--muted))] [&_.recharts-brush-traveller]:stroke-[hsl(var(--border))]">
       <LineChart 
@@ -78,11 +80,11 @@ export const WRProgressionChart = ({ data, categories, platforms, levels, chartC
                 <div className="rounded-none border bg-background p-3 shadow-lg max-w-md">
                   <div className="grid gap-3">
                     <div className="flex items-center justify-between gap-4 border-b pb-2">
-                      <span className="text-sm font-medium">Date</span>
+                      <span className="text-sm font-medium">{t("wrProgression.date")}</span>
                       <span className="text-sm font-semibold">{date.toLocaleDateString()}</span>
                     </div>
                     <div className="flex items-center justify-between gap-4 border-b pb-2">
-                      <span className="text-sm font-medium">World Record Time</span>
+                      <span className="text-sm font-medium">{t("wrProgression.worldRecordTime")}</span>
                       <span className="text-sm font-bold font-mono">{formatTime(data.timeString)}</span>
                     </div>
                     <div className="mt-2">

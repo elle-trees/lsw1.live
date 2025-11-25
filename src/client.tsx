@@ -4,6 +4,7 @@ import { QueryClient, HydrationBoundary } from '@tanstack/react-query'
 import { auth } from './lib/firebase'
 import { onAuthStateChanged } from 'firebase/auth'
 import { getAdminUid } from './lib/env'
+import './lib/i18n' // Initialize i18n before any components render
 
 const ADMIN_UID = getAdminUid()
 

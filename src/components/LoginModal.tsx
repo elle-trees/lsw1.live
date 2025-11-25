@@ -10,6 +10,7 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswor
 import { auth } from "@/lib/firebase";
 import { isDisplayNameAvailable, createPlayer } from "@/lib/db";
 import { getErrorMessage } from "@/lib/errorUtils";
+import { useTranslation } from "react-i18next";
 
 interface LoginModalProps {
   open: boolean;
@@ -25,6 +26,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   // Validate email format
   const validateEmail = (email: string): boolean => {
@@ -35,16 +37,16 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
   // Validate password strength
   const validatePassword = (password: string): { valid: boolean; message?: string } => {
     if (password.length < 8) {
-      return { valid: false, message: "Password must be at least 8 characters long." };
+      return { valid: false, message: t("auth.passwordTooShort") };
     }
     if (!/[A-Z]/.test(password)) {
-      return { valid: false, message: "Password must contain at least one uppercase letter." };
+      return { valid: false, message: t("auth.passwordNoUppercase") };
     }
     if (!/[a-z]/.test(password)) {
-      return { valid: false, message: "Password must contain at least one lowercase letter." };
+      return { valid: false, message: t("auth.passwordNoLowercase") };
     }
     if (!/[0-9]/.test(password)) {
-      return { valid: false, message: "Password must contain at least one number." };
+      return { valid: false, message: t("auth.passwordNoNumber") };
     }
     return { valid: true };
   };
@@ -55,8 +57,8 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
     // Validate email format
     if (!validateEmail(email.trim())) {
       toast({
-        title: "Invalid Email",
-        description: "Please enter a valid email address.",
+        title: t("auth.invalidEmail"),
+        description: t("auth.invalidEmailMessage"),
         variant: "destructive",
       });
       return;
@@ -68,8 +70,8 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
       const trimmedDisplayName = displayName.trim();
       if (!trimmedDisplayName) {
         toast({
-          title: "Display Name Required",
-          description: "Please enter a display name.",
+          title: t("auth.displayNameRequired"),
+          description: t("auth.displayNameRequired"),
           variant: "destructive",
         });
         return;
@@ -77,8 +79,8 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
 
       if (trimmedDisplayName.length < 2) {
         toast({
-          title: "Display Name Too Short",
-          description: "Display name must be at least 2 characters long.",
+          title: t("auth.displayNameTooShort"),
+          description: t("auth.displayNameTooShort"),
           variant: "destructive",
         });
         return;
@@ -86,8 +88,8 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
 
       if (trimmedDisplayName.length > 50) {
         toast({
-          title: "Display Name Too Long",
-          description: "Display name must be 50 characters or less.",
+          title: t("auth.displayNameTooLong"),
+          description: t("auth.displayNameTooLong"),
           variant: "destructive",
         });
         return;
@@ -99,8 +101,8 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
         const isAvailable = await isDisplayNameAvailable(trimmedDisplayName);
         if (!isAvailable) {
           toast({
-            title: "Display Name Taken",
-            description: "This display name is already taken. Please choose a different one.",
+            title: t("auth.displayNameTaken"),
+            description: t("auth.displayNameTakenMessage"),
             variant: "destructive",
           });
           setLoading(false);
@@ -108,8 +110,8 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
         }
       } catch (error) {
         toast({
-          title: "Error",
-          description: "Failed to check display name availability. Please try again.",
+          title: t("common.error"),
+          description: t("auth.failedToCheckDisplayName"),
           variant: "destructive",
         });
         setLoading(false);
@@ -120,7 +122,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
       const passwordValidation = validatePassword(password);
       if (!passwordValidation.valid) {
         toast({
-          title: "Password Requirements Not Met",
+          title: t("auth.passwordRequirementsNotMet"),
           description: passwordValidation.message,
           variant: "destructive",
         });
@@ -130,8 +132,8 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
       // Check password confirmation on signup
       if (password !== confirmPassword) {
         toast({
-          title: "Password Mismatch",
-          description: "Password and confirmation password do not match.",
+          title: t("auth.passwordMismatch"),
+          description: t("auth.passwordMismatchMessage"),
           variant: "destructive",
         });
         return;
@@ -150,7 +152,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
       // Race the auth operation against a timeout
       const timeoutPromise = new Promise<never>((_, reject) => {
         timeoutId = setTimeout(() => {
-          reject(new Error("Authentication timeout. Please check your connection."));
+          reject(new Error(t("auth.authenticationTimeout")));
         }, 10000);
       });
 
@@ -194,8 +196,8 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
       }
       
       toast({
-        title: "Success",
-        description: isLogin ? "You have been logged in successfully." : "Your account has been created successfully.",
+        title: t("common.success"),
+        description: isLogin ? t("auth.youHaveBeenLoggedIn") : t("auth.accountCreatedSuccessfully"),
       });
       // Reset form
       setEmail("");
@@ -205,10 +207,10 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
       setSrcUsername("");
       onOpenChange(false);
     } catch (error) {
-      const errorMessage = getErrorMessage(error, "An error occurred. Please try again.");
+      const errorMessage = getErrorMessage(error, t("errors.generic"));
       
       toast({
-        title: "Error",
+        title: t("common.error"),
         description: errorMessage,
         variant: "destructive",
       });
@@ -223,8 +225,8 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
   const handlePasswordReset = async () => {
     if (!email) {
       toast({
-        title: "Error",
-        description: "Please enter your email address.",
+        title: t("common.error"),
+        description: t("auth.pleaseEnterEmail"),
         variant: "destructive",
       });
       return;
@@ -232,8 +234,8 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
 
     if (!validateEmail(email.trim())) {
       toast({
-        title: "Invalid Email",
-        description: "Please enter a valid email address.",
+        title: t("auth.invalidEmail"),
+        description: t("auth.invalidEmailMessage"),
         variant: "destructive",
       });
       return;
@@ -243,14 +245,14 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
       await sendPasswordResetEmail(auth, email.trim());
       // Always show success message to prevent user enumeration
       toast({
-        title: "Password Reset Email Sent",
-        description: "If an account exists with this email, you will receive password reset instructions.",
+        title: t("auth.passwordResetEmailSent"),
+        description: t("auth.passwordResetEmailSentMessage"),
       });
     } catch (error) {
       // Always show success message to prevent user enumeration
       toast({
-        title: "Password Reset Email Sent",
-        description: "If an account exists with this email, you will receive password reset instructions.",
+        title: t("auth.passwordResetEmailSent"),
+        description: t("auth.passwordResetEmailSentMessage"),
       });
     }
   };
@@ -260,12 +262,12 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
       <DialogContent className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]">
         <DialogHeader>
           <DialogTitle className="text-[hsl(220,17%,92%)]">
-            {isLogin ? "Login to Your Account" : "Create New Account"}
+            {isLogin ? t("auth.login") : t("auth.signup")}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="email" className="text-[hsl(220,17%,92%)]">Email</Label>
+            <Label htmlFor="email" className="text-[hsl(220,17%,92%)]">{t("auth.email")}</Label>
             <Input
               id="email"
               type="email"
@@ -276,7 +278,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
             />
           </div>
           <div>
-            <Label htmlFor="password" className="text-[hsl(220,17%,92%)]">Password</Label>
+            <Label htmlFor="password" className="text-[hsl(220,17%,92%)]">{t("auth.password")}</Label>
             <Input
               id="password"
               type="password"
@@ -292,13 +294,13 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
               disabled={loading}
               className="bg-[#cba6f7] hover:bg-[#b4a0e2] text-[hsl(240,21%,15%)] font-bold"
             >
-              {loading ? "Processing..." : (isLogin ? "Login" : "Sign Up")}
+              {loading ? t("auth.processing") : (isLogin ? t("auth.login") : t("auth.signup"))}
             </Button>
             {!isLogin && (
               <>
                 <div>
                   <Label htmlFor="displayName" className="text-[hsl(220,17%,92%)]">
-                    Display Name <span className="text-[#fab387]">*</span>
+                    {t("auth.displayName")} <span className="text-[#fab387]">*</span>
                   </Label>
                   <Input
                     id="displayName"
@@ -306,36 +308,33 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
                     required
-                    placeholder="Your display name"
+                    placeholder={t("auth.displayName")}
                     maxLength={50}
                     className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] text-[hsl(220,17%,92%)]"
                   />
                   <p className="text-xs text-[hsl(222,15%,60%)] mt-1">
-                    This will be shown on leaderboards and your profile. Must be unique.
+                    {t("auth.displayNameDescription")}
                   </p>
                 </div>
                 <div>
                   <Label htmlFor="srcUsername" className="text-[hsl(220,17%,92%)]">
-                    Speedrun.com Username <span className="text-[#fab387] text-xs">(Recommended)</span>
+                    {t("auth.srcUsername")} <span className="text-[#fab387] text-xs">{t("auth.recommended")}</span>
                   </Label>
                   <Input
                     id="srcUsername"
                     type="text"
                     value={srcUsername}
                     onChange={(e) => setSrcUsername(e.target.value)}
-                    placeholder="Your SRC username (optional)"
+                    placeholder={t("auth.srcUsername")}
                     maxLength={50}
                     className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] text-[hsl(220,17%,92%)]"
                   />
                   <p className="text-xs text-[#fab387] mt-1 font-medium">
-                    💡 We recommend using your Speedrun.com username! This will automatically claim your imported runs.
-                  </p>
-                  <p className="text-xs text-[hsl(222,15%,60%)] mt-1">
-                    Enter your exact Speedrun.com username to automatically claim runs imported from Speedrun.com.
+                    💡 {t("auth.srcUsernameOptional")}
                   </p>
                 </div>
                 <div>
-                  <Label htmlFor="confirmPassword" className="text-[hsl(220,17%,92%)]">Confirm Password</Label>
+                  <Label htmlFor="confirmPassword" className="text-[hsl(220,17%,92%)]">{t("auth.confirmPassword")}</Label>
                   <Input
                     id="confirmPassword"
                     type="password"
@@ -345,7 +344,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                     className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)] text-[hsl(220,17%,92%)]"
                   />
                   <p className="text-xs text-[hsl(222,15%,60%)] mt-1">
-                    Password must be at least 8 characters with uppercase, lowercase, and a number.
+                    {t("auth.passwordTooShort")}
                   </p>
                 </div>
               </>
@@ -362,7 +361,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
               }}
               className="text-[hsl(220,17%,92%)] border-[hsl(235,13%,30%)] hover:bg-[hsl(234,14%,29%)]"
             >
-              {isLogin ? "Need an account? Sign Up" : "Already have an account? Login"}
+              {isLogin ? `${t("auth.dontHaveAccount")} ${t("auth.switchToSignup")}` : `${t("auth.alreadyHaveAccount")} ${t("auth.switchToLogin")}`}
             </Button>
             {isLogin && (
               <Button
@@ -371,7 +370,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                 onClick={handlePasswordReset}
                 className="text-[hsl(222,15%,60%)] hover:text-[hsl(220,17%,92%)]"
               >
-                Forgot Password?
+                {t("auth.forgotPassword")}
               </Button>
             )}
           </div>
