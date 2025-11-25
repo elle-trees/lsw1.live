@@ -382,3 +382,6 @@ export { subscribeToRecentRuns, subscribeToUnverifiedRuns, subscribeToLeaderboar
 export { subscribeToUnreadUserNotifications, subscribeToUserNotifications } from "./db/notifications";
 export { subscribeToPlayersByPoints, subscribeToPlayer } from "./db/players";
 
+// Real-time autoclaiming functions (synchronous, so exported directly)
+export { startRealtimeAutoclaiming, stopRealtimeAutoclaiming, isRealtimeAutoclaimingActive } from "./data/firestore/autoclaim-realtime";
+

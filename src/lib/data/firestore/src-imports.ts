@@ -264,6 +264,13 @@ export const removeDuplicateRunsFirestore = async (duplicateRuns: { runs: Leader
     }
 };
 
+/**
+ * Automatically claim all unclaimed imported runs matching a user's SRC username
+ * Works with both verified and unverified runs - only checks if run is unclaimed
+ * @param uid - The user ID to claim runs for
+ * @param srcUsername - The SRC username to match against
+ * @returns The number of runs claimed
+ */
 export const autoClaimRunsBySRCUsernameFirestore = async (uid: string, srcUsername: string): Promise<number> => {
     if (!db) return 0;
     if (!uid || !srcUsername) return 0;
@@ -275,6 +282,7 @@ export const autoClaimRunsBySRCUsernameFirestore = async (uid: string, srcUserna
         // Query all imported runs (we can't do case-insensitive queries in Firestore)
         // So we fetch all imported runs and filter in memory
         // This handles both normalized and non-normalized srcPlayerName values
+        // Note: This includes both verified and unverified runs
         const q = query(
             collection(db, "leaderboardEntries").withConverter(leaderboardEntryConverter),
             where("importedFromSRC", "==", true)
@@ -295,7 +303,7 @@ export const autoClaimRunsBySRCUsernameFirestore = async (uid: string, srcUserna
             const normalizedSrcPlayerName = entry.srcPlayerName.trim().toLowerCase();
             if (normalizedSrcPlayerName !== normalizedUsername) continue;
             
-            // Only claim if currently unclaimed
+            // Only claim if currently unclaimed (works for both verified and unverified runs)
             if (!entry.playerId || entry.playerId === "imported" || entry.playerId.trim() === "") {
                 currentBatch.update(doc.ref, { playerId: uid });
                 claimedCount++;
@@ -466,6 +474,12 @@ export const tryAutoAssignRunFirestore = async (runId: string, entry: Leaderboar
     }
 };
 
+/**
+ * Get all unclaimed imported runs matching a SRC username
+ * Returns both verified and unverified runs - only filters by unclaimed status
+ * @param srcUsername - The SRC username to match against
+ * @returns Array of unclaimed runs matching the username
+ */
 export const getUnclaimedRunsBySRCUsernameFirestore = async (srcUsername: string): Promise<LeaderboardEntry[]> => {
     if (!db) return [];
     try {
@@ -473,8 +487,9 @@ export const getUnclaimedRunsBySRCUsernameFirestore = async (srcUsername: string
         const normalizedUsername = srcUsername.trim().toLowerCase();
         
         // Query all imported runs (we can't do case-insensitive queries in Firestore)
-        // So we fetch all unclaimed imported runs and filter in memory
+        // So we fetch all imported runs and filter in memory
         // This handles both normalized and non-normalized srcPlayerName values
+        // Note: This includes both verified and unverified runs
         const q = query(
             collection(db, "leaderboardEntries").withConverter(leaderboardEntryConverter),
             where("importedFromSRC", "==", true)
@@ -484,7 +499,7 @@ export const getUnclaimedRunsBySRCUsernameFirestore = async (srcUsername: string
         return snapshot.docs
             .map(doc => doc.data())
             .filter(entry => {
-                // Check if run is unclaimed
+                // Check if run is unclaimed (works for both verified and unverified runs)
                 const isUnclaimed = !entry.playerId || entry.playerId === "imported" || entry.playerId.trim() === "";
                 if (!isUnclaimed) return false;
                 
@@ -506,6 +521,13 @@ export const getUnassignedRunsFirestore = async (): Promise<LeaderboardEntry[]> 
     return getUnclaimedImportedRunsFirestore(100);
 };
 
+/**
+ * Claim an imported SRC run for a user
+ * Works with both verified and unverified runs
+ * @param runId - The ID of the run to claim
+ * @param userId - The user ID claiming the run
+ * @returns true if the run was successfully claimed, false otherwise
+ */
 export const claimRunFirestore = async (runId: string, userId: string): Promise<boolean> => {
     if (!db) return false;
     if (!runId || !userId) return false;
@@ -521,7 +543,7 @@ export const claimRunFirestore = async (runId: string, userId: string): Promise<
         
         const run = runDoc.data();
         
-        // Only allow claiming imported SRC runs
+        // Only allow claiming imported SRC runs (verified or unverified)
         if (!run.importedFromSRC) {
             console.error(`Run ${runId} is not an imported SRC run`);
             return false;
@@ -533,7 +555,7 @@ export const claimRunFirestore = async (runId: string, userId: string): Promise<
             return false;
         }
         
-        // Update the run to claim it
+        // Update the run to claim it (works for both verified and unverified runs)
         await updateDoc(runRef, { playerId: userId });
         return true;
     } catch (error: any) {
