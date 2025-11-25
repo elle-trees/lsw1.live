@@ -79,19 +79,21 @@ export const recalculatePlayerPointsFirestore = async (
       }
     }
     
-    // Update player's total points (only if player exists and has runs)
-    if (runs.length > 0) {
-      const playerRef = doc(db, "players", playerId);
-      // Check if player document exists
-      const playerDocSnap = await getDocs(query(
-        collection(db, "players").withConverter(playerConverter),
-        where("uid", "==", playerId),
-        firestoreLimit(1)
-      ));
-      
-      if (!playerDocSnap.empty) {
-        batch.update(playerRef, { totalPoints } as any);
-      }
+    // Update player's total points and totalRuns (only if player exists)
+    const playerRef = doc(db, "players", playerId);
+    // Check if player document exists
+    const playerDocSnap = await getDocs(query(
+      collection(db, "players").withConverter(playerConverter),
+      where("uid", "==", playerId),
+      firestoreLimit(1)
+    ));
+    
+    if (!playerDocSnap.empty) {
+      const totalRuns = runs.length;
+      batch.update(playerRef, { 
+        totalPoints,
+        totalRuns
+      } as any);
     }
     
     // Commit all updates

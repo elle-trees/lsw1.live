@@ -543,22 +543,25 @@ export const verifyRunWithTransactionFirestore = async (
       
       transaction.update(runRef, updateData);
 
-      // Update player points if run has a valid playerId
+      // Update player points and totalRuns if run has a valid playerId
       if (playerRef && playerDocSnap) {
         if (playerDocSnap.exists()) {
           const player = playerDocSnap.data();
           const currentPoints = player.totalPoints || 0;
+          const currentTotalRuns = player.totalRuns || 0;
           
           if (verified) {
-            // Add points when verifying
+            // Add points and increment totalRuns when verifying
             transaction.update(playerRef, {
-              totalPoints: currentPoints + points
+              totalPoints: currentPoints + points,
+              totalRuns: currentTotalRuns + 1
             } as any);
           } else {
-            // Subtract points when unverifying (if run had points)
+            // Subtract points and decrement totalRuns when unverifying (if run had points)
             const runPoints = currentRun.points || points || 0;
             transaction.update(playerRef, {
-              totalPoints: Math.max(0, currentPoints - runPoints)
+              totalPoints: Math.max(0, currentPoints - runPoints),
+              totalRuns: Math.max(0, currentTotalRuns - 1)
             } as any);
           }
         } else {
@@ -568,6 +571,7 @@ export const verifyRunWithTransactionFirestore = async (
               uid: run.playerId,
               displayName: run.playerName || "Unknown",
               totalPoints: points,
+              totalRuns: 1,
               email: "",
               isAdmin: false
             } as any);

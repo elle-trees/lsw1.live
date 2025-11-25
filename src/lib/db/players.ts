@@ -47,6 +47,12 @@ export const subscribeToPlayer = (
   return subscribeToPlayerFirestore(uid, callback);
 };
 
+// Export totalRuns recalculation functions
+export { 
+  recalculatePlayerTotalRunsFirestore as recalculatePlayerTotalRuns,
+  recalculateAllPlayerTotalRunsFirestore as recalculateAllPlayerTotalRuns
+} from "../data/firestore/players-realtime";
+
 /**
  * Set admin status for a player
  * Creates player document if it doesn't exist

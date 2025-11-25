@@ -152,6 +152,7 @@ const Admin = () => {
   const [foundPlayer, setFoundPlayer] = useState<{ uid: string; displayName: string; email: string; isAdmin: boolean } | null>(null);
   const [searchingPlayer, setSearchingPlayer] = useState(false);
   const [backfillingPoints, setBackfillingPoints] = useState(false);
+  const [recalculatingTotalRuns, setRecalculatingTotalRuns] = useState(false);
   const [activeTab, setActiveTab] = useState("runs");
   
   // User management state
@@ -7247,6 +7248,81 @@ const Admin = () => {
                   </Button>
               </CardContent>
             </Card>
+
+            {/* Recalculate Total Runs Card */}
+            <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
+              <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
+                <CardTitle className="flex items-center gap-2 text-xl text-[#fab387]">
+                  <RefreshCw className="h-5 w-5" />
+                  <span>
+                      Recalculate All Total Runs
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <p className="text-sm text-ctp-subtext1 leading-relaxed mb-4">
+                      Recalculate and update the total verified runs count for all players. This fixes players who have incorrect totalRuns counts (e.g., showing 0 despite having verified runs). The operation runs in the background so you can continue using the admin panel.
+                    </p>
+                    {recalculatingTotalRuns && (
+                  <p className="text-xs text-ctp-overlay0 mb-4 italic flex items-center gap-2">
+                    <span className="animate-pulse">●</span>
+                        Recalculation in progress... This may take a while depending on the number of players. You can continue using the admin panel.
+                  </p>
+                    )}
+                  <Button
+                    onClick={async () => {
+                      if (!window.confirm(
+                        "This will recalculate the total verified runs count for ALL players. " +
+                        "This operation cannot be undone and may take several minutes. Continue?"
+                      )) {
+                        return;
+                      }
+
+                      setRecalculatingTotalRuns(true);
+                      try {
+                        const { recalculateAllPlayerTotalRuns } = await import("@/lib/db/players");
+                        const result = await recalculateAllPlayerTotalRuns((processed, total) => {
+                          console.log(`Recalculating totalRuns: ${processed}/${total} players processed`);
+                        });
+                        if (result.errors.length > 0) {
+                          toast({
+                            title: "Recalculation Complete with Errors",
+                            description: `Updated ${result.playersUpdated} player(s). Some errors occurred.`,
+                            variant: "destructive",
+                          });
+                        } else {
+                          toast({
+                            title: "Recalculation Complete",
+                            description: `Successfully updated ${result.playersUpdated} player(s).`,
+                          });
+                        }
+                      } catch (error: any) {
+                        toast({
+                          title: "Error",
+                          description: error.message || "Failed to recalculate total runs.",
+                          variant: "destructive",
+                        });
+                      } finally {
+                        setRecalculatingTotalRuns(false);
+                      }
+                    }}
+                    disabled={recalculatingTotalRuns}
+                    className="bg-gradient-to-r from-[#a6e3a1] to-[#86c77a] hover:from-[#86c77a] hover:to-[#a6e3a1] text-black font-semibold w-full sm:w-auto transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#a6e3a1]/50"
+                  >
+                    {recalculatingTotalRuns ? (
+                      <>
+                        <LoadingSpinner size="sm" className="mr-2" />
+                        Recalculating Total Runs...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Recalculate All Total Runs
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
           </AnimatedTabsContent>
 
         {/* Manage Downloads Section */}
