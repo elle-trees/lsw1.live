@@ -53,15 +53,23 @@ const App = () => {
       initializePointsConfigSubscription();
 
       // Start the points recalculation service (listens for config changes)
-      const { startPointsRecalculationService } = await import("@/lib/data/firestore/points-realtime");
+      const { 
+        startPointsRecalculationService,
+        startRankUpdateService 
+      } = await import("@/lib/data/firestore/points-realtime");
       startPointsRecalculationService();
+      startRankUpdateService();
     })();
 
     // Cleanup on unmount
     return () => {
       (async () => {
-        const { stopPointsRecalculationService } = await import("@/lib/data/firestore/points-realtime");
+        const { 
+          stopPointsRecalculationService,
+          stopRankUpdateService 
+        } = await import("@/lib/data/firestore/points-realtime");
         stopPointsRecalculationService();
+        stopRankUpdateService();
       })();
     };
   }, []);

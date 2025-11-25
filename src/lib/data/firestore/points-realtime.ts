@@ -15,10 +15,114 @@ import {
 } from "firebase/firestore";
 import { LeaderboardEntry, Player, PointsConfig } from "@/types/database";
 import { leaderboardEntryConverter, playerConverter } from "./converters";
-import { calculatePoints } from "@/lib/utils";
+import { calculatePoints, parseTimeToSeconds } from "@/lib/utils";
 import { getCategoriesFirestore } from "./categories";
 import { getPlatformsFirestore } from "./platforms";
 import { subscribeToPointsConfigFirestore } from "./points";
+
+/**
+ * Calculate the current rank for a run based on the leaderboard
+ * This ensures we use the actual current rank, not a stale stored rank
+ * @param run - The run to calculate rank for
+ * @returns The current rank of the run (undefined if rank cannot be determined)
+ */
+const calculateCurrentRankForRun = async (run: LeaderboardEntry): Promise<number | undefined> => {
+  if (!db) return undefined;
+  
+  try {
+    // Build query to get all verified runs in the same leaderboard group
+    const constraints: any[] = [
+      where("verified", "==", true),
+      where("category", "==", run.category),
+      where("platform", "==", run.platform),
+      where("runType", "==", run.runType || 'solo'),
+    ];
+    
+    // Add leaderboard type filter
+    if (run.leaderboardType) {
+      constraints.push(where("leaderboardType", "==", run.leaderboardType));
+    }
+    
+    // Add level filter for IL and Community Golds
+    if ((run.leaderboardType === 'individual-level' || run.leaderboardType === 'community-golds') && run.level) {
+      constraints.push(where("level", "==", run.level));
+    }
+    
+    // Add subcategory filter for regular leaderboards
+    if (run.leaderboardType === 'regular' || !run.leaderboardType) {
+      if (run.subcategory) {
+        constraints.push(where("subcategory", "==", run.subcategory));
+      } else {
+        // For runs without subcategory, we need to filter for runs that also don't have subcategory
+        // Firestore doesn't support != null queries easily, so we'll fetch all and filter
+      }
+    }
+    
+    constraints.push(firestoreLimit(500));
+    
+    const runsQuery = query(
+      collection(db, "leaderboardEntries").withConverter(leaderboardEntryConverter),
+      ...constraints
+    );
+    
+    const runsSnapshot = await getDocs(runsQuery);
+    let allRuns = runsSnapshot.docs.map(doc => doc.data());
+    
+    // Filter by subcategory if needed (for regular leaderboards)
+    if ((run.leaderboardType === 'regular' || !run.leaderboardType) && !run.subcategory) {
+      allRuns = allRuns.filter(r => !r.subcategory);
+    }
+    
+    // Filter out obsolete runs (unless the current run is obsolete)
+    if (!run.isObsolete) {
+      allRuns = allRuns.filter(r => !r.isObsolete);
+    }
+    
+    // Handle player best runs - only count the best run per player/player pair
+    const playerBestRuns = new Map<string, LeaderboardEntry>();
+    
+    for (const entry of allRuns) {
+      const playerId = entry.playerId || entry.playerName || "";
+      const player2Id = entry.runType === 'co-op' ? (entry.player2Name || "") : "";
+      const groupKey = `${playerId}_${player2Id}_${entry.category}_${entry.platform}_${entry.runType || 'solo'}_${entry.leaderboardType || 'regular'}_${entry.level || ''}`;
+      
+      const existing = playerBestRuns.get(groupKey);
+      if (!existing) {
+        playerBestRuns.set(groupKey, entry);
+      } else {
+        const existingTime = parseTimeToSeconds(existing.time) || Infinity;
+        const currentTime = parseTimeToSeconds(entry.time) || Infinity;
+        if (currentTime < existingTime) {
+          playerBestRuns.set(groupKey, entry);
+        }
+      }
+    }
+    
+    // Sort by time
+    const sortedRuns = Array.from(playerBestRuns.values())
+      .map(entry => ({
+        entry,
+        totalSeconds: parseTimeToSeconds(entry.time) || Infinity
+      }))
+      .sort((a, b) => a.totalSeconds - b.totalSeconds)
+      .map(item => item.entry);
+    
+    // Find the rank of the current run
+    // For the current run, we need to find it in the sorted list
+    // We identify it by ID
+    const currentRunIndex = sortedRuns.findIndex(r => r.id === run.id);
+    
+    if (currentRunIndex === -1) {
+      // Run not found in leaderboard (might be obsolete or filtered out)
+      return undefined;
+    }
+    
+    return currentRunIndex + 1;
+  } catch (error) {
+    console.error(`Error calculating rank for run ${run.id}:`, error);
+    return undefined;
+  }
+};
 
 /**
  * Recalculate points for a single player based on all their verified runs
@@ -57,13 +161,16 @@ export const recalculatePlayerPointsFirestore = async (
       const category = categories.find(c => c.id === run.category);
       const platform = platforms.find(p => p.id === run.platform);
       
+      // Calculate the current rank for this run (not the stored rank which might be stale)
+      const currentRank = await calculateCurrentRankForRun(run);
+      
       const calculatedPoints = await calculatePoints(
         run.time,
         category?.name || "Unknown",
         platform?.name || "Unknown",
         run.category,
         run.platform,
-        run.rank,
+        currentRank, // Use calculated current rank instead of stored rank
         run.runType as 'solo' | 'co-op' | undefined,
         run.leaderboardType,
         run.isObsolete,
@@ -72,10 +179,20 @@ export const recalculatePlayerPointsFirestore = async (
       
       totalPoints += calculatedPoints;
       
-      // Update the run's points if different
-      if (run.points !== calculatedPoints) {
+      // Update the run's points and rank if different
+      const needsUpdate = run.points !== calculatedPoints || 
+                         (currentRank !== undefined && currentRank !== run.rank);
+      
+      if (needsUpdate) {
         const runRef = doc(db, "leaderboardEntries", run.id);
-        batch.update(runRef, { points: calculatedPoints });
+        const updateData: any = {};
+        if (run.points !== calculatedPoints) {
+          updateData.points = calculatedPoints;
+        }
+        if (currentRank !== undefined && currentRank !== run.rank) {
+          updateData.rank = currentRank;
+        }
+        batch.update(runRef, updateData);
       }
     }
     
@@ -349,6 +466,293 @@ export const startPointsRecalculationService = (): void => {
 export const stopPointsRecalculationService = (): void => {
   if (pointsRecalculationService) {
     pointsRecalculationService.stop();
+  }
+};
+
+/**
+ * Get the leaderboard group key for a run
+ * This identifies which leaderboard a run belongs to
+ * Uses '::' as delimiter to avoid conflicts with IDs that might contain underscores
+ */
+const getLeaderboardGroupKey = (run: LeaderboardEntry): string => {
+  return `${run.category}::${run.platform}::${run.runType || 'solo'}::${run.leaderboardType || 'regular'}::${run.level || '__none__'}::${run.subcategory || '__none__'}`;
+};
+
+/**
+ * Recalculate and update ranks for all runs in a specific leaderboard group
+ * @param groupKey - The leaderboard group key
+ * @returns Number of runs updated
+ */
+const updateRanksForLeaderboardGroup = async (groupKey: string): Promise<number> => {
+  if (!db) return 0;
+  
+  try {
+    // Parse the group key to extract filters
+    const [category, platform, runType, leaderboardType, level, subcategory] = groupKey.split('::');
+    const actualLevel = level === '__none__' ? undefined : level;
+    const actualSubcategory = subcategory === '__none__' ? undefined : subcategory;
+    
+    // Build query to get all verified runs in this leaderboard group
+    const constraints: any[] = [
+      where("verified", "==", true),
+      where("category", "==", category),
+      where("platform", "==", platform),
+      where("runType", "==", runType),
+    ];
+    
+    if (leaderboardType && leaderboardType !== 'undefined') {
+      constraints.push(where("leaderboardType", "==", leaderboardType));
+    }
+    
+    if (actualLevel && (leaderboardType === 'individual-level' || leaderboardType === 'community-golds')) {
+      constraints.push(where("level", "==", actualLevel));
+    }
+    
+    if (actualSubcategory && (leaderboardType === 'regular' || !leaderboardType || leaderboardType === 'undefined')) {
+      constraints.push(where("subcategory", "==", actualSubcategory));
+    }
+    
+    constraints.push(firestoreLimit(500));
+    
+    const runsQuery = query(
+      collection(db, "leaderboardEntries").withConverter(leaderboardEntryConverter),
+      ...constraints
+    );
+    
+    const runsSnapshot = await getDocs(runsQuery);
+    let allRuns = runsSnapshot.docs.map(doc => doc.data());
+    
+    // Filter by subcategory if needed (for regular leaderboards without subcategory)
+    if ((!leaderboardType || leaderboardType === 'regular' || leaderboardType === 'undefined') && !actualSubcategory) {
+      allRuns = allRuns.filter(r => !r.subcategory);
+    }
+    
+    // Separate obsolete and non-obsolete runs
+    const nonObsoleteRuns = allRuns.filter(r => !r.isObsolete);
+    const obsoleteRuns = allRuns.filter(r => r.isObsolete);
+    
+    // Handle player best runs - only count the best run per player/player pair
+    const playerBestRuns = new Map<string, LeaderboardEntry>();
+    
+    for (const entry of nonObsoleteRuns) {
+      const playerId = entry.playerId || entry.playerName || "";
+      const player2Id = entry.runType === 'co-op' ? (entry.player2Name || "") : "";
+      const playerGroupKey = `${playerId}_${player2Id}_${entry.category}_${entry.platform}_${entry.runType || 'solo'}_${entry.leaderboardType || 'regular'}_${entry.level || ''}`;
+      
+      const existing = playerBestRuns.get(playerGroupKey);
+      if (!existing) {
+        playerBestRuns.set(playerGroupKey, entry);
+      } else {
+        const existingTime = parseTimeToSeconds(existing.time) || Infinity;
+        const currentTime = parseTimeToSeconds(entry.time) || Infinity;
+        if (currentTime < existingTime) {
+          playerBestRuns.set(playerGroupKey, entry);
+        }
+      }
+    }
+    
+    // Sort by time
+    const sortedNonObsolete = Array.from(playerBestRuns.values())
+      .map(entry => ({
+        entry,
+        totalSeconds: parseTimeToSeconds(entry.time) || Infinity
+      }))
+      .sort((a, b) => a.totalSeconds - b.totalSeconds)
+      .map(item => item.entry);
+    
+    const sortedObsolete = obsoleteRuns
+      .map(entry => ({
+        entry,
+        totalSeconds: parseTimeToSeconds(entry.time) || Infinity
+      }))
+      .sort((a, b) => a.totalSeconds - b.totalSeconds)
+      .map(item => item.entry);
+    
+    // Calculate ranks
+    const rankMap = new Map<string, number>();
+    sortedNonObsolete.forEach((entry, index) => {
+      rankMap.set(entry.id, index + 1);
+    });
+    sortedObsolete.forEach((entry, index) => {
+      rankMap.set(entry.id, sortedNonObsolete.length + index + 1);
+    });
+    
+    // Update ranks in batch
+    const batch = writeBatch(db);
+    let updatesCount = 0;
+    
+    for (const run of allRuns) {
+      const newRank = rankMap.get(run.id);
+      if (newRank !== undefined && newRank !== run.rank) {
+        const runRef = doc(db, "leaderboardEntries", run.id);
+        batch.update(runRef, { rank: newRank });
+        updatesCount++;
+      }
+    }
+    
+    if (updatesCount > 0) {
+      await batch.commit();
+    }
+    
+    return updatesCount;
+  } catch (error) {
+    console.error(`Error updating ranks for leaderboard group ${groupKey}:`, error);
+    return 0;
+  }
+};
+
+/**
+ * Real-time rank update service
+ * Listens for changes to verified runs and automatically updates ranks
+ */
+class RankUpdateService {
+  private runsUnsubscribe: Unsubscribe | null = null;
+  private isListening = false;
+  private rankUpdateDebounceTimer: NodeJS.Timeout | null = null;
+  private pendingGroupUpdates = new Set<string>();
+  private readonly RANK_UPDATE_DEBOUNCE_MS = 2000; // Wait 2 seconds after last change before processing
+  
+  /**
+   * Start listening for leaderboard entry changes
+   */
+  start(): void {
+    if (this.isListening || !db) return;
+    
+    this.isListening = true;
+    
+    try {
+      // Listen to all verified runs (no limit - we only process changes, not all data)
+      const runsQuery = query(
+        collection(db, "leaderboardEntries").withConverter(leaderboardEntryConverter),
+        where("verified", "==", true)
+      );
+      
+      this.runsUnsubscribe = onSnapshot(
+        runsQuery,
+        (snapshot: QuerySnapshot<LeaderboardEntry>) => {
+          // Process all changes (added, modified, removed)
+          const changes = snapshot.docChanges();
+          
+          if (changes.length === 0) return;
+          
+          // Collect affected leaderboard groups
+          for (const change of changes) {
+            const run = change.doc.data();
+            const groupKey = getLeaderboardGroupKey(run);
+            this.pendingGroupUpdates.add(groupKey);
+          }
+          
+          // Debounce rank updates to batch process multiple changes
+          if (this.rankUpdateDebounceTimer) {
+            clearTimeout(this.rankUpdateDebounceTimer);
+          }
+          
+          this.rankUpdateDebounceTimer = setTimeout(() => {
+            this.processPendingRankUpdates();
+          }, this.RANK_UPDATE_DEBOUNCE_MS);
+        },
+        (error) => {
+          console.error("Error in rank update listener:", error);
+        }
+      );
+    } catch (error) {
+      console.error("Error setting up rank update listener:", error);
+      this.isListening = false;
+    }
+  }
+  
+  /**
+   * Process pending rank updates for all affected leaderboard groups
+   */
+  private async processPendingRankUpdates(): Promise<void> {
+    if (this.pendingGroupUpdates.size === 0) return;
+    
+    const groupsToUpdate = Array.from(this.pendingGroupUpdates);
+    this.pendingGroupUpdates.clear();
+    
+    console.log(`Updating ranks for ${groupsToUpdate.length} leaderboard group(s)...`);
+    
+    // Process groups in parallel (but limit concurrency to avoid overwhelming Firestore)
+    const BATCH_SIZE = 5;
+    for (let i = 0; i < groupsToUpdate.length; i += BATCH_SIZE) {
+      const batch = groupsToUpdate.slice(i, i + BATCH_SIZE);
+      await Promise.all(
+        batch.map(async (groupKey) => {
+          try {
+            const updated = await updateRanksForLeaderboardGroup(groupKey);
+            if (updated > 0) {
+              console.log(`Updated ranks for ${updated} runs in group ${groupKey}`);
+            }
+          } catch (error) {
+            console.error(`Error updating ranks for group ${groupKey}:`, error);
+          }
+        })
+      );
+    }
+    
+    console.log("Rank updates completed");
+  }
+  
+  /**
+   * Stop listening for changes
+   */
+  stop(): void {
+    if (this.rankUpdateDebounceTimer) {
+      clearTimeout(this.rankUpdateDebounceTimer);
+      this.rankUpdateDebounceTimer = null;
+    }
+    
+    if (this.runsUnsubscribe) {
+      this.runsUnsubscribe();
+      this.runsUnsubscribe = null;
+    }
+    
+    this.isListening = false;
+    this.pendingGroupUpdates.clear();
+  }
+  
+  /**
+   * Check if the service is currently listening
+   */
+  getIsListening(): boolean {
+    return this.isListening;
+  }
+  
+  /**
+   * Manually trigger rank updates for a specific leaderboard group
+   */
+  async updateRanksForGroup(groupKey: string): Promise<number> {
+    return await updateRanksForLeaderboardGroup(groupKey);
+  }
+}
+
+// Singleton instance
+let rankUpdateService: RankUpdateService | null = null;
+
+/**
+ * Get the rank update service instance
+ */
+export const getRankUpdateService = (): RankUpdateService => {
+  if (!rankUpdateService) {
+    rankUpdateService = new RankUpdateService();
+  }
+  return rankUpdateService;
+};
+
+/**
+ * Start the real-time rank update service
+ */
+export const startRankUpdateService = (): void => {
+  const service = getRankUpdateService();
+  service.start();
+};
+
+/**
+ * Stop the real-time rank update service
+ */
+export const stopRankUpdateService = (): void => {
+  if (rankUpdateService) {
+    rankUpdateService.stop();
   }
 };
 
