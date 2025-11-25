@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, ShieldAlert, ExternalLink, Download, PlusCircle, Trash2, Wrench, Edit2, FolderTree, Play, ArrowUp, ArrowDown, Gamepad2, UserPlus, UserMinus, Trophy, Upload, Star, Gem, RefreshCw, X, AlertTriangle, Users, Search, Save, Coins } from "lucide-react";
+import { CheckCircle, XCircle, ShieldAlert, ExternalLink, Download, PlusCircle, Trash2, Wrench, Edit2, FolderTree, Play, ArrowUp, ArrowDown, Gamepad2, UserPlus, UserMinus, Trophy, Upload, Star, Gem, RefreshCw, X, AlertTriangle, Users, Search, Save, Coins, UserCheck } from "lucide-react";
 import { Tabs, AnimatedTabsList, AnimatedTabsTrigger, AnimatedTabsContent } from "@/components/ui/animated-tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
@@ -53,6 +53,7 @@ const Admin = () => {
   const [showConfirmClearUnverifiedDialog, setShowConfirmClearUnverifiedDialog] = useState(false);
   const [batchVerifying, setBatchVerifying] = useState(false);
   const [batchVerifyingAll, setBatchVerifyingAll] = useState(false);
+  const [autoclaiming, setAutoclaiming] = useState(false);
   const itemsPerPage = 25;
   // SRC categories with variables
   const [srcCategoriesWithVars, setSrcCategoriesWithVars] = useState<Array<SRCCategory & { variablesData?: Array<{ id: string; name: string; values: { values: Record<string, { label: string }> } }> }>>([]);
@@ -1623,6 +1624,65 @@ const Admin = () => {
       });
     } finally {
       setBatchVerifying(false);
+    }
+  };
+
+  const handleAutoclaimRuns = async () => {
+    if (!currentUser?.isAdmin) {
+      toast({
+        title: "Error",
+        description: "You must be an admin to trigger autoclaiming.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (autoclaiming) return;
+
+    setAutoclaiming(true);
+    try {
+      const { runAutoclaimingForAllUsers } = await import("@/lib/db");
+      const result = await runAutoclaimingForAllUsers();
+      
+      if (result.errors.length > 0) {
+        toast({
+          title: "Autoclaiming Complete with Errors",
+          description: `Claimed ${result.runsUpdated} run(s) for ${result.playersUpdated} player(s). Some errors occurred.`,
+          variant: "destructive",
+        });
+      } else if (result.runsUpdated > 0) {
+        toast({
+          title: "Autoclaiming Complete",
+          description: `Successfully claimed ${result.runsUpdated} run(s) for ${result.playersUpdated} player(s).`,
+        });
+        // Refresh imported runs to show updated data
+        const fetchImportedRuns = async () => {
+          setLoadingImportedRuns(true);
+          try {
+            const { getImportedSRCRuns } = await import("@/lib/db/src-imports");
+            const runs = await getImportedSRCRuns(1000);
+            setImportedSRCRuns(runs);
+          } catch (error) {
+            console.error("Error refreshing imported runs:", error);
+          } finally {
+            setLoadingImportedRuns(false);
+          }
+        };
+        await fetchImportedRuns();
+      } else {
+        toast({
+          title: "Autoclaiming Complete",
+          description: "No runs were claimed. All imported runs may already be claimed or no matching players found.",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to trigger autoclaiming.",
+        variant: "destructive",
+      });
+    } finally {
+      setAutoclaiming(false);
     }
   };
 
@@ -4400,6 +4460,31 @@ const Admin = () => {
                       </div>
                     </div>
                   )}
+                </div>
+
+                {/* Autoclaiming Section */}
+                <div className="space-y-4 pb-6 pt-2 border-b border-[hsl(235,13%,30%)]">
+                  <p className="text-[hsl(222,15%,60%)]">
+                    Automatically claim imported runs (both verified and unverified) for players who have set their SRC username. 
+                    This will match runs based on the player name from speedrun.com.
+                  </p>
+                  <Button
+                    onClick={handleAutoclaimRuns}
+                    disabled={autoclaiming || importingRuns}
+                    className="bg-gradient-to-r from-[#f9e2af] to-[#e6d19a] hover:from-[#e6d19a] hover:to-[#f9e2af] text-[hsl(240,21%,15%)] font-bold transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                  >
+                    {autoclaiming ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Autoclaiming...
+                      </>
+                    ) : (
+                      <>
+                        <UserCheck className="h-4 w-4 mr-2" />
+                        Trigger Autoclaiming for All Players
+                      </>
+                    )}
+                  </Button>
                 </div>
 
                 {/* Imported Runs List - Same content as before */}
