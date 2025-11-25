@@ -1,24 +1,29 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useMemo } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, ExternalLink } from "lucide-react";
-import { getDownloadEntries } from "@/lib/db";
+import { getDownloadEntries, getDownloadCategories } from "@/lib/db";
 import { DownloadEntry } from "@/types/database";
 import { FadeIn } from "@/components/ui/fade-in";
 import { AnimatedCard } from "@/components/ui/animated-card";
 
 const Downloads = () => {
   const [downloadEntries, setDownloadEntries] = useState<DownloadEntry[]>([]);
+  const [downloadCategories, setDownloadCategories] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const data = await getDownloadEntries();
-        setDownloadEntries(data);
+        const [entries, categories] = await Promise.all([
+          getDownloadEntries(),
+          getDownloadCategories()
+        ]);
+        setDownloadEntries(entries);
+        setDownloadCategories(categories);
       } catch (_error) {
         // Error fetching download entries
       } finally {
@@ -28,6 +33,41 @@ const Downloads = () => {
 
     fetchData();
   }, []);
+
+  // Group downloads by category
+  const downloadsByCategory = useMemo(() => {
+    const grouped: Record<string, DownloadEntry[]> = {};
+    
+    downloadEntries.forEach((entry) => {
+      const categoryId = entry.category;
+      if (!grouped[categoryId]) {
+        grouped[categoryId] = [];
+      }
+      grouped[categoryId].push(entry);
+    });
+
+    // Sort categories by their order in downloadCategories array
+    const sortedCategories = downloadCategories
+      .filter(cat => grouped[cat.id] && grouped[cat.id].length > 0)
+      .map(cat => ({
+        id: cat.id,
+        name: cat.name,
+        downloads: grouped[cat.id]
+      }));
+
+    // Also include any categories that exist in downloads but not in the categories list
+    Object.keys(grouped).forEach(categoryId => {
+      if (!downloadCategories.find(cat => cat.id === categoryId)) {
+        sortedCategories.push({
+          id: categoryId,
+          name: categoryId, // Fallback to category ID if name not found
+          downloads: grouped[categoryId]
+        });
+      }
+    });
+
+    return sortedCategories;
+  }, [downloadEntries, downloadCategories]);
 
   return (
     <FadeIn className="min-h-screen bg-[#1e1e2e] text-ctp-text py-4 sm:py-6 overflow-x-hidden">
@@ -46,46 +86,62 @@ const Downloads = () => {
             </CardContent>
           </AnimatedCard>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center">
-            {downloadEntries.map((entry) => (
+          <div className="space-y-8">
+            {downloadsByCategory.map((category, categoryIndex) => (
               <Card
-                key={entry.id}
-                className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl rounded-none overflow-hidden hover:border-ctp-surface2 transition-colors duration-200 flex flex-col w-full max-w-md"
+                key={category.id}
+                className="bg-gradient-to-br from-ctp-base to-ctp-mantle border-ctp-surface1 shadow-xl rounded-none overflow-hidden"
               >
-                <CardContent className="p-6 flex flex-col flex-grow">
-                  {entry.imageUrl && (
-                    <div className="relative w-full h-80 rounded-none overflow-hidden mb-4 border border-ctp-surface1">
-                      <img 
-                        src={entry.imageUrl} 
-                        alt={entry.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )}
-                  <CardTitle className="text-xl font-semibold mb-3 text-ctp-text">
-                    {entry.name}
+                <CardHeader className="bg-gradient-to-r from-ctp-mantle to-ctp-base border-b border-ctp-surface1">
+                  <CardTitle className="text-2xl font-semibold text-ctp-text">
+                    {category.name}
                   </CardTitle>
-                  <p className="text-ctp-subtext1 text-sm mb-6 leading-relaxed flex-grow">
-                    {entry.description}
-                  </p>
-                  <Button 
-                    asChild 
-                    className="w-full bg-ctp-mauve hover:bg-ctp-mauve/90 text-ctp-base font-semibold rounded-none transition-colors duration-200"
-                  >
-                    <a 
-                      href={entry.fileUrl || entry.url || "#"} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="flex items-center justify-center gap-2"
-                    >
-                      <span>{entry.fileUrl ? "Download" : "View"}</span>
-                      {entry.fileUrl ? (
-                        <Download className="h-4 w-4" />
-                      ) : (
-                        <ExternalLink className="h-4 w-4" />
-                      )}
-                    </a>
-                  </Button>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {category.downloads.map((entry) => (
+                      <Card
+                        key={entry.id}
+                        className="bg-gradient-to-br from-ctp-crust to-ctp-mantle border-ctp-surface1 shadow-lg rounded-none overflow-hidden hover:border-ctp-surface2 transition-colors duration-200 flex flex-col"
+                      >
+                        <CardContent className="p-6 flex flex-col flex-grow">
+                          {entry.imageUrl && (
+                            <div className="relative w-full h-64 rounded-none overflow-hidden mb-4 border border-ctp-surface1">
+                              <img 
+                                src={entry.imageUrl} 
+                                alt={entry.name}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+                          <CardTitle className="text-lg font-semibold mb-3 text-ctp-text">
+                            {entry.name}
+                          </CardTitle>
+                          <p className="text-ctp-subtext1 text-sm mb-6 leading-relaxed flex-grow">
+                            {entry.description}
+                          </p>
+                          <Button 
+                            asChild 
+                            className="w-full bg-ctp-mauve hover:bg-ctp-mauve/90 text-ctp-base font-semibold rounded-none transition-colors duration-200"
+                          >
+                            <a 
+                              href={entry.fileUrl || entry.url || "#"} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="flex items-center justify-center gap-2"
+                            >
+                              <span>{entry.fileUrl ? "Download" : "View"}</span>
+                              {entry.fileUrl ? (
+                                <Download className="h-4 w-4" />
+                              ) : (
+                                <ExternalLink className="h-4 w-4" />
+                              )}
+                            </a>
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             ))}

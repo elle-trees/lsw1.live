@@ -1,17 +1,26 @@
 // Vercel serverless function to proxy Twitch status requests
 // This bypasses CORS issues by making the request server-side
 
+import {
+  validateQueryParams,
+  createTextResponse,
+  createErrorResponse,
+  createOptionsResponse,
+  createCacheHeaders,
+  handleApiRequest,
+} from '../utils/errorHandler';
+
 export async function GET(request: Request) {
-  try {
+  return handleApiRequest(async () => {
     const { searchParams } = new URL(request.url);
-    const username = searchParams.get('username');
     
-    if (!username) {
-      return new Response(JSON.stringify({ error: 'Username is required' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+    // Validate required parameters
+    const validation = validateQueryParams(searchParams, ['username']);
+    if (!validation.valid) {
+      return validation.error;
     }
+    
+    const username = searchParams.get('username')!;
     
     // Fetch from decapi.me
     const response = await fetch(`https://decapi.me/twitch/status/${username.toLowerCase()}`, {
@@ -21,45 +30,23 @@ export async function GET(request: Request) {
     });
     
     if (!response.ok) {
-      return new Response(JSON.stringify({ error: 'Failed to fetch status' }), {
-        status: response.status,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return createErrorResponse(
+        'Failed to fetch status',
+        response.status,
+        'TWITCH_API_ERROR'
+      );
     }
     
     const text = await response.text();
     
     // Return the text response with CORS headers and caching
     // Cache for 30 seconds, allow stale-while-revalidate for 60 seconds
-    return new Response(text, {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/plain',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
-      },
-    });
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error('[API] Error fetching Twitch status:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
+    return createTextResponse(text, 200, createCacheHeaders(30, 60));
+  }, 'Twitch status');
 }
 
 // Handle OPTIONS for CORS preflight
 export async function OPTIONS() {
-  return new Response(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    },
-  });
+  return createOptionsResponse();
 }
 

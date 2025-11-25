@@ -99,6 +99,12 @@ export default defineConfig(({ mode }) => {
           theme_color: "#ffffff",
           background_color: "#ffffff",
           display: "standalone",
+          orientation: "portrait-primary",
+          start_url: "/",
+          scope: "/",
+          lang: "en",
+          dir: "ltr",
+          categories: ["games", "entertainment", "sports"],
           icons: [
             {
               src: "/favicon.ico",
@@ -109,11 +115,30 @@ export default defineConfig(({ mode }) => {
               src: "/placeholder.svg",
               sizes: "192x192",
               type: "image/svg+xml",
+              purpose: "any maskable",
             },
             {
               src: "/placeholder.svg",
               sizes: "512x512",
               type: "image/svg+xml",
+              purpose: "any maskable",
+            },
+          ],
+          screenshots: [],
+          shortcuts: [
+            {
+              name: "Leaderboards",
+              short_name: "Leaderboards",
+              description: "View speedrunning leaderboards",
+              url: "/leaderboards",
+              icons: [{ src: "/placeholder.svg", sizes: "192x192" }],
+            },
+            {
+              name: "Stats",
+              short_name: "Stats",
+              description: "View statistics",
+              url: "/stats",
+              icons: [{ src: "/placeholder.svg", sizes: "192x192" }],
             },
           ],
         },
@@ -135,6 +160,11 @@ export default defineConfig(({ mode }) => {
           // Skip waiting and claim clients immediately for faster updates
           skipWaiting: true,
           clientsClaim: true,
+          // Offline fallback strategy
+          navigateFallback: '/index.html',
+          navigateFallbackDenylist: [/^\/api\//], // Don't fallback for API routes
+          // Offline fallback page
+          offlineGoogleAnalytics: false,
           runtimeCaching: [
             {
               urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i,
@@ -160,6 +190,34 @@ export default defineConfig(({ mode }) => {
                   maxAgeSeconds: 60 * 60, // 1 hour
                 },
                 networkTimeoutSeconds: 10,
+              },
+            },
+            {
+              // Cache API routes with NetworkFirst strategy
+              urlPattern: /^https?:\/\/.*\/api\/.*/i,
+              handler: "NetworkFirst",
+              options: {
+                cacheName: "api-cache",
+                expiration: {
+                  maxEntries: 100,
+                  maxAgeSeconds: 60 * 5, // 5 minutes
+                },
+                networkTimeoutSeconds: 10,
+                cacheableResponse: {
+                  statuses: [0, 200],
+                },
+              },
+            },
+            {
+              // Cache static assets with CacheFirst
+              urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico|woff|woff2|ttf|eot)$/,
+              handler: "CacheFirst",
+              options: {
+                cacheName: "static-assets-cache",
+                expiration: {
+                  maxEntries: 200,
+                  maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+                },
               },
             },
           ],

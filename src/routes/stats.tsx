@@ -1,7 +1,15 @@
 import { createFileRoute } from '@tanstack/react-router'
-import Stats from '@/pages/Stats'
+import { lazy, Suspense } from 'react'
+import { LoadingSpinner } from '@/components/LoadingSpinner'
+
+// Lazy load Stats page to reduce initial bundle size (contains Recharts)
+const Stats = lazy(() => import('@/pages/Stats').then(m => ({ default: m.default })))
 
 export const Route = createFileRoute('/stats')({
-  component: Stats,
+  component: () => (
+    <Suspense fallback={<LoadingSpinner />}>
+      <Stats />
+    </Suspense>
+  ),
 })
 

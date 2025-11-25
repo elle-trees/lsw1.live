@@ -3,12 +3,22 @@
  */
 
 /**
- * Creates a standardized error response
+ * CORS headers for API responses
+ */
+export const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+} as const;
+
+/**
+ * Creates a standardized error response with CORS headers
  */
 export function createErrorResponse(
   message: string,
   status: number = 500,
-  code?: string
+  code?: string,
+  headers: HeadersInit = {}
 ): Response {
   return new Response(
     JSON.stringify({
@@ -18,21 +28,58 @@ export function createErrorResponse(
     }),
     {
       status,
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...CORS_HEADERS,
+        ...headers,
+      },
     }
   );
 }
 
 /**
- * Creates a standardized success response
+ * Creates a standardized success response with CORS headers
  */
 export function createSuccessResponse<T>(
   data: T,
-  status: number = 200
+  status: number = 200,
+  headers: HeadersInit = {}
 ): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...CORS_HEADERS,
+      ...headers,
+    },
+  });
+}
+
+/**
+ * Creates a text response with CORS headers (for Twitch API proxy responses)
+ */
+export function createTextResponse(
+  text: string,
+  status: number = 200,
+  headers: HeadersInit = {}
+): Response {
+  return new Response(text, {
+    status,
+    headers: {
+      'Content-Type': 'text/plain',
+      ...CORS_HEADERS,
+      ...headers,
+    },
+  });
+}
+
+/**
+ * Creates a standardized OPTIONS response for CORS preflight
+ */
+export function createOptionsResponse(): Response {
+  return new Response(null, {
+    status: 200,
+    headers: CORS_HEADERS,
   });
 }
 
@@ -76,7 +123,6 @@ export async function handleApiRequest<T>(
   try {
     return await handler();
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(`[API] Error in ${context}:`, error);
     return createErrorResponse(
       'Internal server error',
@@ -84,5 +130,21 @@ export async function handleApiRequest<T>(
       'INTERNAL_ERROR'
     );
   }
+}
+
+/**
+ * Creates cache control headers for API responses
+ */
+export function createCacheHeaders(
+  maxAge: number,
+  staleWhileRevalidate?: number
+): HeadersInit {
+  const cacheControl = staleWhileRevalidate
+    ? `public, s-maxage=${maxAge}, stale-while-revalidate=${staleWhileRevalidate}`
+    : `public, s-maxage=${maxAge}`;
+  
+  return {
+    'Cache-Control': cacheControl,
+  };
 }
 

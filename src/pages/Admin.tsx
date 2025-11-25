@@ -82,6 +82,11 @@ const Admin = () => {
   const [addingDownload, setAddingDownload] = useState(false);
   const [reorderingDownload, setReorderingDownload] = useState<string | null>(null);
   const [downloadCategories, setDownloadCategories] = useState<{ id: string; name: string }[]>([]);
+  const [newDownloadCategoryName, setNewDownloadCategoryName] = useState("");
+  const [editingDownloadCategory, setEditingDownloadCategory] = useState<{ id: string; name: string } | null>(null);
+  const [editingDownloadCategoryName, setEditingDownloadCategoryName] = useState("");
+  const [addingDownloadCategory, setAddingDownloadCategory] = useState(false);
+  const [updatingDownloadCategory, setUpdatingDownloadCategory] = useState(false);
   const { startUpload, isUploading } = useUploadThing("downloadFile");
   const { startUpload: startImageUpload, isUploading: isUploadingImage } = useUploadThing("profilePicture");
   const [editingDownload, setEditingDownload] = useState<DownloadEntry | null>(null);
@@ -2176,6 +2181,120 @@ const Admin = () => {
       });
     } finally {
       setReorderingDownload(null);
+    }
+  };
+
+  // Download category management handlers
+  const handleAddDownloadCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDownloadCategoryName.trim()) {
+      toast({
+        title: "Error",
+        description: "Category name cannot be empty.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setAddingDownloadCategory(true);
+    try {
+      const { addDownloadCategory } = await import("@/lib/db/downloads");
+      const result = await addDownloadCategory(newDownloadCategoryName.trim());
+      if (result) {
+        toast({
+          title: "Category Added",
+          description: "New download category has been added.",
+        });
+        setNewDownloadCategoryName("");
+        await fetchDownloadCategories();
+      } else {
+        throw new Error("Failed to add category.");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add download category.",
+        variant: "destructive",
+      });
+    } finally {
+      setAddingDownloadCategory(false);
+    }
+  };
+
+  const handleStartEditDownloadCategory = (category: { id: string; name: string }) => {
+    setEditingDownloadCategory(category);
+    setEditingDownloadCategoryName(category.name);
+  };
+
+  const handleCancelEditDownloadCategory = () => {
+    setEditingDownloadCategory(null);
+    setEditingDownloadCategoryName("");
+  };
+
+  const handleSaveEditDownloadCategory = async () => {
+    if (!editingDownloadCategory || !editingDownloadCategoryName.trim()) {
+      return;
+    }
+    
+    setUpdatingDownloadCategory(true);
+    try {
+      const { updateDownloadCategory } = await import("@/lib/db/downloads");
+      const success = await updateDownloadCategory(editingDownloadCategory.id, editingDownloadCategoryName.trim());
+      if (success) {
+        toast({
+          title: "Category Updated",
+          description: "Download category has been updated.",
+        });
+        setEditingDownloadCategory(null);
+        setEditingDownloadCategoryName("");
+        await fetchDownloadCategories();
+      } else {
+        throw new Error("Failed to update category.");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update download category.",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingDownloadCategory(false);
+    }
+  };
+
+  const handleDeleteDownloadCategory = async (categoryId: string) => {
+    // Check if any downloads use this category
+    const downloadsUsingCategory = downloadEntries.filter(d => d.category === categoryId);
+    if (downloadsUsingCategory.length > 0) {
+      toast({
+        title: "Cannot Delete Category",
+        description: `This category is being used by ${downloadsUsingCategory.length} download(s). Please reassign or delete those downloads first.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!window.confirm("Are you sure you want to delete this download category?")) {
+      return;
+    }
+    try {
+      const { deleteDownloadCategory } = await import("@/lib/db/downloads");
+      const success = await deleteDownloadCategory(categoryId);
+      if (success) {
+        toast({
+          title: "Category Deleted",
+          description: "Download category has been removed.",
+        });
+        await fetchDownloadCategories();
+      } else {
+        throw new Error("Failed to delete category.");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete download category.",
+        variant: "destructive",
+      });
     }
   };
   
@@ -7327,6 +7446,127 @@ const Admin = () => {
 
         {/* Manage Downloads Section */}
           <AnimatedTabsContent value="downloads" className="space-y-4 animate-fade-in">
+            {/* Download Categories Management */}
+            <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
+              <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
+                <CardTitle className="flex items-center gap-2 text-xl text-[#f2cdcd]">
+                  <FolderTree className="h-5 w-5" />
+                  <span>Download Categories</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <h3 className="text-xl font-semibold mb-4">Add New Category</h3>
+                <form onSubmit={handleAddDownloadCategory} className="space-y-4 mb-8">
+                  <div className="flex gap-4">
+                    <Input
+                      type="text"
+                      value={newDownloadCategoryName}
+                      onChange={(e) => setNewDownloadCategoryName(e.target.value)}
+                      placeholder="Category name"
+                      required
+                      className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
+                    />
+                    <Button 
+                      type="submit" 
+                      disabled={addingDownloadCategory}
+                      className="bg-gradient-to-r from-[#cba6f7] to-[#b4a0e2] hover:from-[#b4a0e2] hover:to-[#cba6f7] text-[hsl(240,21%,15%)] font-bold flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                    >
+                      <PlusCircle className="h-4 w-4" />
+                      {addingDownloadCategory ? "Adding..." : "Add Category"}
+                    </Button>
+                  </div>
+                </form>
+
+                <h3 className="text-xl font-semibold mb-4">Existing Categories</h3>
+                {downloadCategories.length === 0 ? (
+                  <p className="text-[hsl(222,15%,60%)] text-center py-4">No categories added yet.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-b border-[hsl(235,13%,30%)] hover:bg-transparent">
+                          <TableHead className="py-3 px-4 text-left">Name</TableHead>
+                          <TableHead className="py-3 px-4 text-center">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {downloadCategories.map((category) => (
+                          <TableRow key={category.id} className="border-b border-[hsl(235,13%,30%)] hover:bg-[hsl(235,19%,13%)] transition-all duration-200 hover:shadow-sm">
+                            <TableCell className="py-3 px-4">
+                              {editingDownloadCategory?.id === category.id ? (
+                                <Input
+                                  type="text"
+                                  value={editingDownloadCategoryName}
+                                  onChange={(e) => setEditingDownloadCategoryName(e.target.value)}
+                                  className="bg-[hsl(240,21%,15%)] border-[hsl(235,13%,30%)]"
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      handleSaveEditDownloadCategory();
+                                    } else if (e.key === 'Escape') {
+                                      handleCancelEditDownloadCategory();
+                                    }
+                                  }}
+                                  autoFocus
+                                />
+                              ) : (
+                                <span className="font-medium">{category.name}</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="py-3 px-4 text-center">
+                              <div className="flex items-center justify-center gap-2">
+                                {editingDownloadCategory?.id === category.id ? (
+                                  <>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      onClick={handleSaveEditDownloadCategory}
+                                      disabled={updatingDownloadCategory}
+                                      className="text-green-500 hover:bg-green-900/20 transition-all duration-200 hover:scale-110"
+                                    >
+                                      <Save className="h-4 w-4" />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      onClick={handleCancelEditDownloadCategory}
+                                      disabled={updatingDownloadCategory}
+                                      className="text-[hsl(222,15%,60%)] hover:bg-[hsl(235,19%,13%)] transition-all duration-200 hover:scale-110"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      onClick={() => handleStartEditDownloadCategory(category)}
+                                      className="text-[#cba6f7] hover:bg-purple-900/20 transition-all duration-200 hover:scale-110"
+                                    >
+                                      <Edit2 className="h-4 w-4" />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      onClick={() => handleDeleteDownloadCategory(category.id)}
+                                      className="text-red-500 hover:bg-red-900/20 transition-all duration-200 hover:scale-110"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Downloads Management */}
             <Card className="bg-gradient-to-br from-[hsl(240,21%,16%)] via-[hsl(240,21%,14%)] to-[hsl(235,19%,13%)] border-[hsl(235,13%,30%)] shadow-xl">
               <CardHeader className="bg-gradient-to-r from-[hsl(240,21%,18%)] to-[hsl(240,21%,15%)] border-b border-[hsl(235,13%,30%)]">
                 <CardTitle className="flex items-center gap-2 text-xl text-[#f2cdcd]">
