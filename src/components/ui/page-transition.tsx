@@ -10,6 +10,7 @@ interface PageTransitionProps {
 export function PageTransition({ children }: PageTransitionProps) {
   // No transition wrapper needed - React Router handles mounting/unmounting
   // We just need a simple container without any animation delays
-  return <div className="w-full">{children}</div>;
+  // Background ensures consistent color during page transitions on HDR displays
+  return <div className="w-full bg-[#1e1e2e] min-h-screen">{children}</div>;
 }
 

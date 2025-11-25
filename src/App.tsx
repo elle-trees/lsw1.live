@@ -53,9 +53,9 @@ const App = () => {
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <div className="flex flex-col min-h-screen">
+              <div className="flex flex-col min-h-screen bg-[#1e1e2e]">
                 <GameDetails />
-                <main className="flex-grow">
+                <main className="flex-grow bg-[#1e1e2e]">
                   <Suspense fallback={null}>
                     <PageTransition>
                       <Routes>
